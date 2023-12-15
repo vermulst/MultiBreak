@@ -1,14 +1,13 @@
 package me.vermulst.multibreak.figure;
 
 import me.vermulst.multibreak.CompassDirection;
-import org.bukkit.Location;
-import org.bukkit.block.BlockFace;
+import me.vermulst.multibreak.figure.types.FigureType;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
-public class Figure {
-
+public abstract class Figure {
 
     private final int width;
     private final int height;
@@ -24,36 +23,11 @@ public class Figure {
         this.depth = depth;
     }
 
-    public ArrayList<Vector> getVectors(Vector playerDirVector, CompassDirection playerDirection) {
-        ArrayList<Vector> vectors = new ArrayList<>();
-
-        int[] widthBound = getBoundPair(width, offSetWidth);
-        int[] heightBound = getBoundPair(height, offSetHeight);
-        int[] depthBound = getBoundPair(depth, offSetDepth);
-
-        for (int width = widthBound[0]; width <= widthBound[1]; width++) {
-            for (int height = heightBound[0]; height <= heightBound[1]; height++) {
-                for (int depth = depthBound[0]; depth <= depthBound[1]; depth++) {
-                    Vector newVector = new Vector(width, height, depth);
-                    if (newVector.equals(new Vector(0, 0, 0))) continue;
-
-                    // Rotate the vector based on player's direction
-                    newVector = rotateVector(newVector, playerDirVector);
-                    if (Math.abs(playerDirVector.getY()) == 1) {
-                        newVector.rotateAroundY(-playerDirection.getAngle());
-                    }
-                    if (Math.abs(playerDirVector.getX()) == 1) {
-                        newVector.rotateAroundX(playerDirection.getAngle());
-                    }
-                    vectors.add(newVector);
-                }
-            }
-        }
-        return vectors;
-    }
+    public abstract HashSet<Vector> getVectors(Vector playerDirVector, CompassDirection playerDirection);
+    public abstract FigureType getFigureType();
 
 
-    private Vector rotateVector(Vector vector, Vector playerDirVector) {
+    public Vector rotateVector(Vector vector, Vector playerDirVector, CompassDirection playerDirection) {
         // Calculate the rotation angle around the Y-axis
         double angleY = -Math.atan2(playerDirVector.getX(), playerDirVector.getZ());
 
@@ -73,6 +47,13 @@ public class Figure {
 
         // Apply the X-axis rotation to the vector
         vector = rotationMatrixX.transform(vector);
+
+        if (Math.abs(playerDirVector.getY()) == 1) {
+            vector.rotateAroundY(-playerDirection.getAngle());
+        }
+        if (Math.abs(playerDirVector.getX()) == 1) {
+            vector.rotateAroundX(playerDirection.getAngle());
+        }
 
         return vector;
     }

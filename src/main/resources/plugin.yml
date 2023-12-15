@@ -12,3 +12,8 @@ commands:
     description: multi break
     usage: /multibreak
     permission: multibreak.admin
+  multiconfig:
+    description: create a multibreak config to apply fast
+    usage: /multiconfig
+    permission: multibreak.admin
+    aliases: [multiconfiguration]

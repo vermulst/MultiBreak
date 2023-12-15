@@ -6,8 +6,10 @@ import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.BlockPosition;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
+import org.bukkit.util.Vector;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -15,9 +17,22 @@ public class MultiBlock {
 
     private final Block block;
     private PacketContainer packetContainer;
+    private final boolean hasAdjacentAir;
 
     public MultiBlock(Block block) {
         this.block = block;
+        this.hasAdjacentAir = this.initHasAdjacentAir(block);
+    }
+
+    public boolean initHasAdjacentAir(Block b) {
+        for (int i = -1; i <= 1; i += 2) {
+            if (b.getLocation().add(new Vector(i, 0, 0)).getBlock().getType().equals(Material.AIR) ||
+                    b.getLocation().add(new Vector(0, i, 0)).getBlock().getType().equals(Material.AIR) ||
+                    b.getLocation().add(new Vector(0, 0, i)).getBlock().getType().equals(Material.AIR)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void writeStage(int stage) {
@@ -37,4 +52,7 @@ public class MultiBlock {
         return block;
     }
 
+    public boolean hasAdjacentAir() {
+        return hasAdjacentAir;
+    }
 }

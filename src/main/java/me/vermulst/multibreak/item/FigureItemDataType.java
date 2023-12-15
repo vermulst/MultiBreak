@@ -1,6 +1,7 @@
 package me.vermulst.multibreak.item;
 
 import me.vermulst.multibreak.figure.Figure;
+import me.vermulst.multibreak.figure.types.FigureType;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -52,19 +53,24 @@ public class FigureItemDataType implements PersistentDataType<PersistentDataCont
         persistentDataContainer.set(key("widthO"), PersistentDataType.INTEGER, figureInfo.figure().getOffSetWidth());
         persistentDataContainer.set(key("heightO"), PersistentDataType.INTEGER, figureInfo.figure().getOffSetHeight());
         persistentDataContainer.set(key("depthO"), PersistentDataType.INTEGER, figureInfo.figure().getOffSetDepth());
+        persistentDataContainer.set(key("type_id"), PersistentDataType.INTEGER, figureInfo.figure().getFigureType().ordinal());
         //todo: add more options
         return persistentDataContainer;
     }
 
     @Override
     public FigureItemInfo fromPrimitive(PersistentDataContainer persistentDataContainer, PersistentDataAdapterContext persistentDataAdapterContext) {
-        int width = persistentDataContainer.get(key("width"), PersistentDataType.INTEGER);
-        int height = persistentDataContainer.get(key("height"), PersistentDataType.INTEGER);
-        int depth = persistentDataContainer.get(key("depth"), PersistentDataType.INTEGER);
-        Figure figure = new Figure(width,height,depth);
-        int widthO = persistentDataContainer.get(key("widthO"), PersistentDataType.INTEGER);
-        int heightO = persistentDataContainer.get(key("heightO"), PersistentDataType.INTEGER);
-        int depthO = persistentDataContainer.get(key("depthO"), PersistentDataType.INTEGER);
+        int width = persistentDataContainer.getOrDefault(key("width"), PersistentDataType.INTEGER, 3);
+        int height = persistentDataContainer.getOrDefault(key("height"), PersistentDataType.INTEGER, 3);
+        int depth = persistentDataContainer.getOrDefault(key("depth"), PersistentDataType.INTEGER, 1);
+
+        int figureTypeOrdinal = persistentDataContainer.getOrDefault(key("type_id"), PersistentDataType.INTEGER, 0);
+        FigureType figureType = FigureType.values()[figureTypeOrdinal];
+        Figure figure = figureType.build(width, height, depth);
+
+        int widthO = persistentDataContainer.getOrDefault(key("widthO"), PersistentDataType.INTEGER, 0);
+        int heightO = persistentDataContainer.getOrDefault(key("heightO"), PersistentDataType.INTEGER, 0);
+        int depthO = persistentDataContainer.getOrDefault(key("depthO"), PersistentDataType.INTEGER, 0);
         figure.setOffsets(widthO, heightO, depthO);
         FigureItemInfo figureItemInfo = new FigureItemInfo(figure);
         return figureItemInfo;

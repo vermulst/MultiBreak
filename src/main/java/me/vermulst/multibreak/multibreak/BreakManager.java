@@ -1,6 +1,7 @@
 package me.vermulst.multibreak.multibreak;
 
 import me.vermulst.multibreak.Main;
+import me.vermulst.multibreak.config.ConfigManager;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.item.FigureItemDataType;
 import me.vermulst.multibreak.item.FigureItemInfo;
@@ -32,11 +33,8 @@ public class BreakManager implements Listener {
         Player p = e.getPlayer();
         if (p.getGameMode().equals(GameMode.CREATIVE)) return;
         ItemStack tool = p.getInventory().getItemInMainHand();
-        if (tool.getItemMeta() == null) return;
-        FigureItemInfo figureItemInfo = this.getFigureItemInfo(tool);
-        if (figureItemInfo == null) return;
-
-        Figure figure = figureItemInfo.figure();
+        Figure figure = this.getFigure(tool);
+        if (figure == null) return;
 
         BlockFace blockFace = this.getBlockFace(p);
         Block blockMining = this.getTargetBlock(p);
@@ -55,16 +53,31 @@ public class BreakManager implements Listener {
         Player p = e.getPlayer();
         if (e.isCancelled() || p.getGameMode().equals(GameMode.CREATIVE)) return;
         ItemStack tool = p.getInventory().getItemInMainHand();
-        if (tool.getItemMeta() == null) return;
-        FigureItemInfo figureItemInfo = this.getFigureItemInfo(tool);
-        if (figureItemInfo == null) return;
+        Figure figure = this.getFigure(tool);
+        if (figure == null) return;
 
-        Figure figure = figureItemInfo.figure();
         BlockFace blockFace = this.getBlockFace(p);
         MultiBreak multiBlock = multiBlockHashMap.computeIfAbsent(p.getUniqueId(),
                 b -> new MultiBreak(p, getTargetBlock(p), figure, blockFace.getDirection()));
         multiBlock.end(true);
         multiBlockHashMap.remove(p.getUniqueId());
+    }
+
+    public Figure getFigure(ItemStack tool) {
+        Figure figure = null;
+        if (tool.getItemMeta() == null) return null;
+        FigureItemInfo figureItemInfo = this.getFigureItemInfo(tool);
+        if (figureItemInfo == null) {
+            Material material = tool.getType();
+            ConfigManager configManager = this.plugin.getConfigManager();
+            if (configManager.getMaterialOptions().containsKey(material)) {
+                String configOptionName = configManager.getMaterialOptions().get(material);
+                figure = configManager.getConfigOptions().get(configOptionName);
+            }
+        } else {
+            figure = figureItemInfo.figure();
+        }
+        return figure;
     }
 
     public FigureItemInfo getFigureItemInfo(ItemStack item) {
