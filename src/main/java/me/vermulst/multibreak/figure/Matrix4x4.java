@@ -4,7 +4,7 @@ package me.vermulst.multibreak.figure;
 import org.bukkit.util.Vector;
 
 public class Matrix4x4 {
-    private double[][] matrix;
+    private final double[][] matrix;
 
     public Matrix4x4() {
         this.matrix = new double[4][4];
@@ -33,14 +33,6 @@ public class Matrix4x4 {
         matrix[0][2] = Math.sin(angle);
         matrix[2][0] = -Math.sin(angle);
         matrix[2][2] = Math.cos(angle);
-    }
-
-    public void setRotationZ(double angle) {
-        setIdentity();
-        matrix[0][0] = Math.cos(angle);
-        matrix[0][1] = -Math.sin(angle);
-        matrix[1][0] = Math.sin(angle);
-        matrix[1][1] = Math.cos(angle);
     }
 
     public Vector transform(Vector vector) {

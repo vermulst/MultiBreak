@@ -2,9 +2,9 @@ package me.vermulst.multibreak.figure.types;
 
 import me.vermulst.multibreak.CompassDirection;
 import me.vermulst.multibreak.figure.Figure;
+import me.vermulst.multibreak.figure.VectorTransformer;
 import org.bukkit.util.Vector;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 
 public class FigureCircle extends Figure {
@@ -17,6 +17,7 @@ public class FigureCircle extends Figure {
     @Override
     public HashSet<Vector> getVectors(Vector playerDirVector, CompassDirection playerDirection) {
         HashSet<Vector> vectors = new HashSet<>();
+        VectorTransformer vectorTransformer = new VectorTransformer(playerDirVector, playerDirection);
 
         Vector startPos = new Vector(this.getOffSetWidth(), this.getOffSetHeight(), this.getOffSetDepth());
         double a = getWidth() / 2.0;
@@ -49,12 +50,10 @@ public class FigureCircle extends Figure {
                     int zRounded = (int) Math.round(z - (errorZ * signZ));
                     Vector vector = new Vector(xRounded, yRounded, zRounded);
                     vector.add(startPos);
-
-                    vectors.add(rotateVector(vector, playerDirVector, playerDirection));
+                    vectors.add(vectorTransformer.rotateVector(vector));
                 }
             }
         }
-
         return vectors;
     }
 

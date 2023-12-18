@@ -2,6 +2,7 @@ package me.vermulst.multibreak.figure.types;
 
 import me.vermulst.multibreak.CompassDirection;
 import me.vermulst.multibreak.figure.Figure;
+import me.vermulst.multibreak.figure.VectorTransformer;
 import org.bukkit.util.Vector;
 
 import java.util.HashSet;
@@ -16,6 +17,7 @@ public class FigureLinear extends Figure {
     @Override
     public HashSet<Vector> getVectors(Vector playerDirVector, CompassDirection playerDirection) {
         HashSet<Vector> vectors = new HashSet<>();
+        VectorTransformer vectorTransformer = new VectorTransformer(playerDirVector, playerDirection);
 
         int[] widthBound = getBoundPair(this.getWidth(), this.getOffSetWidth());
         int[] heightBound = getBoundPair(this.getHeight(), this.getOffSetHeight());
@@ -26,14 +28,18 @@ public class FigureLinear extends Figure {
                 for (int depth = depthBound[0]; depth <= depthBound[1]; depth++) {
                     Vector newVector = new Vector(width, height, depth);
                     if (newVector.equals(new Vector(0, 0, 0))) continue;
-
-                    // Rotate the vector based on player's direction
-                    newVector = rotateVector(newVector, playerDirVector, playerDirection);
-                    vectors.add(newVector);
+                    vectors.add(vectorTransformer.rotateVector(newVector));
                 }
             }
         }
         return vectors;
+    }
+
+    public int[] getBoundPair(int length, int offSetRight) {
+        double bound = (double) (length - 1) / 2;
+        int lowerBound = (int) Math.ceil(bound);
+        int higherBound = (int) Math.floor(bound);
+        return new int[]{-lowerBound + offSetRight, higherBound + offSetRight};
     }
 
     @Override
