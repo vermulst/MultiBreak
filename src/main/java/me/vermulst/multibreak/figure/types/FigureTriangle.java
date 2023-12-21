@@ -24,9 +24,9 @@ public class FigureTriangle extends FigureIterable {
         int[] depthBound = getBoundPair(this.getDepth(), this.getOffSetDepth());
 
         ArrayList<Vector> triangles = new ArrayList<>();
-        Vector vertexTop = new Vector(0, heightBound[1], 0);
-        Vector vertexLeft = new Vector(widthBound[0], heightBound[0], 0);
-        Vector vertexRight = new Vector(widthBound[1], heightBound[0], 0);
+        Vector vertexTop = new Vector(this.getOffSetWidth(), heightBound[1], this.getOffSetDepth());
+        Vector vertexLeft = new Vector(widthBound[0], heightBound[0], this.getOffSetDepth());
+        Vector vertexRight = new Vector(widthBound[1], heightBound[0], this.getOffSetDepth());
         for (int i = depthBound[0]; i <= depthBound[1]; i++) {
             triangles.add(vertexTop.clone().add(new Vector(0, 0, i)));
             triangles.add(vertexLeft.clone().add(new Vector(0, 0, i)));
