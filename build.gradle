@@ -3,7 +3,7 @@ plugins {
     id "com.github.johnrengelman.shadow" version "8.1.1"
 }
 
-group = 'com.github.vermulst'
+group = 'me.vermulst.multibreak'
 version = '0.5'
 
 repositories {
