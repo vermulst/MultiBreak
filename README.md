@@ -1,10 +1,11 @@
-Maven imports:
-```
+Maven:
+```xml
 <repository>
 	<id>jitpack.io</id>
 	<url>https://jitpack.io</url>
 </repository>
-
+```
+```xml
 <dependency>
 	<groupId>com.github.vermulst</groupId>
 	<artifactId>MultiBreak</artifactId>
@@ -13,20 +14,22 @@ Maven imports:
 ```
 
 
-Gradle imports: 
-```
+Gradle: 
+```groovy
 repositories {
 	maven {
 		url = 'https://jitpack.io'
 	}
 }
-
+```
+```groovy
 dependencies {
 	compileOnly 'com.github.vermulst:MultiBreak:version'
 }
 ```
 
-```
+Example use:
+```java
 @EventHandler
 public void multiBreakStart(MultiBreakStartEvent e) {
 	FigureCircle figureCircle = new FigureCircle(10, 10, 3);
