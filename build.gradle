@@ -1,11 +1,19 @@
 plugins {
     id 'java'
     id "com.github.johnrengelman.shadow" version "8.1.1"
+    id 'maven-publish'
 }
 
 group = 'me.vermulst.multibreak'
 version = '0.5'
 
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+}
 repositories {
     mavenCentral()
     maven {
@@ -29,12 +37,6 @@ dependencies {
     implementation 'org.bstats:bstats-bukkit:3.0.2'
 }
 
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
-}
 
 def targetJavaVersion = 17
 java {
