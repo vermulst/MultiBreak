@@ -14,7 +14,6 @@ public class VectorTransformer {
         Matrix4x4 rotationMatrixY = new Matrix4x4();
         rotationMatrixY.setRotationY(angleY);
         this.rotationMatrixY = rotationMatrixY;
-
         Matrix4x4 rotationMatrixX = new Matrix4x4();
         rotationMatrixX.setRotationX(angleX);
         this.rotationMatrixX = rotationMatrixX;
@@ -25,15 +24,14 @@ public class VectorTransformer {
     private final Matrix4x4 rotationMatrixY;
     private final Matrix4x4 rotationMatrixX;
 
-    public Vector rotateVector(Vector vector) {
-        vector = this.getRotationMatrixY().transform(vector);
-        vector = this.getRotationMatrixX().transform(vector);
+    public void rotateVector(Vector vector) {
+        this.getRotationMatrixY().transform(vector);
+        this.getRotationMatrixX().transform(vector);
         if (Math.abs(this.getPlayerDirectionVector().getY()) == 1) {
             vector.rotateAroundY(-this.getPlayerDirection().getAngle());
         } else {
             vector.rotateAroundY(this.getPlayerDirection().getAngle() * 2);
         }
-        return vector;
     }
 
     public Vector getPlayerDirectionVector() {

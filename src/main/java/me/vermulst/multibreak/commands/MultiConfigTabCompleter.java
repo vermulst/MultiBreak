@@ -30,6 +30,7 @@ public class MultiConfigTabCompleter implements TabCompleter {
                 completions.add("create");
                 completions.add("reload");
                 completions.add("delete");
+                completions.add("menu");
             }
             case 2 -> {
                 switch (args[0]) {
@@ -82,17 +83,32 @@ public class MultiConfigTabCompleter implements TabCompleter {
             }
             case 7 -> {
                 if ("create".equals(args[0])) {
-                    completions.add("Width offset");
+                    completions.add("Width_rotation (0-360)");
                 }
             }
             case 8 -> {
                 if ("create".equals(args[0])) {
-                    completions.add("Height offset");
+                    completions.add("Height_rotation (0-360)");
                 }
             }
             case 9 -> {
                 if ("create".equals(args[0])) {
-                    completions.add("Depth offset");
+                    completions.add("Depth_rotation (0-360)");
+                }
+            }
+            case 10 -> {
+                if ("create".equals(args[0])) {
+                    completions.add("Width_offset");
+                }
+            }
+            case 11 -> {
+                if ("create".equals(args[0])) {
+                    completions.add("Height_offset");
+                }
+            }
+            case 12 -> {
+                if ("create".equals(args[0])) {
+                    completions.add("Depth_offset");
                 }
             }
         }

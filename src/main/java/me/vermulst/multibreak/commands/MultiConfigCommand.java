@@ -1,7 +1,6 @@
 package me.vermulst.multibreak.commands;
 
 import me.vermulst.multibreak.Main;
-import me.vermulst.multibreak.config.ConfigOption;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.types.FigureType;
 import me.vermulst.multibreak.item.FigureItemDataType;
@@ -15,6 +14,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,22 +33,37 @@ public class MultiConfigCommand implements CommandExecutor {
                 return this.enterValidOption(p);
             }
             String option = args[0];
-            if ("apply".equals(option)) {
-                return this.applyConfig(p, args);
-            } else if ("create".equals(option)) {
-                return this.createConfig(p, args);
-            } else if ("reload".equals(option)) {
-                this.getPlugin().reloadConfig();
-                this.getPlugin().getConfigManager().load(this.getPlugin().getConfig());
-                p.sendMessage(Component.text("Config reloaded").color(TextColor.color(85, 255, 85)));
-                return true;
-            } else if ("delete".equals(option)) {
-                return this.deleteConfig(p, args);
-            } else {
-                return this.enterValidOption(p);
+            switch (option) {
+                case "apply" -> {
+                    return this.applyConfig(p, args);
+                }
+                case "create" -> {
+                    return this.createConfig(p, args);
+                }
+                case "reload" -> {
+                    this.getPlugin().reloadConfig();
+                    this.getPlugin().getConfigManager().load(this.getPlugin().getConfig());
+                    p.sendMessage(Component.text("Config reloaded").color(TextColor.color(85, 255, 85)));
+                    return true;
+                }
+                case "delete" -> {
+                    return this.deleteConfig(p, args);
+                }
+                case "menu" -> {
+                    return this.openMenu(p);
+                }
+                default -> {
+                    return this.enterValidOption(p);
+                }
             }
         }
         return false;
+    }
+
+    public boolean openMenu(@NotNull Player p) {
+        Inventory inventory = this.getConfigManager().getMenu();
+        p.openInventory(inventory);
+        return true;
     }
 
     public boolean deleteConfig(@NotNull Player p, @NotNull String[] args) {
@@ -93,8 +108,10 @@ public class MultiConfigCommand implements CommandExecutor {
             p.sendMessage(Component.text("Please enter valid width, height and depth").color(TextColor.color(255, 85, 85)));
             return true;
         }
-        int[] offsets = this.getOffSets(p, args, 6);
+        int[] rotations = this.getArgs(p, args, 6);
+        int[] offsets = this.getArgs(p, args, 9);
         Figure figure = figureType.build(width, height, depth);
+        figure.setRotations((short) rotations[0], (short) rotations[1], (short) rotations[2]);
         figure.setOffsets(offsets[0], offsets[1], offsets[2]);
 
         this.getConfigManager().getConfigOptions().put(configName, figure);
@@ -121,8 +138,8 @@ public class MultiConfigCommand implements CommandExecutor {
         FigureItemDataType figureItemDataType = new FigureItemDataType(this.getPlugin());
         if ("holding".equals(applyTo)) {
             ItemStack item = p.getInventory().getItemInMainHand();
-            ItemStack newItem = figureItemDataType.set(item, figureItemInfo);
-            p.getInventory().setItemInMainHand(newItem);
+            item = figureItemDataType.set(item, figureItemInfo);
+            p.getInventory().setItemInMainHand(item);
             FigureMessages.sendApplyMessage(p, figure, false, item.getType());
             p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1f);
             return true;
@@ -158,33 +175,33 @@ public class MultiConfigCommand implements CommandExecutor {
     }
 
 
-    public int[] getOffSets(Player p, @NotNull String[] args, int firstIndex) {
-        int[] offsets = new int[]{0, 0, 0};
+    public int[] getArgs(Player p, @NotNull String[] args, int firstIndex) {
+        int[] result = new int[]{0, 0, 0};
         if (args.length > firstIndex) {
             try {
-                offsets[0] = Integer.parseInt(args[firstIndex]);
+                result[0] = Integer.parseInt(args[firstIndex]);
             } catch (Exception e) {
                 p.sendMessage(Component.text("Not a valid offset for Width").color(TextColor.color(255, 85, 85)));
-                return offsets;
+                return result;
             }
         }
         if (args.length > firstIndex + 1) {
             try {
-                offsets[1] = Integer.parseInt(args[firstIndex + 1]);
+                result[1] = Integer.parseInt(args[firstIndex + 1]);
             } catch (Exception e) {
                 p.sendMessage(Component.text("Not a valid offset for Height").color(TextColor.color(255, 85, 85)));
-                return offsets;
+                return result;
             }
         }
         if (args.length > firstIndex + 2) {
             try {
-                offsets[2] = Integer.parseInt(args[firstIndex + 2]);
+                result[2] = Integer.parseInt(args[firstIndex + 2]);
             } catch (Exception e) {
                 p.sendMessage(Component.text("Not a valid offset for Depth").color(TextColor.color(255, 85, 85)));
-                return offsets;
+                return result;
             }
         }
-        return offsets;
+        return result;
     }
 
     public boolean enterValidOption(Player p) {

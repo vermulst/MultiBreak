@@ -2,9 +2,14 @@ package me.vermulst.multibreak.config;
 
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.types.FigureType;
+import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,6 +18,23 @@ public class ConfigManager {
 
     private HashMap<String, Figure> configOptions;
     private HashMap<Material, String> materialOptions;
+
+    public Inventory getMenu() {
+        Inventory inventory = Bukkit.createInventory(null, 54, Component.text("Configurations"));
+        int index = 0;
+        for (Map.Entry<String, Figure> entry : configOptions.entrySet()) {
+            String name = entry.getKey();
+            Figure figure = entry.getValue();
+            ItemStack item = new ItemStack(Material.WRITABLE_BOOK);
+            ItemMeta meta = item.getItemMeta();
+            meta.displayName(Component.text(name));
+            meta.lore(figure.getLore());
+            item.setItemMeta(meta);
+            inventory.setItem(index, item);
+            index++;
+        }
+        return inventory;
+    }
 
     public void save(FileConfiguration fileConfiguration) {
         for (Map.Entry<String, Figure> entry : this.getConfigOptions().entrySet()) {
@@ -24,6 +46,11 @@ public class ConfigManager {
             fileConfiguration.set(figurePath + "width", figure.getWidth());
             fileConfiguration.set(figurePath + "height", figure.getHeight());
             fileConfiguration.set(figurePath + "depth", figure.getDepth());
+
+            fileConfiguration.set(figurePath + "width_rotation", figure.getRotationWidth());
+            fileConfiguration.set(figurePath + "height_rotation", figure.getRotationHeight());
+            fileConfiguration.set(figurePath + "depth_rotation", figure.getRotationDepth());
+
             fileConfiguration.set(figurePath + "width_offset", figure.getOffSetWidth());
             fileConfiguration.set(figurePath + "height_offset", figure.getOffSetHeight());
             fileConfiguration.set(figurePath + "depth_offset", figure.getOffSetDepth());
@@ -45,10 +72,16 @@ public class ConfigManager {
                 int width = section1.getInt("width");
                 int height = section1.getInt("height");
                 int depth = section1.getInt("depth");
+
+                short width_rotation = (short) section1.getInt("width_rotation");
+                short height_rotation = (short) section1.getInt("height_rotation");
+                short depth_rotation = (short) section1.getInt("depth_rotation");
+
                 int width_offset = section1.getInt("width_offset");
                 int height_offset = section1.getInt("height_offset");
                 int depth_offset = section1.getInt("depth_offset");
                 Figure figure = figureType.build(width, height, depth);
+                figure.setRotations(width_rotation, height_rotation, depth_rotation);
                 figure.setOffsets(width_offset, height_offset, depth_offset);
                 this.getConfigOptions().put(name, figure);
             }
@@ -74,6 +107,8 @@ public class ConfigManager {
             }
         }
     }
+
+
 
     public void updateDeleteMaterial(FileConfiguration fileConfiguration, Material material) {
         fileConfiguration.set("material_configs." + material.name(), null);

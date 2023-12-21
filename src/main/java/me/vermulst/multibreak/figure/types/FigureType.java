@@ -17,8 +17,13 @@ public enum FigureType {
         public Figure build(int width, int height, int depth) {
             return new FigureCircle(width, height, depth);
         }
+    },
+    TRIANGULAR {
+        @Override
+        public Figure build(int width, int height, int depth) {
+            return new FigureTriangle(width, height, depth);
+        }
     };
 
     public abstract Figure build(int width, int height, int depth);
-
 }

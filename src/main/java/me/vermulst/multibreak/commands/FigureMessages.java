@@ -15,6 +15,9 @@ public class FigureMessages {
         int width = figure.getWidth();
         int height = figure.getHeight();
         int depth = figure.getDepth();
+        short rotationWidth = figure.getRotationWidth();
+        short rotationHeight = figure.getRotationHeight();
+        short rotationDepth = figure.getRotationDepth();
         int offSetWidth = figure.getOffSetWidth();
         int offSetHeight = figure.getOffSetHeight();
         int offSetDepth = figure.getOffSetDepth();
@@ -27,13 +30,23 @@ public class FigureMessages {
         TextComponent depthText = Component.text(", Depth: ").color(TextColor.color(170, 170, 170)).append(depthN);
         TextComponent dimensions = widthText.append(heightText).append(depthText);
 
+        TextComponent comma = Component.text(", ").color(TextColor.color(170, 170, 170));
+
+        TextComponent widthR = Component.text(rotationWidth).color(TextColor.color(255, 255, 85));
+        TextComponent heightR = Component.text(rotationHeight).color(TextColor.color(255, 255, 85));
+        TextComponent depthR = Component.text(rotationDepth).color(TextColor.color(255, 255, 85));
+        TextComponent RText = Component.text("Rotations: ").color(TextColor.color(170, 170, 170));
+        TextComponent rotations = newLine.append(RText).append(widthR).append(comma).append(heightR).append(comma).append(depthR);
+
         TextComponent widthON = Component.text(offSetWidth).color(TextColor.color(255, 255, 85));
         TextComponent heightON = Component.text(offSetHeight).color(TextColor.color(255, 255, 85));
         TextComponent depthON = Component.text(offSetDepth).color(TextColor.color(255, 255, 85));
-        TextComponent comma = Component.text(", ").color(TextColor.color(170, 170, 170));
         TextComponent offsetsText = Component.text("Offsets: ").color(TextColor.color(170, 170, 170));
         TextComponent offsets = newLine.append(offsetsText).append(widthON).append(comma).append(heightON).append(comma).append(depthON);
-        return dimensions.append(offsets);
+
+
+
+        return dimensions.append(rotations).append(offsets);
     }
 
     public static void sendApplyMessage(Player p, Figure figure, boolean global, Material material) {

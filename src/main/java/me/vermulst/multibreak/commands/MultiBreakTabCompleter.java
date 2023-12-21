@@ -30,13 +30,22 @@ public class MultiBreakTabCompleter implements TabCompleter {
                 completions.add("Depth");
             }
             case 5 -> {
-                completions.add("Width offset");
+                completions.add("Width_rotation (0-360)");
             }
             case 6 -> {
-                completions.add("Height offset");
+                completions.add("Height_rotation (0-360)");
             }
             case 7 -> {
-                completions.add("Depth offset");
+                completions.add("Depth_rotation (0-360)");
+            }
+            case 8 -> {
+                completions.add("Width_offset");
+            }
+            case 9 -> {
+                completions.add("Height_offset");
+            }
+            case 10 -> {
+                completions.add("Depth_offset");
             }
         }
         return completions;

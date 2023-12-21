@@ -4,6 +4,8 @@ import com.destroystokyo.paper.ParticleBuilder;
 import me.vermulst.multibreak.CompassDirection;
 import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.figure.Figure;
+import me.vermulst.multibreak.figure.Matrix4x4;
+import me.vermulst.multibreak.figure.VectorTransformer;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -48,10 +50,33 @@ public class MultiBreak {
     public void initBlocks(Figure figure, Vector playerDirection) {
         this.multiBlocks = new ArrayList<>();
         CompassDirection compassDirection = CompassDirection.getCompassDir(this.getPlayer().getLocation());
-        HashSet<Vector> blockVectors = figure.getVectors(playerDirection, compassDirection);
+
+        VectorTransformer vectorTransformer = new VectorTransformer(playerDirection, compassDirection);
+        boolean rotated = figure.getRotationWidth() != 0.0 || figure.getRotationHeight() != 0.0 || figure.getRotationDepth() != 0.0;
+        HashSet<Vector> blockVectors = figure.getVectors(rotated);
+        if (rotated) {
+            HashSet<Vector> rotatedVectors = new HashSet<>();
+            Matrix4x4 rotationMatrix = new Matrix4x4();
+            rotationMatrix.setRotationX(figure.getRotationWidth() * (Math.PI / 180));
+            rotationMatrix.setRotationY(figure.getRotationHeight() * (Math.PI / 180));
+            rotationMatrix.setRotationZ(figure.getRotationDepth() * (Math.PI / 180));
+            for (Vector vector : blockVectors) {
+                rotationMatrix.transform(vector);
+                vector.setX(Math.round(vector.getX()));
+                vector.setY(Math.round(vector.getY()));
+                vector.setZ(Math.round(vector.getZ()));
+                rotatedVectors.add(new Vector(Math.round(vector.getX()), Math.round(vector.getY()), Math.round(vector.getZ())));
+            }
+            blockVectors = rotatedVectors;
+        }
+        for (Vector vector : blockVectors) {
+            vectorTransformer.rotateVector(vector);
+        }
+
 
         Location loc = this.getBlock().getLocation();
         for (Vector vector : blockVectors) {
+            if (vector.equals(new Vector(0, 0, 0))) continue;
             Block block1 = loc.clone().add(vector).getBlock();
             MultiBlock multiBlock = new MultiBlock(block1);
             this.getMultiBlocks().add(multiBlock);
