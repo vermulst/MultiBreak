@@ -4,7 +4,8 @@ Maven:
 	<id>jitpack.io</id>
 	<url>https://jitpack.io</url>
 </repository>
-
+```
+```xml
 <dependency>
 	<groupId>com.github.vermulst</groupId>
 	<artifactId>MultiBreak</artifactId>
@@ -14,13 +15,14 @@ Maven:
 
 
 Gradle: 
-```kotlin
+```groovy
 repositories {
 	maven {
 		url = 'https://jitpack.io'
 	}
 }
-
+```
+```groovy
 dependencies {
 	compileOnly 'com.github.vermulst:MultiBreak:version'
 }
