@@ -23,11 +23,17 @@ repositories {
     mavenLocal()
 }
 
-
 dependencies {
     compileOnly "io.papermc.paper:paper-api:1.18.1-R0.1-SNAPSHOT"
     compileOnly 'com.comphenix.protocol:ProtocolLib:5.1.0'
     implementation 'org.bstats:bstats-bukkit:3.0.2'
+}
+
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
 }
 
 def targetJavaVersion = 17
