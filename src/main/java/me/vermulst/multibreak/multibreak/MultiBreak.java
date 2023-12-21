@@ -160,6 +160,14 @@ public class MultiBreak {
         return multiBlocks;
     }
 
+    public ArrayList<Block> getBlocks() {
+        ArrayList<Block> blocks = new ArrayList<>();
+        for (MultiBlock multiBlock : this.getMultiBlocks()) {
+            blocks.add(multiBlock.getBlock());
+        }
+        return blocks;
+    }
+
     public int getDestroySpeedInTicks() {
         return destroySpeedInTicks;
     }

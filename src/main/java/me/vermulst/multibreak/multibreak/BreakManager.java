@@ -5,6 +5,8 @@ import me.vermulst.multibreak.config.ConfigManager;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.item.FigureItemDataType;
 import me.vermulst.multibreak.item.FigureItemInfo;
+import me.vermulst.multibreak.multibreak.event.MultiBreakEndEvent;
+import me.vermulst.multibreak.multibreak.event.MultiBreakStartEvent;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -37,6 +39,7 @@ public class BreakManager implements Listener {
             public void run() {
                 Player p = e.getPlayer();
                 MultiBreak multiBreak = getMultiBreak(p);
+                if (!new MultiBreakStartEvent(p, multiBreak).callEvent()) return;
                 if (multiBreak == null) return;
                 int taskID = new BukkitRunnable() {
                     @Override
@@ -53,6 +56,7 @@ public class BreakManager implements Listener {
     public void multiBreakStop(BlockDamageAbortEvent e) {
         Player p = e.getPlayer();
         MultiBreak multiBreak = this.getMultiBreak(p);
+        new MultiBreakEndEvent(p, multiBreak, false).callEvent();
         if (multiBreak == null) return;
         this.end(p, multiBreak, false);
     }
@@ -62,6 +66,7 @@ public class BreakManager implements Listener {
         Player p = e.getPlayer();
         if (e.isCancelled()) return;
         MultiBreak multiBreak = this.getMultiBreak(p);
+        new MultiBreakEndEvent(p, multiBreak, true).callEvent();
         if (multiBreak == null) return;
         this.end(p, multiBreak, true);
     }
