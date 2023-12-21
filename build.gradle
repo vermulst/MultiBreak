@@ -1,22 +1,11 @@
 plugins {
     id 'java'
-    id "com.github.johnrengelman.shadow" version "8.1.1"
     id 'maven-publish'
+    id "com.github.johnrengelman.shadow" version "8.1.1"
 }
 
-group = 'me.vermulst.multibreak'
+group = 'me.vermulst'
 version = '0.5'
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-            groupId = 'me.vermulst.multibreak'
-            artifactId = 'MultiBreak'
-            version = '0.5'
-        }
-    }
-}
 
 repositories {
     mavenCentral()
@@ -44,12 +33,12 @@ dependencies {
 
 def targetJavaVersion = 17
 java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
     def javaVersion = JavaVersion.toVersion(targetJavaVersion)
     sourceCompatibility = javaVersion
     targetCompatibility = javaVersion
+    if (JavaVersion.current() < javaVersion) {
+        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -64,6 +53,18 @@ processResources {
     filteringCharset 'UTF-8'
     filesMatching('plugin.yml') {
         expand props
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            afterEvaluate {
+                artifactId = 'MultiBreak'
+            }
+        }
     }
 }
 
