@@ -27,6 +27,7 @@ public class MultiBreak {
 
     private final Player p;
     private final Block block;
+    private final Vector playerDirection;
     private int progressTicks;
     private ArrayList<MultiBlock> multiBlocks = new ArrayList<>();
     private final int destroySpeedInTicks;
@@ -35,10 +36,17 @@ public class MultiBreak {
     public MultiBreak(Player p, Block block, Figure figure, Vector playerDirection) {
         this.p = p;
         this.block = block;
+        this.playerDirection = playerDirection;
         this.initBlocks(figure, playerDirection);
         float breakSpeed = this.getBlock().getBreakSpeed(this.getPlayer());
         this.checkValid(breakSpeed);
         this.destroySpeedInTicks = (int) (0.0001 + (1 / breakSpeed));
+    }
+
+    public void setFigure(Figure figure) {
+        this.initBlocks(figure, this.playerDirection);
+        float breakSpeed = this.getBlock().getBreakSpeed(this.getPlayer());
+        this.checkValid(breakSpeed);
     }
 
     public void checkValid(float breakSpeed) {
