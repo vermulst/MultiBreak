@@ -14,7 +14,7 @@ Maven:
 
 
 Gradle: 
-```xml
+```kotlin
 repositories {
 	maven {
 		url = 'https://jitpack.io'
