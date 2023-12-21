@@ -1,5 +1,2 @@
 rootProject.name = 'MultiBreak'
-include 'v1_19_R3'
 include 'v1_20_R2'
-include 'nms'
-
