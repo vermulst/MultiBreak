@@ -7,6 +7,7 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
+import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -14,14 +15,20 @@ import java.util.ArrayList;
 public class MultiBreakStartEvent extends Event {
 
     private static final HandlerList HANDLERS_LIST = new HandlerList();
-    private final Player player;
-    private final MultiBreak multiBreak;
     private boolean isCancelled;
 
+    private final Player player;
+    private final Vector playerDirection;
+    private final Block block;
+    private MultiBreak multiBreak;
 
-    public MultiBreakStartEvent(Player p, MultiBreak multiBreak) {
+
+
+    public MultiBreakStartEvent(Player p, MultiBreak multiBreak, Block block, Vector playerDirection) {
         this.player = p;
         this.multiBreak = multiBreak;
+        this.playerDirection = playerDirection;
+        this.block = block;
     }
 
     @Override
@@ -46,7 +53,11 @@ public class MultiBreakStartEvent extends Event {
     }
 
     public void setFigure(Figure figure) {
-        this.getMultiBreak().setFigure(figure);
+        if (this.multiBreak == null) {
+            this.multiBreak = new MultiBreak(this.getPlayer(), block, figure, this.getPlayerDirection());
+        } else {
+            this.getMultiBreak().setFigure(figure);
+        }
     }
 
     public MultiBreak getMultiBreak() {
@@ -55,5 +66,13 @@ public class MultiBreakStartEvent extends Event {
 
     public ArrayList<Block> getBlocks() {
         return multiBreak.getBlocks();
+    }
+
+    public Vector getPlayerDirection() {
+        return playerDirection;
+    }
+
+    public Block getBlock() {
+        return block;
     }
 }

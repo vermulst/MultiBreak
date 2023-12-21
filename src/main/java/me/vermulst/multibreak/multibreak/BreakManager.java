@@ -40,12 +40,19 @@ public class BreakManager implements Listener {
             public void run() {
                 Player p = e.getPlayer();
                 MultiBreak multiBreak = getMultiBreak(p);
-                if (!new MultiBreakStartEvent(p, multiBreak).callEvent()) return;
+                BlockFace blockFace = getBlockFace(p);
+                MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, e.getBlock(), blockFace.getDirection());
+                if (!event.callEvent()) return;
+                if (!multiBreak.equals(event.getMultiBreak())) {
+                    multiBreak = event.getMultiBreak();
+                    multiBlockHashMap.put(p.getUniqueId(), multiBreak);
+                }
                 if (multiBreak == null) return;
+                MultiBreak finalMultiBreak = multiBreak;
                 int taskID = new BukkitRunnable() {
                     @Override
                     public void run() {
-                        multiBreak.tick();
+                        finalMultiBreak.tick();
                     }
                 }.runTaskTimer(getPlugin(), 0, 1).getTaskId();
                 getMultiBreakTask().put(p.getUniqueId(), taskID);
