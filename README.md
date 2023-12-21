@@ -8,7 +8,7 @@ Maven imports:
 <dependency>
 	<groupId>com.github.vermulst</groupId>
 	<artifactId>MultiBreak</artifactId>
-	<version>master-98f06726fc-1</version>
+	<version>version</version>
 </dependency>
 ```
 
