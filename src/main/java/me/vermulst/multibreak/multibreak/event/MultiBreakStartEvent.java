@@ -15,7 +15,7 @@ public class MultiBreakStartEvent extends Event {
 
     private static final HandlerList HANDLERS_LIST = new HandlerList();
     private final Player player;
-    private MultiBreak multiBreak;
+    private final MultiBreak multiBreak;
     private boolean isCancelled;
 
 
@@ -49,16 +49,8 @@ public class MultiBreakStartEvent extends Event {
         this.getMultiBreak().setFigure(figure);
     }
 
-    public void setBlocks(MultiBreak multiBreak) {
-        this.multiBreak = multiBreak;
-    }
-
     public MultiBreak getMultiBreak() {
         return multiBreak;
-    }
-
-    public ArrayList<MultiBlock> getMultiBlocks() {
-        return multiBreak.getMultiBlocks();
     }
 
     public ArrayList<Block> getBlocks() {

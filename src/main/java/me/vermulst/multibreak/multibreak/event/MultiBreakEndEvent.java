@@ -40,10 +40,6 @@ public class MultiBreakEndEvent extends Event {
         return multiBreak;
     }
 
-    public ArrayList<MultiBlock> getMultiBlocks() {
-        return multiBreak.getMultiBlocks();
-    }
-
     public ArrayList<Block> getBlocks() {
         return multiBreak.getBlocks();
     }
