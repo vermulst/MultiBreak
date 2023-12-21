@@ -43,7 +43,7 @@ public class BreakManager implements Listener {
                 BlockFace blockFace = getBlockFace(p);
                 MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, e.getBlock(), blockFace.getDirection());
                 if (!event.callEvent()) return;
-                if (!multiBreak.equals(event.getMultiBreak())) {
+                if (!event.getMultiBreak().equals(multiBreak)) {
                     multiBreak = event.getMultiBreak();
                     multiBlockHashMap.put(p.getUniqueId(), multiBreak);
                 }
@@ -90,6 +90,9 @@ public class BreakManager implements Listener {
 
     public MultiBreak getMultiBreak(Player p) {
         if (p.getGameMode().equals(GameMode.CREATIVE)) return null;
+        if (multiBlockHashMap.containsKey(p.getUniqueId())) {
+            return multiBlockHashMap.get(p.getUniqueId());
+        }
         ItemStack tool = p.getInventory().getItemInMainHand();
         Figure figure = this.getFigure(tool);
         if (figure == null) return null;
