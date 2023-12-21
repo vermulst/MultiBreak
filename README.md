@@ -1,5 +1,5 @@
-Maven imports:
-```
+Maven:
+```xml
 <repository>
 	<id>jitpack.io</id>
 	<url>https://jitpack.io</url>
@@ -13,8 +13,8 @@ Maven imports:
 ```
 
 
-Gradle imports: 
-```
+Gradle: 
+```xml
 repositories {
 	maven {
 		url = 'https://jitpack.io'
@@ -26,6 +26,7 @@ dependencies {
 }
 ```
 
+Example use:
 ```
 @EventHandler
 public void multiBreakStart(MultiBreakStartEvent e) {
