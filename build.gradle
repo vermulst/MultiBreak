@@ -4,7 +4,7 @@ plugins {
     id "com.github.johnrengelman.shadow" version "8.1.1"
 }
 
-group = 'me.vermulst'
+group = 'com.github.vermulst'
 version = '0.5'
 
 repositories {
@@ -61,12 +61,15 @@ processResources {
 }
 
 publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-
-            afterEvaluate {
-                artifactId = 'MultiBreak'
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                from components.java
+            }
+        }
+        repositories {
+            maven {
+                url "https://jitpack.io"
             }
         }
     }
