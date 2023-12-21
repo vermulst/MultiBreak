@@ -29,7 +29,7 @@ dependencies {
 ```
 
 Example use:
-```
+```java
 @EventHandler
 public void multiBreakStart(MultiBreakStartEvent e) {
 	FigureCircle figureCircle = new FigureCircle(10, 10, 3);
