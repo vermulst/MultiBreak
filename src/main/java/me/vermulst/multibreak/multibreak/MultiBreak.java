@@ -2,7 +2,6 @@ package me.vermulst.multibreak.multibreak;
 
 import com.destroystokyo.paper.ParticleBuilder;
 import me.vermulst.multibreak.CompassDirection;
-import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.Matrix4x4;
 import me.vermulst.multibreak.figure.VectorTransformer;
@@ -11,17 +10,14 @@ import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Set;
 
 public class MultiBreak {
 
@@ -57,6 +53,7 @@ public class MultiBreak {
 
     public void initBlocks(Figure figure, Vector playerDirection) {
         this.multiBlocks = new ArrayList<>();
+        if (figure == null) return;
         CompassDirection compassDirection = CompassDirection.getCompassDir(this.getPlayer().getLocation());
 
         VectorTransformer vectorTransformer = new VectorTransformer(playerDirection, compassDirection);
@@ -80,13 +77,15 @@ public class MultiBreak {
         for (Vector vector : blockVectors) {
             vectorTransformer.rotateVector(vector);
         }
-
-
         Location loc = this.getBlock().getLocation();
         for (Vector vector : blockVectors) {
             if (vector.equals(new Vector(0, 0, 0))) continue;
             Block block1 = loc.clone().add(vector).getBlock();
             MultiBlock multiBlock = new MultiBlock(block1);
+            this.getMultiBlocks().add(multiBlock);
+        }
+        MultiBlock multiBlock = new MultiBlock(this.getBlock());
+        if (!this.getMultiBlocks().contains(multiBlock)) {
             this.getMultiBlocks().add(multiBlock);
         }
     }
@@ -110,9 +109,16 @@ public class MultiBreak {
         float volume = (float) (1 / Math.log(((size) + 1) * Math.E));
         ItemStack tool = this.getPlayer().getInventory().getItemInMainHand();
         for (MultiBlock multiBlock : this.getMultiBlocks()) {
+            if (!multiBlock.breakThisBlock()) continue;
             Block block = multiBlock.getBlock();
-            for (ItemStack drop : block.getDrops(tool)) {
-                world.dropItemNaturally(block.getLocation(), drop);
+            if (multiBlock.getDrops() == null) {
+                for (ItemStack drop : block.getDrops(tool)) {
+                    world.dropItemNaturally(block.getLocation(), drop);
+                }
+            } else {
+                for (ItemStack drop : multiBlock.getDrops()) {
+                    world.dropItemNaturally(block.getLocation(), drop);
+                }
             }
             if (multiBlock.hasAdjacentAir()) {
                 particleBuilder

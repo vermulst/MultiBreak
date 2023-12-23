@@ -42,17 +42,14 @@ public class BreakManager implements Listener {
                 MultiBreak multiBreak = getMultiBreak(p);
                 BlockFace blockFace = getBlockFace(p);
                 MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, e.getBlock(), blockFace.getDirection());
-                if (!event.callEvent()) return;
+                if (!event.callEvent() || event.getMultiBreak() == null) return;
                 if (!event.getMultiBreak().equals(multiBreak)) {
-                    multiBreak = event.getMultiBreak();
                     multiBlockHashMap.put(p.getUniqueId(), multiBreak);
                 }
-                if (multiBreak == null) return;
-                MultiBreak finalMultiBreak = multiBreak;
                 int taskID = new BukkitRunnable() {
                     @Override
                     public void run() {
-                        finalMultiBreak.tick();
+                        event.getMultiBreak().tick();
                     }
                 }.runTaskTimer(getPlugin(), 0, 1).getTaskId();
                 getMultiBreakTask().put(p.getUniqueId(), taskID);
@@ -95,9 +92,7 @@ public class BreakManager implements Listener {
         }
         ItemStack tool = p.getInventory().getItemInMainHand();
         Figure figure = this.getFigure(tool);
-        if (figure == null) return null;
         BlockFace blockFace = this.getBlockFace(p);
-        if (blockFace == null) return null;
         Block blockMining = this.getTargetBlock(p);
         return multiBlockHashMap.computeIfAbsent(p.getUniqueId(),
                 b -> new MultiBreak(p, blockMining, figure, blockFace.getDirection()));

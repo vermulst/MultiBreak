@@ -36,6 +36,10 @@ public class MultiBreakEndEvent extends Event {
         return player;
     }
 
+    public Block getBlock() {
+        return multiBreak.getBlock();
+    }
+
     public MultiBreak getMultiBreak() {
         return multiBreak;
     }
