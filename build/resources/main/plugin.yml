@@ -1,0 +1,19 @@
+name: MultiBreak
+version: '0.5'
+main: me.vermulst.multibreak.Main
+api-version: '1.18'
+depend:
+  - ProtocolLib
+permissions:
+  multibreak.admin:
+    default: op
+commands:
+  multibreak:
+    description: multi break
+    usage: /multibreak
+    permission: multibreak.admin
+  multiconfig:
+    description: create a multibreak config to apply fast
+    usage: /multiconfig
+    permission: multibreak.admin
+    aliases: [multiconfiguration]
