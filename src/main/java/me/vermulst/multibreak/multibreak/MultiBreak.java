@@ -2,6 +2,7 @@ package me.vermulst.multibreak.multibreak;
 
 import com.destroystokyo.paper.ParticleBuilder;
 import me.vermulst.multibreak.CompassDirection;
+import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.Matrix4x4;
 import me.vermulst.multibreak.figure.VectorTransformer;
@@ -13,6 +14,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
@@ -27,7 +29,7 @@ public class MultiBreak {
     private int progressTicks;
     private ArrayList<MultiBlock> multiBlocks = new ArrayList<>();
     private final int destroySpeedInTicks;
-    private boolean scheduleAnother = false;
+    private boolean ended = false;
 
 
     public MultiBreak(Player p, Block block, Figure figure, Vector playerDirection) {
@@ -91,12 +93,22 @@ public class MultiBreak {
         }
     }
 
+    public void tick(Main plugin, Block blockMining) {
+        if (!blockMining.equals(this.getBlock())) {
+            this.end(false);
+        }
+        this.progressTicks++;
+        this.updateAnimations(this.progressTicks % 2 == 0);
+        this.scheduleCancel(plugin, blockMining);
+    }
+
     public void tick() {
         this.progressTicks++;
         this.updateAnimations(this.progressTicks % 2 == 0);
     }
 
     public void end(boolean finished) {
+        this.ended = true;
         for (MultiBlock multiBlock : this.getMultiBlocks()) {
             multiBlock.writeStage(-1);
         }
@@ -159,6 +171,24 @@ public class MultiBreak {
         }
     }
 
+    public void scheduleCancel(Main plugin, Block targetBlock) {
+        int currentProgress = this.progressTicks;
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                boolean progress = currentProgress != getProgressTicks();
+                boolean target = targetBlock == null
+                        || targetBlock.equals(p.getLastTwoTargetBlocks(null, 10).get(1));
+                if (target && progress) return;
+                for (MultiBlock multiBlock : getMultiBlocks()) {
+                    if (!multiBlock.hasAdjacentAir()) continue;
+                    multiBlock.writeStage(-1);
+                }
+                end(false);
+            }
+        }.runTaskLater(plugin, 2);
+    }
+
     public Player getPlayer() {
         return p;
     }
@@ -187,11 +217,7 @@ public class MultiBreak {
         return destroySpeedInTicks;
     }
 
-    public boolean isScheduleAnother() {
-        return scheduleAnother;
-    }
-
-    public void scheduleAnother() {
-        this.scheduleAnother = true;
+    public boolean hasEnded() {
+        return ended;
     }
 }

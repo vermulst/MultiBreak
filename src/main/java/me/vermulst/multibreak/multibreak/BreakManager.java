@@ -12,6 +12,7 @@ import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.types.FigureCircle;
 import me.vermulst.multibreak.item.FigureItemDataType;
 import me.vermulst.multibreak.item.FigureItemInfo;
+import me.vermulst.multibreak.multibreak.event.LegacyModeEvent;
 import me.vermulst.multibreak.multibreak.event.MultiBreakEndEvent;
 import me.vermulst.multibreak.multibreak.event.MultiBreakStartEvent;
 import org.bukkit.*;
@@ -24,6 +25,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageAbortEvent;
 import org.bukkit.event.block.BlockDamageEvent;
+import org.bukkit.event.player.PlayerAnimationEvent;
+import org.bukkit.event.player.PlayerAnimationType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -40,39 +43,29 @@ public class BreakManager implements Listener {
         this.plugin = plugin;
     }
 
-    public void scheduleMultiBreak(Player p, Block block) {
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (block == null || !block.equals(getTargetBlock(p))) {
-                    return;
-                }
-                MultiBreak multiBreak = getMultiBreak(p);
-                BlockFace blockFace = getBlockFace(p);
-                MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, block, blockFace.getDirection());
-                if (!event.callEvent() || event.getMultiBreak() == null) return;
-                if (!event.getMultiBreak().equals(multiBreak)) {
-                    multiBlockHashMap.put(p.getUniqueId(), multiBreak);
-                }
-                int taskID = new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        event.getMultiBreak().tick();
-                    }
-                }.runTaskTimer(getPlugin(), 0, 1).getTaskId();
-                getMultiBreakTask().put(p.getUniqueId(), taskID);
-            }
-        }.runTaskLater(plugin, 1);
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void armSwingEvent(PlayerAnimationEvent e) {
+        //check legacy
+        LegacyModeEvent legacyModeEvent = new LegacyModeEvent();
+        legacyModeEvent.callEvent();
+        if (!legacyModeEvent.isLegacy()) return;
+
+        if (!e.getAnimationType().equals(PlayerAnimationType.ARM_SWING)) return;
+        Player p = e.getPlayer();
+        if (p.getGameMode().equals(GameMode.CREATIVE)) return;
+        MultiBreak multiBreak = getMultiBreak(p);
+        Block blockMining = this.getTargetBlock(p);
+        multiBreak.tick(this.getPlugin(), blockMining);
     }
 
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void multiBreakStart(BlockDamageEvent e) {
-        this.scheduleMultiBreak(e.getPlayer(), e.getBlock());
-    }
-
-    @EventHandler
     public void multiBreakStop(BlockDamageAbortEvent e) {
+        //check for non legacy
+        LegacyModeEvent legacyModeEvent = new LegacyModeEvent();
+        legacyModeEvent.callEvent();
+        if (legacyModeEvent.isLegacy()) return;
+
         Player p = e.getPlayer();
         MultiBreak multiBreak = this.getMultiBreak(p);
         new MultiBreakEndEvent(p, multiBreak, false).callEvent();
@@ -80,17 +73,42 @@ public class BreakManager implements Listener {
         this.end(p, multiBreak, false);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void breakBlockType(BlockBreakEvent e) {
         Player p = e.getPlayer();
         if (e.isCancelled()) return;
         MultiBreak multiBreak = this.getMultiBreak(p);
+        if (multiBreak != null && !multiBreak.getBlock().equals(e.getBlock())) return;
         new MultiBreakEndEvent(p, multiBreak, true).callEvent();
         if (multiBreak == null) return;
         this.end(p, multiBreak, true);
-        if (multiBreak.isScheduleAnother()) {
-            this.scheduleMultiBreak(p, multiBreak.getBlock());
-        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void multiBreakStart(BlockDamageEvent e) {
+        //check for non legacy
+        LegacyModeEvent legacyModeEvent = new LegacyModeEvent();
+        legacyModeEvent.callEvent();
+        if (legacyModeEvent.isLegacy()) return;
+
+        this.scheduleMultiBreak(e.getPlayer());
+    }
+
+    public void scheduleMultiBreak(Player p) {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                MultiBreak multiBreak = getMultiBreak(p);
+                if (multiBreak == null) return;
+                int taskID = new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        multiBreak.tick();
+                    }
+                }.runTaskTimer(getPlugin(), 0, 1).getTaskId();
+                getMultiBreakTask().put(p.getUniqueId(), taskID);
+            }
+        }.runTaskLater(plugin, 1);
     }
 
     public void end(Player p, MultiBreak multiBreak, boolean finished) {
@@ -109,8 +127,10 @@ public class BreakManager implements Listener {
         Figure figure = this.getFigure(tool);
         BlockFace blockFace = this.getBlockFace(p);
         Block blockMining = this.getTargetBlock(p);
-        return multiBlockHashMap.computeIfAbsent(p.getUniqueId(),
-                b -> new MultiBreak(p, blockMining, figure, blockFace.getDirection()));
+        MultiBreak multiBreak = new MultiBreak(p, blockMining, figure, blockFace.getDirection());
+        MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, blockMining, blockFace.getDirection());
+        if (!event.callEvent()) return null;
+        return multiBlockHashMap.put(p.getUniqueId(), event.getMultiBreak());
     }
 
     public Figure getFigure(ItemStack tool) {
