@@ -27,6 +27,7 @@ public class MultiBreak {
     private int progressTicks;
     private ArrayList<MultiBlock> multiBlocks = new ArrayList<>();
     private final int destroySpeedInTicks;
+    private boolean scheduleAnother = false;
 
 
     public MultiBreak(Player p, Block block, Figure figure, Vector playerDirection) {
@@ -184,5 +185,13 @@ public class MultiBreak {
 
     public int getDestroySpeedInTicks() {
         return destroySpeedInTicks;
+    }
+
+    public boolean isScheduleAnother() {
+        return scheduleAnother;
+    }
+
+    public void scheduleAnother() {
+        this.scheduleAnother = true;
     }
 }

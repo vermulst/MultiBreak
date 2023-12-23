@@ -1,6 +1,5 @@
 package me.vermulst.multibreak.multibreak.event;
 
-import me.vermulst.multibreak.multibreak.MultiBlock;
 import me.vermulst.multibreak.multibreak.MultiBreak;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;

@@ -1,5 +1,11 @@
 package me.vermulst.multibreak.multibreak;
 
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
+import com.comphenix.protocol.events.ListenerPriority;
+import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketEvent;
 import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.config.ConfigManager;
 import me.vermulst.multibreak.figure.Figure;
@@ -13,6 +19,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageAbortEvent;
@@ -33,15 +40,16 @@ public class BreakManager implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler
-    public void multiBreakStart(BlockDamageEvent e) {
+    public void scheduleMultiBreak(Player p, Block block) {
         new BukkitRunnable() {
             @Override
             public void run() {
-                Player p = e.getPlayer();
+                if (block == null || !block.equals(getTargetBlock(p))) {
+                    return;
+                }
                 MultiBreak multiBreak = getMultiBreak(p);
                 BlockFace blockFace = getBlockFace(p);
-                MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, e.getBlock(), blockFace.getDirection());
+                MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, block, blockFace.getDirection());
                 if (!event.callEvent() || event.getMultiBreak() == null) return;
                 if (!event.getMultiBreak().equals(multiBreak)) {
                     multiBlockHashMap.put(p.getUniqueId(), multiBreak);
@@ -58,6 +66,10 @@ public class BreakManager implements Listener {
     }
 
 
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void multiBreakStart(BlockDamageEvent e) {
+        this.scheduleMultiBreak(e.getPlayer(), e.getBlock());
+    }
 
     @EventHandler
     public void multiBreakStop(BlockDamageAbortEvent e) {
@@ -76,6 +88,9 @@ public class BreakManager implements Listener {
         new MultiBreakEndEvent(p, multiBreak, true).callEvent();
         if (multiBreak == null) return;
         this.end(p, multiBreak, true);
+        if (multiBreak.isScheduleAnother()) {
+            this.scheduleMultiBreak(p, multiBreak.getBlock());
+        }
     }
 
     public void end(Player p, MultiBreak multiBreak, boolean finished) {

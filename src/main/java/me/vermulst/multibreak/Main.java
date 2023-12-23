@@ -30,7 +30,8 @@ public final class Main extends JavaPlugin {
         this.configManager = new ConfigManager();
         this.getConfigManager().load(this.getConfig());
 
-        this.getServer().getPluginManager().registerEvents(new BreakManager(this), this);
+        BreakManager breakManager = new BreakManager(this);
+        this.getServer().getPluginManager().registerEvents(breakManager, this);
 
         //multibreak command
         PluginCommand multibreakCommand = this.getServer().getPluginCommand("multibreak");
