@@ -12,6 +12,7 @@ import java.util.ArrayList;
 public class MultiBreakEndEvent extends Event {
 
     private static final HandlerList HANDLERS_LIST = new HandlerList();
+    private boolean cancelled;
     private final Player player;
     private final MultiBreak multiBreak;
     private final boolean successful;
@@ -50,4 +51,14 @@ public class MultiBreakEndEvent extends Event {
     public boolean isSuccessful() {
         return successful;
     }
+
+    public boolean isCancelled() {
+        return cancelled;
+    }
+
+    public void setCancelled(boolean cancelled) {
+        this.cancelled = cancelled;
+    }
+
+
 }

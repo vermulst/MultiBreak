@@ -56,6 +56,8 @@ public class MultiBreak {
 
     public void initBlocks(Figure figure, Vector playerDirection) {
         this.multiBlocks = new ArrayList<>();
+        MultiBlock multiBlock = new MultiBlock(this.getBlock());
+        this.getMultiBlocks().add(multiBlock);
         if (figure == null) return;
         CompassDirection compassDirection = CompassDirection.getCompassDir(this.getPlayer().getLocation());
 
@@ -84,12 +86,9 @@ public class MultiBreak {
         for (Vector vector : blockVectors) {
             if (vector.equals(new Vector(0, 0, 0))) continue;
             Block block1 = loc.clone().add(vector).getBlock();
-            MultiBlock multiBlock = new MultiBlock(block1);
-            this.getMultiBlocks().add(multiBlock);
-        }
-        MultiBlock multiBlock = new MultiBlock(this.getBlock());
-        if (!this.getMultiBlocks().contains(multiBlock)) {
-            this.getMultiBlocks().add(multiBlock);
+            MultiBlock multiBlock1 = new MultiBlock(block1);
+            if (multiBlock.equals(multiBlock1)) continue;
+            this.getMultiBlocks().add(multiBlock1);
         }
     }
 
@@ -150,6 +149,7 @@ public class MultiBreak {
                 .offset(0.375, 0, 0.375);
         HashMap<Material, BlockData> blockDataHashMap = new HashMap<>();
         for (MultiBlock multiBlock : this.getMultiBlocks()) {
+            if (multiBlock.getBlock().equals(this.getBlock())) continue;
             if (!multiBlock.hasAdjacentAir()) continue;
             Block block1 = multiBlock.getBlock();
             if (!particles) continue;
@@ -166,6 +166,7 @@ public class MultiBreak {
         double progress = ((double) this.getProgressTicks() / (double) this.getDestroySpeedInTicks());
         int stage = (int) (progress * 9);
         for (MultiBlock multiBlock : this.getMultiBlocks()) {
+            if (multiBlock.getBlock().equals(this.getBlock())) continue;
             if (!multiBlock.hasAdjacentAir()) continue;
             multiBlock.writeStage(stage);
         }
@@ -219,5 +220,18 @@ public class MultiBreak {
 
     public boolean hasEnded() {
         return ended;
+    }
+
+    @Override
+    public String toString() {
+        return "MultiBreak{" +
+                "p=" + p +
+                ", block=" + block +
+                ", playerDirection=" + playerDirection +
+                ", progressTicks=" + progressTicks +
+                ", multiBlocks=" + multiBlocks +
+                ", destroySpeedInTicks=" + destroySpeedInTicks +
+                ", ended=" + ended +
+                '}';
     }
 }

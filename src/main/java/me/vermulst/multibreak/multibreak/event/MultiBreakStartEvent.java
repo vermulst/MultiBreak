@@ -65,7 +65,14 @@ public class MultiBreakStartEvent extends Event {
     }
 
     public ArrayList<Block> getBlocks() {
-        return multiBreak.getBlocks();
+        ArrayList<Block> blocks = new ArrayList<>();
+        if (this.getMultiBreak() != null) {
+            blocks.addAll(multiBreak.getBlocks());
+        }
+        if (!blocks.contains(this.getBlock())) {
+            blocks.add(this.getBlock());
+        }
+        return blocks;
     }
 
     public Vector getPlayerDirection() {

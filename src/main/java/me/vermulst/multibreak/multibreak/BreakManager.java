@@ -54,6 +54,7 @@ public class BreakManager implements Listener {
         Player p = e.getPlayer();
         if (p.getGameMode().equals(GameMode.CREATIVE)) return;
         MultiBreak multiBreak = getMultiBreak(p);
+        if (multiBreak == null) return;
         Block blockMining = this.getTargetBlock(p);
         multiBreak.tick(this.getPlugin(), blockMining);
     }
@@ -68,7 +69,8 @@ public class BreakManager implements Listener {
 
         Player p = e.getPlayer();
         MultiBreak multiBreak = this.getMultiBreak(p);
-        new MultiBreakEndEvent(p, multiBreak, false).callEvent();
+        MultiBreakEndEvent event = new MultiBreakEndEvent(p, multiBreak, false);
+        event.callEvent();
         if (multiBreak == null) return;
         this.end(p, multiBreak, false);
     }
@@ -76,12 +78,12 @@ public class BreakManager implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void breakBlockType(BlockBreakEvent e) {
         Player p = e.getPlayer();
-        if (e.isCancelled()) return;
         MultiBreak multiBreak = this.getMultiBreak(p);
-        if (multiBreak != null && !multiBreak.getBlock().equals(e.getBlock())) return;
-        new MultiBreakEndEvent(p, multiBreak, true).callEvent();
-        if (multiBreak == null) return;
-        this.end(p, multiBreak, true);
+        MultiBreakEndEvent event = new MultiBreakEndEvent(p, multiBreak, true);
+        event.callEvent();
+        if (event.isCancelled()) return;
+        if (event.getMultiBreak() == null) return;
+        this.end(p, event.getMultiBreak(), true);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -115,13 +117,15 @@ public class BreakManager implements Listener {
         UUID uuid = p.getUniqueId();
         multiBreak.end(finished);
         this.getMultiBlockHashMap().remove(uuid);
+        if (!this.getMultiBreakTask().containsKey(uuid)) return;
         Bukkit.getScheduler().cancelTask(this.getMultiBreakTask().get(uuid));
     }
 
     public MultiBreak getMultiBreak(Player p) {
         if (p.getGameMode().equals(GameMode.CREATIVE)) return null;
         if (multiBlockHashMap.containsKey(p.getUniqueId())) {
-            return multiBlockHashMap.get(p.getUniqueId());
+            MultiBreak multiBreak = multiBlockHashMap.get(p.getUniqueId());
+            if (!multiBreak.hasEnded()) return multiBreak;
         }
         ItemStack tool = p.getInventory().getItemInMainHand();
         Figure figure = this.getFigure(tool);

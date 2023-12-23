@@ -1,18 +1,14 @@
 package me.vermulst.multibreak.multibreak.event;
 
-import me.vermulst.multibreak.multibreak.MultiBreak;
-import org.bukkit.block.Block;
-import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 
 public class LegacyModeEvent extends Event {
 
     private static final HandlerList HANDLERS_LIST = new HandlerList();
-    private boolean legacy = false;
+    private boolean legacy = true;
 
     public LegacyModeEvent() {
     }
