@@ -3,6 +3,7 @@ package me.vermulst.multibreak.multibreak;
 import com.destroystokyo.paper.ParticleBuilder;
 import me.vermulst.multibreak.CompassDirection;
 import me.vermulst.multibreak.Main;
+import me.vermulst.multibreak.config.ConfigManager;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.Matrix4x4;
 import me.vermulst.multibreak.figure.VectorTransformer;
@@ -30,12 +31,14 @@ public class MultiBreak {
     private ArrayList<MultiBlock> multiBlocks = new ArrayList<>();
     private final int destroySpeedInTicks;
     private boolean ended = false;
+    private final boolean fair_mode;
 
 
-    public MultiBreak(Player p, Block block, Figure figure, Vector playerDirection) {
+    public MultiBreak(Player p, Block block, Figure figure, Vector playerDirection, boolean fair_mode) {
         this.p = p;
         this.block = block;
         this.playerDirection = playerDirection;
+        this.fair_mode = fair_mode;
         this.initBlocks(figure, playerDirection);
         float breakSpeed = this.getBlock().getBreakSpeed(this.getPlayer());
         this.checkValid(breakSpeed);
@@ -50,6 +53,7 @@ public class MultiBreak {
 
     public void checkValid(float breakSpeed) {
         this.getMultiBlocks().removeIf(multiBlock -> multiBlock.getBlock().getType().equals(Material.AIR));
+        if (!this.fair_mode) return;
         this.getMultiBlocks().removeIf(multiBlock -> multiBlock.getBlock().getBreakSpeed(this.getPlayer()) < breakSpeed);
     }
 

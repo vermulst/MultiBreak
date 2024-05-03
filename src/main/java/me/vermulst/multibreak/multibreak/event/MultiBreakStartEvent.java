@@ -21,14 +21,16 @@ public class MultiBreakStartEvent extends Event {
     private final Vector playerDirection;
     private final Block block;
     private MultiBreak multiBreak;
+    private final boolean fair_mode;
 
 
 
-    public MultiBreakStartEvent(Player p, MultiBreak multiBreak, Block block, Vector playerDirection) {
+    public MultiBreakStartEvent(Player p, MultiBreak multiBreak, Block block, Vector playerDirection, boolean fair_mode) {
         this.player = p;
         this.multiBreak = multiBreak;
         this.playerDirection = playerDirection;
         this.block = block;
+        this.fair_mode = fair_mode;
     }
 
     @Override
@@ -54,7 +56,7 @@ public class MultiBreakStartEvent extends Event {
 
     public void setFigure(Figure figure) {
         if (this.multiBreak == null) {
-            this.multiBreak = new MultiBreak(this.getPlayer(), block, figure, this.getPlayerDirection());
+            this.multiBreak = new MultiBreak(this.getPlayer(), block, figure, this.getPlayerDirection(), this.fair_mode);
         } else {
             this.getMultiBreak().setFigure(figure);
         }

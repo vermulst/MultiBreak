@@ -11,6 +11,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,6 +19,9 @@ public class ConfigManager {
 
     private HashMap<String, Figure> configOptions;
     private HashMap<Material, String> materialOptions;
+
+    private final boolean[] options = new boolean[optionNames.length];
+    private static final String[] optionNames = new String[]{"fair_mode", "legacy_mode"};
 
     public Inventory getMenu() {
         Inventory inventory = Bukkit.createInventory(null, 54, Component.text("Configurations"));
@@ -37,6 +41,11 @@ public class ConfigManager {
     }
 
     public void save(FileConfiguration fileConfiguration) {
+        for (int i = 0; i < options.length; i++) {
+            String optionName = optionNames[i];
+            boolean option = options[i];
+            fileConfiguration.set(optionName, option);
+        }
         for (Map.Entry<String, Figure> entry : this.getConfigOptions().entrySet()) {
             String name = entry.getKey();
             String path = "config_options." + name;
@@ -60,9 +69,29 @@ public class ConfigManager {
         }
     }
 
-    public void load(FileConfiguration fileConfiguration) {
+    // first element is whether to save or not
+    public boolean loadOptions(FileConfiguration fileConfiguration) {
+        boolean save = false;
+        int index = 0;
+        for (String option : optionNames) {
+            if (fileConfiguration.getKeys(false).contains(option)) {
+                this.options[index] = fileConfiguration.getBoolean(option);
+            } else {
+                save = true;
+                this.options[index] = false;
+                fileConfiguration.set(option, false);
+            }
+            index++;
+        }
+        return save;
+    }
+
+    public boolean load(FileConfiguration fileConfiguration) {
         this.configOptions = new HashMap<>();
         this.materialOptions = new HashMap<>();
+
+        boolean save = this.loadOptions(fileConfiguration);
+
         if (fileConfiguration.getKeys(false).contains("config_options")) {
             ConfigurationSection section = fileConfiguration.getConfigurationSection("config_options");
             for (String name : section.getKeys(false)) {
@@ -94,6 +123,7 @@ public class ConfigManager {
                 this.getMaterialOptions().put(material, configOption);
             }
         }
+        return save;
     }
 
     public void updateDeleteConfig(FileConfiguration fileConfiguration, String name) {
@@ -116,6 +146,10 @@ public class ConfigManager {
 
     public HashMap<String, Figure> getConfigOptions() {
         return configOptions;
+    }
+
+    public boolean[] getOptions() {
+        return options;
     }
 
     public HashMap<Material, String> getMaterialOptions() {

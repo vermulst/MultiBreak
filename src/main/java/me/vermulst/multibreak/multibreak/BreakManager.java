@@ -1,18 +1,10 @@
 package me.vermulst.multibreak.multibreak;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.ListenerPriority;
-import com.comphenix.protocol.events.PacketAdapter;
-import com.comphenix.protocol.events.PacketEvent;
 import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.config.ConfigManager;
 import me.vermulst.multibreak.figure.Figure;
-import me.vermulst.multibreak.figure.types.FigureCircle;
 import me.vermulst.multibreak.item.FigureItemDataType;
 import me.vermulst.multibreak.item.FigureItemInfo;
-import me.vermulst.multibreak.multibreak.event.LegacyModeEvent;
 import me.vermulst.multibreak.multibreak.event.MultiBreakEndEvent;
 import me.vermulst.multibreak.multibreak.event.MultiBreakStartEvent;
 import org.bukkit.*;
@@ -46,9 +38,8 @@ public class BreakManager implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void armSwingEvent(PlayerAnimationEvent e) {
         //check legacy
-        LegacyModeEvent legacyModeEvent = new LegacyModeEvent();
-        legacyModeEvent.callEvent();
-        if (!legacyModeEvent.isLegacy()) return;
+        boolean legacy_mode = plugin.getConfigManager().getOptions()[1];
+        if (!legacy_mode) return;
 
         if (!e.getAnimationType().equals(PlayerAnimationType.ARM_SWING)) return;
         Player p = e.getPlayer();
@@ -63,10 +54,8 @@ public class BreakManager implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void multiBreakStop(BlockDamageAbortEvent e) {
         //check for non legacy
-        LegacyModeEvent legacyModeEvent = new LegacyModeEvent();
-        legacyModeEvent.callEvent();
-        if (legacyModeEvent.isLegacy()) return;
-
+        boolean legacy_mode = plugin.getConfigManager().getOptions()[1];
+        if (legacy_mode) return;
         Player p = e.getPlayer();
         MultiBreak multiBreak = this.getMultiBreak(p);
         MultiBreakEndEvent event = new MultiBreakEndEvent(p, multiBreak, false);
@@ -89,10 +78,8 @@ public class BreakManager implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void multiBreakStart(BlockDamageEvent e) {
         //check for non legacy
-        LegacyModeEvent legacyModeEvent = new LegacyModeEvent();
-        legacyModeEvent.callEvent();
-        if (legacyModeEvent.isLegacy()) return;
-
+        boolean legacy_mode = plugin.getConfigManager().getOptions()[1];
+        if (legacy_mode) return;
         this.scheduleMultiBreak(e.getPlayer());
     }
 
@@ -127,14 +114,18 @@ public class BreakManager implements Listener {
             MultiBreak multiBreak = multiBlockHashMap.get(p.getUniqueId());
             if (!multiBreak.hasEnded()) return multiBreak;
         }
+        //init
         ItemStack tool = p.getInventory().getItemInMainHand();
         Figure figure = this.getFigure(tool);
         BlockFace blockFace = this.getBlockFace(p);
         Block blockMining = this.getTargetBlock(p);
-        MultiBreak multiBreak = new MultiBreak(p, blockMining, figure, blockFace.getDirection());
-        MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, blockMining, blockFace.getDirection());
+        boolean fair_mode = plugin.getConfigManager().getOptions()[0];
+        MultiBreak multiBreak = new MultiBreak(p, blockMining, figure, blockFace.getDirection(), fair_mode);
+        MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, blockMining, blockFace.getDirection(), fair_mode);
         if (!event.callEvent()) return null;
-        return multiBlockHashMap.put(p.getUniqueId(), event.getMultiBreak());
+        MultiBreak multiBreak1 = event.getMultiBreak();
+        multiBlockHashMap.put(p.getUniqueId(), multiBreak1);
+        return multiBreak1;
     }
 
     public Figure getFigure(ItemStack tool) {

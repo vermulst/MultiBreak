@@ -28,7 +28,9 @@ public final class Main extends JavaPlugin {
         new Metrics(this, pluginId);
 
         this.configManager = new ConfigManager();
-        this.getConfigManager().load(this.getConfig());
+        if (this.getConfigManager().load(this.getConfig())) {
+            this.saveConfig();
+        }
 
         BreakManager breakManager = new BreakManager(this);
         this.getServer().getPluginManager().registerEvents(breakManager, this);
