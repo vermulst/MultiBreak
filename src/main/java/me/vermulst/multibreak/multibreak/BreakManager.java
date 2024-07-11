@@ -50,6 +50,37 @@ public class BreakManager implements Listener {
         multiBreak.tick(this.getPlugin(), blockMining);
     }
 
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void breakBlockType(BlockBreakEvent e) {
+        if (this.ignoreMultiBreak(e)) return;
+        Player p = e.getPlayer();
+        MultiBreak multiBreak = this.getMultiBreak(p);
+        MultiBreakEndEvent event = new MultiBreakEndEvent(p, multiBreak, true);
+        event.callEvent();
+        if (event.isCancelled()) return;
+        if (event.getMultiBreak() == null) return;
+        this.end(p, event.getMultiBreak(), true);
+    }
+
+    private boolean ignoreMultiBreak(BlockBreakEvent e) {
+        Block block = e.getBlock();
+        boolean b1 = block.hasMetadata("multi-broken");
+        boolean b2 = plugin.getConfigManager().getIgnoredMaterials().contains(block.getType());
+        boolean b3 = e.isCancelled();
+        if (block.hasMetadata("multi-broken")) {
+            block.removeMetadata("multi-broken", getPlugin());
+        }
+        return b1 || b2 || b3;
+    }
+
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void multiBreakStart(BlockDamageEvent e) {
+        //check for non legacy
+        boolean legacy_mode = plugin.getConfigManager().getOptions()[1];
+        if (legacy_mode) return;
+        this.scheduleMultiBreak(e.getPlayer());
+    }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void multiBreakStop(BlockDamageAbortEvent e) {
@@ -62,25 +93,6 @@ public class BreakManager implements Listener {
         event.callEvent();
         if (multiBreak == null) return;
         this.end(p, multiBreak, false);
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void breakBlockType(BlockBreakEvent e) {
-        Player p = e.getPlayer();
-        MultiBreak multiBreak = this.getMultiBreak(p);
-        MultiBreakEndEvent event = new MultiBreakEndEvent(p, multiBreak, true);
-        event.callEvent();
-        if (event.isCancelled()) return;
-        if (event.getMultiBreak() == null) return;
-        this.end(p, event.getMultiBreak(), true);
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void multiBreakStart(BlockDamageEvent e) {
-        //check for non legacy
-        boolean legacy_mode = plugin.getConfigManager().getOptions()[1];
-        if (legacy_mode) return;
-        this.scheduleMultiBreak(e.getPlayer());
     }
 
     public void scheduleMultiBreak(Player p) {
@@ -102,7 +114,7 @@ public class BreakManager implements Listener {
 
     public void end(Player p, MultiBreak multiBreak, boolean finished) {
         UUID uuid = p.getUniqueId();
-        multiBreak.end(finished);
+        multiBreak.end(finished, getPlugin());
         this.getMultiBlockHashMap().remove(uuid);
         if (!this.getMultiBreakTask().containsKey(uuid)) return;
         Bukkit.getScheduler().cancelTask(this.getMultiBreakTask().get(uuid));
@@ -119,9 +131,11 @@ public class BreakManager implements Listener {
         Figure figure = this.getFigure(tool);
         BlockFace blockFace = this.getBlockFace(p);
         Block blockMining = this.getTargetBlock(p);
-        boolean fair_mode = plugin.getConfigManager().getOptions()[0];
-        MultiBreak multiBreak = new MultiBreak(p, blockMining, figure, blockFace.getDirection(), fair_mode);
-        MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, blockMining, blockFace.getDirection(), fair_mode);
+        ConfigManager config = plugin.getConfigManager();
+        boolean fair_mode = config.getOptions()[0];
+        List<Material> ignoredMaterials = config.getIgnoredMaterials();
+        MultiBreak multiBreak = new MultiBreak(p, blockMining, figure, blockFace.getDirection(), fair_mode, ignoredMaterials);
+        MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, blockMining, blockFace.getDirection(), fair_mode, ignoredMaterials);
         if (!event.callEvent()) return null;
         MultiBreak multiBreak1 = event.getMultiBreak();
         multiBlockHashMap.put(p.getUniqueId(), multiBreak1);

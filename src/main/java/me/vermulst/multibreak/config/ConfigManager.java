@@ -12,13 +12,16 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ConfigManager {
 
     private HashMap<String, Figure> configOptions;
     private HashMap<Material, String> materialOptions;
+    private final List<Material> ignoredMaterials = new ArrayList<>();
 
     private final boolean[] options = new boolean[optionNames.length];
     private static final String[] optionNames = new String[]{"fair_mode", "legacy_mode"};
@@ -67,6 +70,9 @@ public class ConfigManager {
         for (Map.Entry<Material, String> entry : materialOptions.entrySet()) {
             fileConfiguration.set("material_configs." + entry.getKey().name(), entry.getValue());
         }
+        List<String> materialNames = new ArrayList<>(ignoredMaterials.size());
+        ignoredMaterials.forEach(material -> materialNames.add(material.toString()));
+        fileConfiguration.set("ignored_materials", materialNames);
     }
 
     // first element is whether to save or not
@@ -89,9 +95,14 @@ public class ConfigManager {
     public boolean load(FileConfiguration fileConfiguration) {
         this.configOptions = new HashMap<>();
         this.materialOptions = new HashMap<>();
+        boolean save1 = this.loadOptions(fileConfiguration);
+        this.loadMultiConfigs(fileConfiguration);
+        this.loadMaterialConfigs(fileConfiguration);
+        boolean save2 = this.loadIgnoredMaterials(fileConfiguration);
+        return save1 || save2;
+    }
 
-        boolean save = this.loadOptions(fileConfiguration);
-
+    private void loadMultiConfigs(FileConfiguration fileConfiguration) {
         if (fileConfiguration.getKeys(false).contains("config_options")) {
             ConfigurationSection section = fileConfiguration.getConfigurationSection("config_options");
             for (String name : section.getKeys(false)) {
@@ -115,6 +126,9 @@ public class ConfigManager {
                 this.getConfigOptions().put(name, figure);
             }
         }
+    }
+
+    private void loadMaterialConfigs(FileConfiguration fileConfiguration) {
         if (fileConfiguration.getKeys(false).contains("material_configs")) {
             ConfigurationSection section = fileConfiguration.getConfigurationSection("material_configs");
             for (String itemtype : section.getKeys(false)) {
@@ -123,7 +137,22 @@ public class ConfigManager {
                 this.getMaterialOptions().put(material, configOption);
             }
         }
-        return save;
+    }
+
+    private boolean loadIgnoredMaterials(FileConfiguration fileConfiguration) {
+        if (fileConfiguration.getKeys(false).contains("ignored_materials")) {
+            List<String> materialNames = fileConfiguration.getStringList("ignored_materials");
+            for (String matName : materialNames) {
+                this.ignoredMaterials.add(Material.getMaterial(matName));
+            }
+        } else {
+            List<String> ignoredMaterials = new ArrayList<>();
+            ignoredMaterials.add(Material.BEDROCK.toString());
+            fileConfiguration.set("ignored_materials", ignoredMaterials);
+            this.ignoredMaterials.add(Material.BEDROCK);
+            return true;
+        }
+        return false;
     }
 
     public void updateDeleteConfig(FileConfiguration fileConfiguration, String name) {
@@ -137,8 +166,6 @@ public class ConfigManager {
             }
         }
     }
-
-
 
     public void updateDeleteMaterial(FileConfiguration fileConfiguration, Material material) {
         fileConfiguration.set("material_configs." + material.name(), null);
@@ -154,5 +181,9 @@ public class ConfigManager {
 
     public HashMap<Material, String> getMaterialOptions() {
         return materialOptions;
+    }
+
+    public List<Material> getIgnoredMaterials() {
+        return ignoredMaterials;
     }
 }

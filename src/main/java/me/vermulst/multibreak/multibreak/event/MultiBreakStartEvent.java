@@ -3,6 +3,7 @@ package me.vermulst.multibreak.multibreak.event;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.multibreak.MultiBlock;
 import me.vermulst.multibreak.multibreak.MultiBreak;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -11,6 +12,7 @@ import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class MultiBreakStartEvent extends Event {
 
@@ -22,15 +24,17 @@ public class MultiBreakStartEvent extends Event {
     private final Block block;
     private MultiBreak multiBreak;
     private final boolean fair_mode;
+    private final List<Material> ignoredMaterials;
 
 
 
-    public MultiBreakStartEvent(Player p, MultiBreak multiBreak, Block block, Vector playerDirection, boolean fair_mode) {
+    public MultiBreakStartEvent(Player p, MultiBreak multiBreak, Block block, Vector playerDirection, boolean fair_mode, List<Material> ignoredMaterials) {
         this.player = p;
         this.multiBreak = multiBreak;
         this.playerDirection = playerDirection;
         this.block = block;
         this.fair_mode = fair_mode;
+        this.ignoredMaterials = ignoredMaterials;
     }
 
     @Override
@@ -56,7 +60,7 @@ public class MultiBreakStartEvent extends Event {
 
     public void setFigure(Figure figure) {
         if (this.multiBreak == null) {
-            this.multiBreak = new MultiBreak(this.getPlayer(), block, figure, this.getPlayerDirection(), this.fair_mode);
+            this.multiBreak = new MultiBreak(this.getPlayer(), block, figure, this.getPlayerDirection(), this.fair_mode, this.ignoredMaterials);
         } else {
             this.getMultiBreak().setFigure(figure);
         }

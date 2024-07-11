@@ -1,5 +1,5 @@
 name: MultiBreak
-version: '0.6'
+version: '0.7'
 main: me.vermulst.multibreak.Main
 api-version: '1.18'
 depend:

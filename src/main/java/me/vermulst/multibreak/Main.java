@@ -24,7 +24,7 @@ public final class Main extends JavaPlugin {
     @Override
     public void onEnable() {
 
-        int pluginId = 20516; // <-- Replace with the id of your plugin!
+        int pluginId = 20516;
         new Metrics(this, pluginId);
 
         this.configManager = new ConfigManager();

@@ -14,13 +14,17 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 
 public class MultiBreak {
 
@@ -32,13 +36,15 @@ public class MultiBreak {
     private final int destroySpeedInTicks;
     private boolean ended = false;
     private final boolean fair_mode;
+    private final List<Material> ignoredMaterials;
 
 
-    public MultiBreak(Player p, Block block, Figure figure, Vector playerDirection, boolean fair_mode) {
+    public MultiBreak(Player p, Block block, Figure figure, Vector playerDirection, boolean fair_mode, List<Material> ignoredMaterials) {
         this.p = p;
         this.block = block;
         this.playerDirection = playerDirection;
         this.fair_mode = fair_mode;
+        this.ignoredMaterials = ignoredMaterials;
         this.initBlocks(figure, playerDirection);
         float breakSpeed = this.getBlock().getBreakSpeed(this.getPlayer());
         this.checkValid(breakSpeed);
@@ -90,6 +96,7 @@ public class MultiBreak {
         for (Vector vector : blockVectors) {
             if (vector.equals(new Vector(0, 0, 0))) continue;
             Block block1 = loc.clone().add(vector).getBlock();
+            if (this.ignoredMaterials.contains(block1.getType())) continue;
             MultiBlock multiBlock1 = new MultiBlock(block1);
             if (multiBlock.equals(multiBlock1)) continue;
             this.getMultiBlocks().add(multiBlock1);
@@ -98,7 +105,7 @@ public class MultiBreak {
 
     public void tick(Main plugin, Block blockMining) {
         if (!blockMining.equals(this.getBlock())) {
-            this.end(false);
+            this.end(false, plugin);
         }
         this.progressTicks++;
         this.updateAnimations(this.progressTicks % 2 == 0);
@@ -110,7 +117,7 @@ public class MultiBreak {
         this.updateAnimations(this.progressTicks % 2 == 0);
     }
 
-    public void end(boolean finished) {
+    public void end(boolean finished, Main plugin) {
         this.ended = true;
         for (MultiBlock multiBlock : this.getMultiBlocks()) {
             multiBlock.writeStage(-1);
@@ -127,6 +134,11 @@ public class MultiBreak {
         for (MultiBlock multiBlock : this.getMultiBlocks()) {
             if (!multiBlock.breakThisBlock()) continue;
             Block block = multiBlock.getBlock();
+            if (plugin.getConfigManager().getIgnoredMaterials().contains(block.getType())) continue;
+            block.setMetadata("multi-broken", new FixedMetadataValue(plugin, true));
+            BlockBreakEvent blockBreakEvent = new BlockBreakEvent(block, getPlayer());
+            blockBreakEvent.callEvent();
+            if (blockBreakEvent.isCancelled()) continue;
             if (multiBlock.getDrops() == null) {
                 for (ItemStack drop : block.getDrops(tool)) {
                     world.dropItemNaturally(block.getLocation(), drop);
@@ -189,7 +201,7 @@ public class MultiBreak {
                     if (!multiBlock.hasAdjacentAir()) continue;
                     multiBlock.writeStage(-1);
                 }
-                end(false);
+                end(false, plugin);
             }
         }.runTaskLater(plugin, 2);
     }
