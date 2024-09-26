@@ -37,10 +37,8 @@ public class BreakManager implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void armSwingEvent(PlayerAnimationEvent e) {
-        //check legacy
         boolean legacy_mode = plugin.getConfigManager().getOptions()[1];
         if (!legacy_mode) return;
-
         if (!e.getAnimationType().equals(PlayerAnimationType.ARM_SWING)) return;
         Player p = e.getPlayer();
         if (p.getGameMode().equals(GameMode.CREATIVE)) return;
@@ -48,6 +46,25 @@ public class BreakManager implements Listener {
         if (multiBreak == null) return;
         Block blockMining = this.getTargetBlock(p);
         multiBreak.tick(this.getPlugin(), blockMining);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void multiBreakStart(BlockDamageEvent e) {
+        boolean legacy_mode = plugin.getConfigManager().getOptions()[1];
+        if (legacy_mode) return;
+        this.scheduleMultiBreak(e.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void multiBreakStop(BlockDamageAbortEvent e) {
+        boolean legacy_mode = plugin.getConfigManager().getOptions()[1];
+        if (legacy_mode) return;
+        Player p = e.getPlayer();
+        MultiBreak multiBreak = this.getMultiBreak(p);
+        MultiBreakEndEvent event = new MultiBreakEndEvent(p, multiBreak, false);
+        event.callEvent();
+        if (multiBreak == null) return;
+        this.end(p, multiBreak, false);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -73,27 +90,6 @@ public class BreakManager implements Listener {
         return b1 || b2 || b3;
     }
 
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void multiBreakStart(BlockDamageEvent e) {
-        //check for non legacy
-        boolean legacy_mode = plugin.getConfigManager().getOptions()[1];
-        if (legacy_mode) return;
-        this.scheduleMultiBreak(e.getPlayer());
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void multiBreakStop(BlockDamageAbortEvent e) {
-        //check for non legacy
-        boolean legacy_mode = plugin.getConfigManager().getOptions()[1];
-        if (legacy_mode) return;
-        Player p = e.getPlayer();
-        MultiBreak multiBreak = this.getMultiBreak(p);
-        MultiBreakEndEvent event = new MultiBreakEndEvent(p, multiBreak, false);
-        event.callEvent();
-        if (multiBreak == null) return;
-        this.end(p, multiBreak, false);
-    }
 
     public void scheduleMultiBreak(Player p) {
         new BukkitRunnable() {

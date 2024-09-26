@@ -8,6 +8,7 @@ import com.comphenix.protocol.wrappers.BlockPosition;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
@@ -19,7 +20,7 @@ public class MultiBlock {
 
     private final Block block;
     private final boolean hasAdjacentAir;
-    private PacketContainer packetContainer;
+    private final int sourceID = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
     private boolean breakThisBlock = true;
     private ArrayList<ItemStack> drops;
 
@@ -40,9 +41,10 @@ public class MultiBlock {
         return false;
     }
 
-    public void writeStage(int stage) {
-        Location loc = this.getBlock().getLocation();
-        ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
+    public void writeStage(Player p, float stage) {
+        p.sendBlockDamage(this.getBlock().getLocation(), stage, sourceID);
+        //Location loc = this.getBlock().getLocation();
+        /*ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
         if (this.packetContainer == null) {
             this.packetContainer = protocolManager.createPacket(PacketType.Play.Server.BLOCK_BREAK_ANIMATION);
             int randomID = ThreadLocalRandom.current().nextInt(0, Integer.MAX_VALUE);
@@ -50,7 +52,7 @@ public class MultiBlock {
             this.packetContainer.getBlockPositionModifier().write(0, new BlockPosition((int) loc.getX(), (int) loc.getY(), (int) loc.getZ()));
         }
         packetContainer.getIntegers().write(1, stage);
-        protocolManager.broadcastServerPacket(packetContainer);
+        protocolManager.broadcastServerPacket(packetContainer);*/
     }
 
     public Block getBlock() {
@@ -66,12 +68,12 @@ public class MultiBlock {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         MultiBlock that = (MultiBlock) o;
-        return hasAdjacentAir == that.hasAdjacentAir && Objects.equals(block, that.block) && Objects.equals(packetContainer, that.packetContainer);
+        return hasAdjacentAir == that.hasAdjacentAir && Objects.equals(block, that.block);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(block, hasAdjacentAir, packetContainer);
+        return Objects.hash(block, hasAdjacentAir);
     }
 
     public boolean breakThisBlock() {

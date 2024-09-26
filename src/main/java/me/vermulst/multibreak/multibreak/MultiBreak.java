@@ -3,7 +3,6 @@ package me.vermulst.multibreak.multibreak;
 import com.destroystokyo.paper.ParticleBuilder;
 import me.vermulst.multibreak.CompassDirection;
 import me.vermulst.multibreak.Main;
-import me.vermulst.multibreak.config.ConfigManager;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.Matrix4x4;
 import me.vermulst.multibreak.figure.VectorTransformer;
@@ -14,10 +13,8 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
-import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
@@ -66,8 +63,6 @@ public class MultiBreak {
 
     public void initBlocks(Figure figure, Vector playerDirection) {
         this.multiBlocks = new ArrayList<>();
-        MultiBlock multiBlock = new MultiBlock(this.getBlock());
-        this.getMultiBlocks().add(multiBlock);
         if (figure == null) return;
         CompassDirection compassDirection = CompassDirection.getCompassDir(this.getPlayer().getLocation());
 
@@ -92,13 +87,12 @@ public class MultiBreak {
         for (Vector vector : blockVectors) {
             vectorTransformer.rotateVector(vector);
         }
+        blockVectors.remove(new Vector(0, 0, 0));
         Location loc = this.getBlock().getLocation();
         for (Vector vector : blockVectors) {
-            if (vector.equals(new Vector(0, 0, 0))) continue;
             Block block1 = loc.clone().add(vector).getBlock();
             if (this.ignoredMaterials.contains(block1.getType())) continue;
             MultiBlock multiBlock1 = new MultiBlock(block1);
-            if (multiBlock.equals(multiBlock1)) continue;
             this.getMultiBlocks().add(multiBlock1);
         }
     }
@@ -120,7 +114,7 @@ public class MultiBreak {
     public void end(boolean finished, Main plugin) {
         this.ended = true;
         for (MultiBlock multiBlock : this.getMultiBlocks()) {
-            multiBlock.writeStage(-1);
+            multiBlock.writeStage(this.getPlayer(), 0);
         }
         if (!finished) return;
         ParticleBuilder particleBuilder = new ParticleBuilder(Particle.ITEM_CRACK)
@@ -134,28 +128,29 @@ public class MultiBreak {
         for (MultiBlock multiBlock : this.getMultiBlocks()) {
             if (!multiBlock.breakThisBlock()) continue;
             Block block = multiBlock.getBlock();
-            if (plugin.getConfigManager().getIgnoredMaterials().contains(block.getType())) continue;
+            Material blockType = block.getType();
+            BlockData blockData = block.getBlockData().clone();
+            Location location = block.getLocation();
+
+            if (plugin.getConfigManager().getIgnoredMaterials().contains(blockType)) continue;
             block.setMetadata("multi-broken", new FixedMetadataValue(plugin, true));
-            BlockBreakEvent blockBreakEvent = new BlockBreakEvent(block, getPlayer());
-            blockBreakEvent.callEvent();
-            if (blockBreakEvent.isCancelled()) continue;
+            boolean broken = this.getPlayer().breakBlock(block);
+            if (!broken) continue;
             if (multiBlock.getDrops() == null) {
                 for (ItemStack drop : block.getDrops(tool)) {
-                    world.dropItemNaturally(block.getLocation(), drop);
+                    world.dropItemNaturally(location, drop);
                 }
             } else {
                 for (ItemStack drop : multiBlock.getDrops()) {
-                    world.dropItemNaturally(block.getLocation(), drop);
+                    world.dropItemNaturally(location, drop);
                 }
             }
+            world.playSound(location, blockData.getSoundGroup().getBreakSound(), volume, 1F);
             if (multiBlock.hasAdjacentAir()) {
-                particleBuilder
-                        .data(new ItemStack(block.getType()))
-                        .location(block.getLocation().add(0.5, 0, 0.5))
+                particleBuilder.data(new ItemStack(blockType));
+                particleBuilder.location(location.add(0.5, 0, 0.5))
                         .spawn();
             }
-            world.playSound(block.getLocation(), block.getBlockData().getSoundGroup().getBreakSound(), volume, 1F);
-            block.setType(Material.AIR);
         }
     }
 
@@ -179,12 +174,13 @@ public class MultiBreak {
     }
 
     public void updateBlockAnimationPacket() {
-        double progress = ((double) this.getProgressTicks() / (double) this.getDestroySpeedInTicks());
-        int stage = (int) (progress * 9);
+        float stage = ((float) this.getProgressTicks() / (float) this.getDestroySpeedInTicks());
+        stage = Math.min(stage, 1);
+        stage = Math.max(stage, 0);
         for (MultiBlock multiBlock : this.getMultiBlocks()) {
             if (multiBlock.getBlock().equals(this.getBlock())) continue;
             if (!multiBlock.hasAdjacentAir()) continue;
-            multiBlock.writeStage(stage);
+            multiBlock.writeStage(this.getPlayer(), stage);
         }
     }
 
@@ -199,7 +195,7 @@ public class MultiBreak {
                 if (target && progress) return;
                 for (MultiBlock multiBlock : getMultiBlocks()) {
                     if (!multiBlock.hasAdjacentAir()) continue;
-                    multiBlock.writeStage(-1);
+                    multiBlock.writeStage(getPlayer(), 0);
                 }
                 end(false, plugin);
             }
