@@ -1,10 +1,5 @@
 package me.vermulst.multibreak.multibreak;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.wrappers.BlockPosition;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -20,9 +15,9 @@ public class MultiBlock {
 
     private final Block block;
     private final boolean hasAdjacentAir;
-    private final int sourceID = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
     private boolean breakThisBlock = true;
     private ArrayList<ItemStack> drops;
+    private final int sourceID = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
 
     public MultiBlock(Block block) {
         this.block = block;
@@ -43,16 +38,6 @@ public class MultiBlock {
 
     public void writeStage(Player p, float stage) {
         p.sendBlockDamage(this.getBlock().getLocation(), stage, sourceID);
-        //Location loc = this.getBlock().getLocation();
-        /*ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
-        if (this.packetContainer == null) {
-            this.packetContainer = protocolManager.createPacket(PacketType.Play.Server.BLOCK_BREAK_ANIMATION);
-            int randomID = ThreadLocalRandom.current().nextInt(0, Integer.MAX_VALUE);
-            this.packetContainer.getIntegers().write(0, randomID);
-            this.packetContainer.getBlockPositionModifier().write(0, new BlockPosition((int) loc.getX(), (int) loc.getY(), (int) loc.getZ()));
-        }
-        packetContainer.getIntegers().write(1, stage);
-        protocolManager.broadcastServerPacket(packetContainer);*/
     }
 
     public Block getBlock() {
