@@ -1,8 +1,9 @@
 
 [**MultiBreak Spigot Plugin**](https://www.spigotmc.org/resources/multibreak-1-18-1-20.113810/)
 
+#API usage
 
-Maven:
+##Maven
 ```xml
 <repository>
 	<id>jitpack.io</id>
@@ -14,11 +15,12 @@ Maven:
 	<groupId>com.github.vermulst</groupId>
 	<artifactId>MultiBreak</artifactId>
 	<version>v0.9</version>
+	<scope>provided</scope>
 </dependency>
 ```
 
 
-Gradle: 
+##Gradle
 ```groovy
 repositories {
 	maven {
@@ -32,7 +34,7 @@ dependencies {
 }
 ```
 
-Example use:
+##Example use
 ```java
 @EventHandler
 public void multiBreakStart(MultiBreakStartEvent e) {
