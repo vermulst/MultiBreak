@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.github.vermulst'
-version = '0.8'
+version = '0.9'
 
 repositories {
     mavenCentral()
@@ -16,10 +16,6 @@ repositories {
     maven {
         name = "sonatype"
         url = "https://oss.sonatype.org/content/groups/public/"
-    }
-    maven {
-        name = "ProtocolLib"
-        url = "https://repo.dmulloy2.net/repository/public/"
     }
     mavenLocal()
 }

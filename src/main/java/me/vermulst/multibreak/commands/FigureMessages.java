@@ -3,13 +3,11 @@ package me.vermulst.multibreak.commands;
 import me.vermulst.multibreak.figure.Figure;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
 public class FigureMessages {
-
-
 
     public static TextComponent getFigureInfoText(Figure figure) {
         int width = figure.getWidth();
@@ -22,69 +20,83 @@ public class FigureMessages {
         int offSetHeight = figure.getOffSetHeight();
         int offSetDepth = figure.getOffSetDepth();
         TextComponent newLine = Component.text("\n");
-        TextComponent widthN = Component.text(width).color(TextColor.color(255, 255, 85));
-        TextComponent heightN = Component.text(height).color(TextColor.color(255, 255, 85));
-        TextComponent depthN = Component.text(depth).color(TextColor.color(255, 255, 85));
-        TextComponent widthText = Component.text("Width: ").color(TextColor.color(170, 170, 170)).append(widthN);
-        TextComponent heightText = Component.text(", Height: ").color(TextColor.color(170, 170, 170)).append(heightN);
-        TextComponent depthText = Component.text(", Depth: ").color(TextColor.color(170, 170, 170)).append(depthN);
-        TextComponent dimensions = widthText.append(heightText).append(depthText);
+        TextComponent widthN = Component.text(width, NamedTextColor.YELLOW);
+        TextComponent heightN = Component.text(height, NamedTextColor.YELLOW);
+        TextComponent depthN = Component.text(depth, NamedTextColor.YELLOW);
+        TextComponent.Builder widthText = Component.text()
+                .content("Width: ")
+                .color(NamedTextColor.GRAY)
+                .append(widthN);
+        TextComponent heightText = Component.text(", Height: ", NamedTextColor.GRAY).append(heightN);
+        TextComponent depthText = Component.text(", Depth: ", NamedTextColor.GRAY).append(depthN);
+        TextComponent.Builder dimensions = widthText.append(heightText).append(depthText);
 
-        TextComponent comma = Component.text(", ").color(TextColor.color(170, 170, 170));
+        TextComponent comma = Component.text(", ", NamedTextColor.GRAY);
 
-        TextComponent widthR = Component.text(rotationWidth).color(TextColor.color(255, 255, 85));
-        TextComponent heightR = Component.text(rotationHeight).color(TextColor.color(255, 255, 85));
-        TextComponent depthR = Component.text(rotationDepth).color(TextColor.color(255, 255, 85));
-        TextComponent RText = Component.text("Rotations: ").color(TextColor.color(170, 170, 170));
-        TextComponent rotations = newLine.append(RText).append(widthR).append(comma).append(heightR).append(comma).append(depthR);
+        TextComponent widthR = Component.text(rotationWidth, NamedTextColor.YELLOW);
+        TextComponent heightR = Component.text(rotationHeight, NamedTextColor.YELLOW);
+        TextComponent depthR = Component.text(rotationDepth, NamedTextColor.YELLOW);
+        TextComponent RText = Component.text("Rotations: ", NamedTextColor.GRAY);
+        TextComponent rotations = newLine.toBuilder().append(RText).append(widthR).append(comma).append(heightR).append(comma).append(depthR).build();
 
-        TextComponent widthON = Component.text(offSetWidth).color(TextColor.color(255, 255, 85));
-        TextComponent heightON = Component.text(offSetHeight).color(TextColor.color(255, 255, 85));
-        TextComponent depthON = Component.text(offSetDepth).color(TextColor.color(255, 255, 85));
-        TextComponent offsetsText = Component.text("Offsets: ").color(TextColor.color(170, 170, 170));
-        TextComponent offsets = newLine.append(offsetsText).append(widthON).append(comma).append(heightON).append(comma).append(depthON);
+        TextComponent widthON = Component.text(offSetWidth, NamedTextColor.YELLOW);
+        TextComponent heightON = Component.text(offSetHeight, NamedTextColor.YELLOW);
+        TextComponent depthON = Component.text(offSetDepth, NamedTextColor.YELLOW);
+        TextComponent offsetsText = Component.text("Offsets: ", NamedTextColor.GRAY);
+        TextComponent offsets = newLine.toBuilder().append(offsetsText).append(widthON).append(comma).append(heightON).append(comma).append(depthON).build();
 
-
-
-        return dimensions.append(rotations).append(offsets);
+        return dimensions.append(rotations).append(offsets).build();
     }
 
     public static void sendApplyMessage(Player p, Figure figure, boolean global, Material material) {
         TextComponent newLine = Component.text("\n");
-        TextComponent successMessage = Component.text("Applied the following multi break attributes:").color(TextColor.color(85, 255, 85));
+        TextComponent successMessage = Component.text("Applied the following multi break attributes:", NamedTextColor.GREEN);
 
-        TextComponent typeN = Component.text("holding item (" + material.name() + ")").color(TextColor.color(255, 255, 85));
-        if (global) {
-            typeN = Component.text("all items of type " + material.name()).color(TextColor.color(255, 255, 85));
-        }
-        TextComponent typeText = Component.text("Type: ").color(TextColor.color(170, 170, 170)).append(typeN);
+        TextComponent typeN = global
+                ? Component.text("all items of type " + material.name(), NamedTextColor.GREEN)
+                : Component.text("holding item (" + material.name() + ")", NamedTextColor.YELLOW);
+        TextComponent.Builder typeText = Component.text()
+                .content("Type: ")
+                .color(NamedTextColor.GRAY)
+                .append(typeN);
 
         TextComponent figureInfo = getFigureInfoText(figure);
 
-        TextComponent total = newLine.append(successMessage).append(newLine).append(newLine).append(typeText).append(newLine).append(newLine).append(figureInfo);
+        TextComponent total = newLine.toBuilder()
+                .append(successMessage).append(newLine).append(newLine)
+                .append(typeText).append(newLine).append(newLine)
+                .append(figureInfo).build();
 
         p.sendMessage(total);
     }
 
     public static void sendCreateMessage(Player p, Figure figure, String name) {
         TextComponent newLine = Component.text("\n");
-        TextComponent successMessage = Component.text("Created a new config with the following attributes:").color(TextColor.color(85, 255, 85));
+        TextComponent successMessage = Component.text("Created a new config with the following attributes:", NamedTextColor.GREEN);
 
-        TextComponent nameN = Component.text(name).color(TextColor.color(255, 255, 85));
-        TextComponent nameText = Component.text("Name: ").color(TextColor.color(170, 170, 170)).append(nameN);
+        TextComponent nameN = Component.text(name, NamedTextColor.YELLOW);
+        TextComponent.Builder nameText = Component.text()
+                .content("Name: ")
+                .color(NamedTextColor.GRAY)
+                .append(nameN);
 
         TextComponent figureInfo = getFigureInfoText(figure);
 
-        TextComponent total = newLine.append(successMessage).append(newLine).append(newLine).append(nameText).append(newLine).append(newLine).append(figureInfo);
+        TextComponent total = newLine.toBuilder()
+                .append(successMessage).append(newLine).append(newLine)
+                .append(nameText).append(newLine).append(newLine)
+                .append(figureInfo).build();
 
         p.sendMessage(total);
     }
 
     public static void sendDeleteMessage(Player p, Figure figure, String name) {
         TextComponent newLine = Component.text("\n");
-        TextComponent successMessage = Component.text("Deleted config named \"" + name + "\":").color(TextColor.color(255, 85, 85));
+        TextComponent successMessage = Component.text("Deleted config named \"" + name + "\":", NamedTextColor.RED);
         TextComponent figureInfo = getFigureInfoText(figure);
-        TextComponent total = newLine.append(successMessage).append(newLine).append(newLine).append(figureInfo);
+        TextComponent total = newLine.toBuilder()
+                .append(successMessage).append(newLine).append(newLine)
+                .append(figureInfo).build();
         p.sendMessage(total);
     }
 

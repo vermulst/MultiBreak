@@ -4,7 +4,6 @@ import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.config.ConfigManager;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.item.FigureItemDataType;
-import me.vermulst.multibreak.item.FigureItemInfo;
 import me.vermulst.multibreak.multibreak.event.MultiBreakEndEvent;
 import me.vermulst.multibreak.multibreak.event.MultiBreakStartEvent;
 import org.bukkit.*;
@@ -28,8 +27,8 @@ public class BreakManager implements Listener {
 
     private final Main plugin;
 
-    private final HashMap<UUID, Integer> multiBreakTask = new HashMap<>();
-    private final HashMap<UUID, MultiBreak> multiBlockHashMap = new HashMap<>();
+    private final Map<UUID, Integer> multiBreakTask = new HashMap<>();
+    private final Map<UUID, MultiBreak> multiBlockHashMap = new HashMap<>();
 
     public BreakManager(Main plugin) {
         this.plugin = plugin;
@@ -45,6 +44,7 @@ public class BreakManager implements Listener {
         MultiBreak multiBreak = getMultiBreak(p);
         if (multiBreak == null) return;
         Block blockMining = this.getTargetBlock(p);
+        if (blockMining == null) return;
         multiBreak.tick(this.getPlugin(), blockMining);
     }
 
@@ -52,7 +52,17 @@ public class BreakManager implements Listener {
     public void multiBreakStart(BlockDamageEvent e) {
         boolean legacy_mode = plugin.getConfigManager().getOptions()[1];
         if (legacy_mode) return;
-        this.scheduleMultiBreak(e.getPlayer());
+        /*if (e.getInstaBreak()) {
+            Player p = e.getPlayer();
+            if (p.getGameMode().equals(GameMode.CREATIVE)) return;
+            MultiBreak multiBreak = this.getMultiBreak(p);
+            if (multiBreak == null) return;
+            Block blockMining = this.getTargetBlock(p);
+            if (blockMining == null) return;
+            multiBreak.tick(this.getPlugin(), blockMining);
+        } else {*/
+            this.scheduleMultiBreak(e.getPlayer());
+        //}
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -92,20 +102,15 @@ public class BreakManager implements Listener {
 
 
     public void scheduleMultiBreak(Player p) {
-        new BukkitRunnable() {
+        MultiBreak multiBreak = getMultiBreak(p);
+        if (multiBreak == null) return;
+        int taskID = new BukkitRunnable() {
             @Override
             public void run() {
-                MultiBreak multiBreak = getMultiBreak(p);
-                if (multiBreak == null) return;
-                int taskID = new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        multiBreak.tick();
-                    }
-                }.runTaskTimer(getPlugin(), 0, 1).getTaskId();
-                getMultiBreakTask().put(p.getUniqueId(), taskID);
+                multiBreak.tick();
             }
-        }.runTaskLater(plugin, 1);
+        }.runTaskTimer(getPlugin(), 0, 1).getTaskId();
+        getMultiBreakTask().put(p.getUniqueId(), taskID);
     }
 
     public void end(Player p, MultiBreak multiBreak, boolean finished) {
@@ -127,9 +132,10 @@ public class BreakManager implements Listener {
         Figure figure = this.getFigure(tool);
         BlockFace blockFace = this.getBlockFace(p);
         Block blockMining = this.getTargetBlock(p);
+        if (blockMining == null || blockFace == null) return null;
         ConfigManager config = plugin.getConfigManager();
         boolean fair_mode = config.getOptions()[0];
-        List<Material> ignoredMaterials = config.getIgnoredMaterials();
+        EnumSet<Material> ignoredMaterials = config.getIgnoredMaterials();
         MultiBreak multiBreak = new MultiBreak(p, blockMining, figure, blockFace.getDirection(), fair_mode, ignoredMaterials);
         MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, blockMining, blockFace.getDirection(), fair_mode, ignoredMaterials);
         if (!event.callEvent()) return null;
@@ -140,7 +146,7 @@ public class BreakManager implements Listener {
 
     public Figure getFigure(ItemStack tool) {
         if (tool.getItemMeta() == null) return null;
-        FigureItemInfo figureItemInfo = this.getFigureItemInfo(tool);
+        FigureItemDataType.FigureItemInfo figureItemInfo = this.getFigureItemInfo(tool);
         if (figureItemInfo == null) {
             Material material = tool.getType();
             ConfigManager configManager = this.getPlugin().getConfigManager();
@@ -154,28 +160,28 @@ public class BreakManager implements Listener {
         }
     }
 
-    public FigureItemInfo getFigureItemInfo(ItemStack item) {
+    public FigureItemDataType.FigureItemInfo getFigureItemInfo(ItemStack item) {
         FigureItemDataType figureItemDataType = new FigureItemDataType(this.getPlugin());
         return figureItemDataType.get(item);
     }
 
     public Block getTargetBlock(Player p) {
-        return p.getTargetBlockExact(10);
+        return p.getTargetBlockExact(plugin.getConfigManager().getMaxRange());
     }
 
     public BlockFace getBlockFace(Player p) {
-        return p.getTargetBlockFace(10);
+        return p.getTargetBlockFace(plugin.getConfigManager().getMaxRange());
     }
 
     public Main getPlugin() {
         return plugin;
     }
 
-    public HashMap<UUID, Integer> getMultiBreakTask() {
+    public Map<UUID, Integer> getMultiBreakTask() {
         return multiBreakTask;
     }
 
-    public HashMap<UUID, MultiBreak> getMultiBlockHashMap() {
+    public Map<UUID, MultiBreak> getMultiBlockHashMap() {
         return multiBlockHashMap;
     }
 }

@@ -4,7 +4,6 @@ import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.types.FigureType;
 import me.vermulst.multibreak.item.FigureItemDataType;
-import me.vermulst.multibreak.item.FigureItemInfo;
 import me.vermulst.multibreak.config.ConfigManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
@@ -134,7 +133,7 @@ public class MultiConfigCommand implements CommandExecutor {
         }
         String applyTo = args[2];
         Figure figure = this.getConfigManager().getConfigOptions().get(configOptionName);
-        FigureItemInfo figureItemInfo = new FigureItemInfo(figure);
+        FigureItemDataType.FigureItemInfo figureItemInfo = new FigureItemDataType.FigureItemInfo(figure);
         FigureItemDataType figureItemDataType = new FigureItemDataType(this.getPlugin());
         if ("holding".equals(applyTo)) {
             ItemStack item = p.getInventory().getItemInMainHand();

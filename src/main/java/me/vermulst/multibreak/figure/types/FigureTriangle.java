@@ -1,14 +1,11 @@
 package me.vermulst.multibreak.figure.types;
 
-import me.vermulst.multibreak.CompassDirection;
-import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.FigureIterable;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class FigureTriangle extends FigureIterable {
 
@@ -18,12 +15,12 @@ public class FigureTriangle extends FigureIterable {
     }
 
     @Override
-    public HashSet<Vector> getVectors(boolean rotated) {
+    public Set<Vector> getVectors(boolean rotated) {
         int[] widthBound = getBoundPair(this.getWidth(), this.getOffSetWidth());
         int[] heightBound = getBoundPair(this.getHeight(), this.getOffSetHeight());
         int[] depthBound = getBoundPair(this.getDepth(), this.getOffSetDepth());
 
-        ArrayList<Vector> triangles = new ArrayList<>();
+        List<Vector> triangles = new ArrayList<>();
         Vector vertexTop = new Vector(this.getOffSetWidth(), heightBound[1], this.getOffSetDepth());
         Vector vertexLeft = new Vector(widthBound[0], heightBound[0], this.getOffSetDepth());
         Vector vertexRight = new Vector(widthBound[1], heightBound[0], this.getOffSetDepth());
@@ -32,12 +29,12 @@ public class FigureTriangle extends FigureIterable {
             triangles.add(vertexLeft.clone().add(new Vector(0, 0, i)));
             triangles.add(vertexRight.clone().add(new Vector(0, 0, i)));
         }
-        HashSet<Vector> vectors = this.iterateOverBoundingBox(new HashSet<>(triangles), rotated);
+        Set<Vector> vectors = this.iterateOverBoundingBox(triangles, rotated);
         vectors.removeIf(vector -> !this.isPointInAnyTriangle(vector, triangles));
         return vectors;
     }
 
-    private boolean isPointInAnyTriangle(Vector point, ArrayList<Vector> triangles) {
+    private boolean isPointInAnyTriangle(Vector point, List<Vector> triangles) {
         for (int i = 0; i < triangles.size(); i += 3) {
             if (point.getZ() != triangles.get(i).getZ()) continue;
             if (isPointInTriangle(point, triangles.get(i), triangles.get(i + 1), triangles.get(i + 2))) {

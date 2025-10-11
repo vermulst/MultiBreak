@@ -12,7 +12,7 @@ import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.EnumSet;
 
 public class MultiBreakStartEvent extends Event {
 
@@ -24,11 +24,10 @@ public class MultiBreakStartEvent extends Event {
     private final Block block;
     private MultiBreak multiBreak;
     private final boolean fair_mode;
-    private final List<Material> ignoredMaterials;
+    private final EnumSet<Material> ignoredMaterials;
 
 
-
-    public MultiBreakStartEvent(Player p, MultiBreak multiBreak, Block block, Vector playerDirection, boolean fair_mode, List<Material> ignoredMaterials) {
+    public MultiBreakStartEvent(Player p, MultiBreak multiBreak, Block block, Vector playerDirection, boolean fair_mode, EnumSet<Material> ignoredMaterials) {
         this.player = p;
         this.multiBreak = multiBreak;
         this.playerDirection = playerDirection;
@@ -79,6 +78,10 @@ public class MultiBreakStartEvent extends Event {
             blocks.add(this.getBlock());
         }
         return blocks;
+    }
+
+    public EnumSet<Material> getIgnoredMaterials() {
+        return ignoredMaterials;
     }
 
     public Vector getPlayerDirection() {

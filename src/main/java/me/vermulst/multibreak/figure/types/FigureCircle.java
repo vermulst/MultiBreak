@@ -1,14 +1,10 @@
 package me.vermulst.multibreak.figure.types;
 
-import me.vermulst.multibreak.CompassDirection;
-import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.FigureIterable;
-import me.vermulst.multibreak.figure.VectorTransformer;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import java.util.HashSet;
+import java.util.Set;
 
 public class FigureCircle extends FigureIterable {
 
@@ -18,7 +14,7 @@ public class FigureCircle extends FigureIterable {
     }
 
     @Override
-    public HashSet<Vector> getVectors(boolean rotated) {
+    public Set<Vector> getVectors(boolean rotated) {
 
         Vector startPos = new Vector(this.getOffSetWidth(), this.getOffSetHeight(), this.getOffSetDepth());
         double a = getWidth() / 2.0;
@@ -29,7 +25,7 @@ public class FigureCircle extends FigureIterable {
         double du = 2.0 * Math.PI / (resolution - 1);
         double dv = Math.PI / (resolution - 1);
 
-        HashSet<Vector> boundingVectors = new HashSet<>();
+        Set<Vector> boundingVectors = new HashSet<>();
         for (int i = 0; i < resolution; i++) {
             double u = i * du;
             for (int j = 0; j < resolution; j++) {
@@ -40,7 +36,7 @@ public class FigureCircle extends FigureIterable {
                 boundingVectors.add(vector);
             }
         }
-        HashSet<Vector> vectors = this.iterateOverBoundingBox(boundingVectors, rotated);
+        Set<Vector> vectors = this.iterateOverBoundingBox(boundingVectors, rotated);
         vectors.removeIf(vector -> !this.isInsideEllipsoid(vector, a, b, c));
         return vectors;
     }

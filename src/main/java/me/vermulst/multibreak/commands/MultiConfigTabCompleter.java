@@ -22,7 +22,7 @@ public class MultiConfigTabCompleter implements TabCompleter {
 
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
-        ArrayList<String> completions = new ArrayList<>();
+        List<String> completions = new ArrayList<>();
 
         switch (args.length) {
             case 1 -> {

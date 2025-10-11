@@ -1,11 +1,10 @@
 package me.vermulst.multibreak.figure.types;
 
-import me.vermulst.multibreak.CompassDirection;
 import me.vermulst.multibreak.figure.Figure;
-import me.vermulst.multibreak.figure.VectorTransformer;
 import org.bukkit.util.Vector;
 
 import java.util.HashSet;
+import java.util.Set;
 
 public class FigureLinear extends Figure {
 
@@ -15,8 +14,8 @@ public class FigureLinear extends Figure {
     }
 
     @Override
-    public HashSet<Vector> getVectors(boolean rotated) {
-        HashSet<Vector> vectors = new HashSet<>();
+    public Set<Vector> getVectors(boolean rotated) {
+        Set<Vector> vectors = new HashSet<>();
 
         double step = rotated ? 0.3 : 1;
         int[] widthBound = getBoundPair(this.getWidth(), this.getOffSetWidth());

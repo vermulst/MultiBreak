@@ -7,7 +7,7 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class MultiBreakEndEvent extends Event {
 
@@ -44,7 +44,7 @@ public class MultiBreakEndEvent extends Event {
         return multiBreak;
     }
 
-    public ArrayList<Block> getBlocks() {
+    public List<Block> getBlocks() {
         return multiBreak.getBlocks();
     }
 

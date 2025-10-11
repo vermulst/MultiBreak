@@ -1,15 +1,16 @@
 package me.vermulst.multibreak.figure;
 
-import me.vermulst.multibreak.CompassDirection;
 import me.vermulst.multibreak.figure.types.FigureType;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.util.Vector;
 
-import java.awt.*;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public abstract class Figure {
 
@@ -31,7 +32,7 @@ public abstract class Figure {
         this.depth = depth;
     }
 
-    public abstract HashSet<Vector> getVectors(boolean rotated);
+    public abstract Set<Vector> getVectors(boolean rotated);
     public abstract FigureType getFigureType();
 
 
@@ -47,41 +48,59 @@ public abstract class Figure {
         this.rotationDepth = rotationDepth;
     }
 
-    public ArrayList<Component> getLore() {
-        ArrayList<Component> lore = new ArrayList<>();
+    public List<TextComponent> getLore() {
+        List<TextComponent> lore = new ArrayList<>();
 
 
-        Component widthC = Component.text("Width: ").color(TextColor.color(170, 170, 170));
-        Component heightC = Component.text("Height: ").color(TextColor.color(170, 170, 170));
-        Component depthC = Component.text("Depth: ").color(TextColor.color(170, 170, 170));
+        TextComponent widthC = Component.text("Width: ", NamedTextColor.GRAY);
+        TextComponent heightC = Component.text("Height: ", NamedTextColor.GRAY);
+        TextComponent depthC = Component.text("Depth: ", NamedTextColor.GRAY);
 
         lore.add(Component.empty());
-        lore.add(Component.text("Size")
+        lore.add(Component.text()
+                .content("Size")
+                .color(NamedTextColor.WHITE)
+                .decoration(TextDecoration.UNDERLINED, true)
+                .decoration(TextDecoration.BOLD, true)
+                .build());
+
+        // Add dimensions
+        lore.add(widthC
+                .append(Component.text(this.getWidth(), NamedTextColor.YELLOW)));
+        lore.add(heightC
+                .append(Component.text(this.getHeight(), NamedTextColor.YELLOW)));
+        lore.add(depthC
+                .append(Component.text(this.getDepth(), NamedTextColor.YELLOW)));
+
+
+        lore.add(Component.empty());
+        lore.add(Component.text()
+                .content("Rotations")
+                .color(NamedTextColor.WHITE)
+                .decoration(TextDecoration.UNDERLINED, true)
+                .build());
+
+        lore.add(widthC
+                .append(Component.text(this.getRotationWidth(), NamedTextColor.YELLOW)));
+        lore.add(heightC
+                .append(Component.text(this.getRotationHeight(), NamedTextColor.YELLOW)));
+        lore.add(depthC
+                .append(Component.text(this.getRotationDepth(), NamedTextColor.YELLOW)));
+
+
+        lore.add(Component.empty());
+        lore.add(Component.text()
+                .content("Offsets")
                 .color(TextColor.color(255, 255, 255))
                 .decoration(TextDecoration.UNDERLINED, true)
-                .decoration(TextDecoration.BOLD, true));
-        lore.add(widthC.append(Component.text(this.getWidth()).color(TextColor.color(255, 255, 85))));
-        lore.add(heightC.append(Component.text(this.getHeight()).color(TextColor.color(255, 255, 85))));
-        lore.add(depthC.append(Component.text(this.getDepth()).color(TextColor.color(255, 255, 85))));
+                .build());
 
-
-        lore.add(Component.empty());
-        lore.add(Component.text("Rotations")
-                .color(TextColor.color(255, 255, 255))
-                .decoration(TextDecoration.UNDERLINED, true));
-
-        lore.add(widthC.append(Component.text(this.getRotationWidth()).color(TextColor.color(255, 255, 85))));
-        lore.add(heightC.append(Component.text(this.getRotationHeight()).color(TextColor.color(255, 255, 85))));
-        lore.add(depthC.append(Component.text(this.getRotationDepth()).color(TextColor.color(255, 255, 85))));
-
-        lore.add(Component.empty());
-        lore.add(Component.text("Offsets")
-                .color(TextColor.color(255, 255, 255))
-                .decoration(TextDecoration.UNDERLINED, true));
-
-        lore.add(widthC.append(Component.text(this.getOffSetWidth()).color(TextColor.color(255, 255, 85))));
-        lore.add(heightC.append(Component.text(this.getOffSetHeight()).color(TextColor.color(255, 255, 85))));
-        lore.add(depthC.append(Component.text(this.getOffSetDepth()).color(TextColor.color(255, 255, 85))));
+        lore.add(widthC
+                .append(Component.text(this.getOffSetWidth(), NamedTextColor.YELLOW)));
+        lore.add(heightC
+                .append(Component.text(this.getOffSetHeight(), NamedTextColor.YELLOW)));
+        lore.add(depthC
+                .append(Component.text(this.getOffSetDepth(), NamedTextColor.YELLOW)));
 
         return lore;
     }

@@ -18,10 +18,7 @@ import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 public class MultiBreak {
 
@@ -29,14 +26,14 @@ public class MultiBreak {
     private final Block block;
     private final Vector playerDirection;
     private int progressTicks;
-    private ArrayList<MultiBlock> multiBlocks = new ArrayList<>();
-    private final int destroySpeedInTicks;
+    private List<MultiBlock> multiBlocks = new ArrayList<>();
+    private final float destroySpeed;
     private boolean ended = false;
     private final boolean fair_mode;
-    private final List<Material> ignoredMaterials;
+    private final EnumSet<Material> ignoredMaterials;
 
 
-    public MultiBreak(Player p, Block block, Figure figure, Vector playerDirection, boolean fair_mode, List<Material> ignoredMaterials) {
+    public MultiBreak(Player p, Block block, Figure figure, Vector playerDirection, boolean fair_mode, EnumSet<Material> ignoredMaterials) {
         this.p = p;
         this.block = block;
         this.playerDirection = playerDirection;
@@ -45,7 +42,7 @@ public class MultiBreak {
         this.initBlocks(figure, playerDirection);
         float breakSpeed = this.getBlock().getBreakSpeed(this.getPlayer());
         this.checkValid(breakSpeed);
-        this.destroySpeedInTicks = (int) (0.0001 + (1 / breakSpeed));
+        this.destroySpeed = 0.000001f + (1 / breakSpeed);
     }
 
     public void setFigure(Figure figure) {
@@ -68,7 +65,7 @@ public class MultiBreak {
 
         VectorTransformer vectorTransformer = new VectorTransformer(playerDirection, compassDirection);
         boolean rotated = figure.getRotationWidth() != 0.0 || figure.getRotationHeight() != 0.0 || figure.getRotationDepth() != 0.0;
-        HashSet<Vector> blockVectors = figure.getVectors(rotated);
+        Set<Vector> blockVectors = figure.getVectors(rotated);
         if (rotated) {
             HashSet<Vector> rotatedVectors = new HashSet<>();
             Matrix4x4 rotationMatrix = new Matrix4x4();
@@ -91,7 +88,9 @@ public class MultiBreak {
         Location loc = this.getBlock().getLocation();
         for (Vector vector : blockVectors) {
             Block block1 = loc.clone().add(vector).getBlock();
-            if (this.ignoredMaterials.contains(block1.getType())) continue;
+            Material type = block1.getType();
+            if (this.ignoredMaterials.contains(type)) continue;
+            if (block1.isLiquid() || !type.isItem()) continue;
             MultiBlock multiBlock1 = new MultiBlock(block1);
             this.getMultiBlocks().add(multiBlock1);
         }
@@ -102,13 +101,15 @@ public class MultiBreak {
             this.end(false, plugin);
         }
         this.progressTicks++;
-        this.updateAnimations(this.progressTicks % 2 == 0);
+        if (this.progressTicks % 2 == 0) this.playParticles();
+        updateBlockAnimationPacket();
         this.scheduleCancel(plugin, blockMining);
     }
 
     public void tick() {
         this.progressTicks++;
-        this.updateAnimations(this.progressTicks % 2 == 0);
+        if (this.progressTicks % 2 == 0) this.playParticles();
+        updateBlockAnimationPacket();
     }
 
     public void end(boolean finished, Main plugin) {
@@ -124,7 +125,6 @@ public class MultiBreak {
         World world = this.getBlock().getWorld();
         int size = this.getMultiBlocks().size() - 1;
         float volume = (float) (1 / Math.log(((size) + 1) * Math.E));
-        ItemStack tool = this.getPlayer().getInventory().getItemInMainHand();
         for (MultiBlock multiBlock : this.getMultiBlocks()) {
             if (!multiBlock.breakThisBlock()) continue;
             Block block = multiBlock.getBlock();
@@ -136,17 +136,13 @@ public class MultiBreak {
             block.setMetadata("multi-broken", new FixedMetadataValue(plugin, true));
             boolean broken = this.getPlayer().breakBlock(block);
             if (!broken) continue;
-            if (multiBlock.getDrops() == null) {
-                for (ItemStack drop : block.getDrops(tool)) {
-                    world.dropItemNaturally(location, drop);
-                }
-            } else {
+            if (multiBlock.getDrops() != null) {
                 for (ItemStack drop : multiBlock.getDrops()) {
                     world.dropItemNaturally(location, drop);
                 }
             }
             world.playSound(location, blockData.getSoundGroup().getBreakSound(), volume, 1F);
-            if (multiBlock.hasAdjacentAir()) {
+            if (multiBlock.isVisible()) {
                 particleBuilder.data(new ItemStack(blockType));
                 particleBuilder.location(location.add(0.5, 0, 0.5))
                         .spawn();
@@ -155,31 +151,29 @@ public class MultiBreak {
     }
 
 
-    public void updateAnimations(boolean particles) {
+    public void playParticles() {
         ParticleBuilder particleBuilder = new ParticleBuilder(Particle.BLOCK_CRACK)
                 .offset(0.375, 0, 0.375);
         HashMap<Material, BlockData> blockDataHashMap = new HashMap<>();
         for (MultiBlock multiBlock : this.getMultiBlocks()) {
             if (multiBlock.getBlock().equals(this.getBlock())) continue;
-            if (!multiBlock.hasAdjacentAir()) continue;
+            if (!multiBlock.isVisible()) continue;
             Block block1 = multiBlock.getBlock();
-            if (!particles) continue;
             BlockData blockData = blockDataHashMap.computeIfAbsent(block1.getType(), data -> block1.getType().createBlockData());
             particleBuilder.location(block1.getLocation()
                     .add(0.5, 1, 0.5))
                     .data(blockData)
                     .spawn();
         }
-        updateBlockAnimationPacket();
     }
 
     public void updateBlockAnimationPacket() {
-        float stage = ((float) this.getProgressTicks() / (float) this.getDestroySpeedInTicks());
+        float stage = ((float) this.getProgressTicks() / this.getDestroySpeed());
         stage = Math.min(stage, 1);
         stage = Math.max(stage, 0);
         for (MultiBlock multiBlock : this.getMultiBlocks()) {
             if (multiBlock.getBlock().equals(this.getBlock())) continue;
-            if (!multiBlock.hasAdjacentAir()) continue;
+            if (!multiBlock.isVisible()) continue;
             multiBlock.writeStage(this.getPlayer(), stage);
         }
     }
@@ -194,7 +188,7 @@ public class MultiBreak {
                         || targetBlock.equals(p.getLastTwoTargetBlocks(null, 10).get(1));
                 if (target && progress) return;
                 for (MultiBlock multiBlock : getMultiBlocks()) {
-                    if (!multiBlock.hasAdjacentAir()) continue;
+                    if (!multiBlock.isVisible()) continue;
                     multiBlock.writeStage(getPlayer(), 0);
                 }
                 end(false, plugin);
@@ -214,20 +208,20 @@ public class MultiBreak {
         return progressTicks;
     }
 
-    public ArrayList<MultiBlock> getMultiBlocks() {
+    public List<MultiBlock> getMultiBlocks() {
         return multiBlocks;
     }
 
-    public ArrayList<Block> getBlocks() {
-        ArrayList<Block> blocks = new ArrayList<>();
+    public List<Block> getBlocks() {
+        List<Block> blocks = new ArrayList<>();
         for (MultiBlock multiBlock : this.getMultiBlocks()) {
             blocks.add(multiBlock.getBlock());
         }
         return blocks;
     }
 
-    public int getDestroySpeedInTicks() {
-        return destroySpeedInTicks;
+    public float getDestroySpeed() {
+        return destroySpeed;
     }
 
     public boolean hasEnded() {
@@ -242,7 +236,7 @@ public class MultiBreak {
                 ", playerDirection=" + playerDirection +
                 ", progressTicks=" + progressTicks +
                 ", multiBlocks=" + multiBlocks +
-                ", destroySpeedInTicks=" + destroySpeedInTicks +
+                ", destroySpeed=" + destroySpeed +
                 ", ended=" + ended +
                 '}';
     }

@@ -1,8 +1,6 @@
 package me.vermulst.multibreak.figure.types;
 
 import me.vermulst.multibreak.figure.Figure;
-import me.vermulst.multibreak.figure.types.FigureCircle;
-import me.vermulst.multibreak.figure.types.FigureLinear;
 
 public enum FigureType {
 

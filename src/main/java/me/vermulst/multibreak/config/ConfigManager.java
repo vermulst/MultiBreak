@@ -11,17 +11,14 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ConfigManager {
 
-    private HashMap<String, Figure> configOptions;
-    private HashMap<Material, String> materialOptions;
-    private final List<Material> ignoredMaterials = new ArrayList<>();
+    private Map<String, Figure> configOptions;
+    private Map<Material, String> materialOptions;
+    private final EnumSet<Material> ignoredMaterials = EnumSet.noneOf(Material.class);
+    private int maxRange = 10;
 
     private final boolean[] options = new boolean[optionNames.length];
     private static final String[] optionNames = new String[]{"fair_mode", "legacy_mode"};
@@ -44,11 +41,24 @@ public class ConfigManager {
     }
 
     public void save(FileConfiguration fileConfiguration) {
+        /*fileConfiguration.options().setHeader(List.of(
+                "legacy_mode: If enabled, old, more performance heavy logic will be used to detect block breaks, however might be more reliable if you see bugs.",
+                "fair_mode: If enabled, blocks that take longer to break than the source, will not be multibroken.",
+                "max_break_range: The maximum range (in blocks) from which a player can break blocks with multibreak. Only needed when increasing the block range attribute of a player.",
+                "ignored_materials: List of blocks ignored by multibreaks."
+        ));*/
+
+        List<String>[] optionComments = new List[]{
+                List.of("If enabled, blocks that take longer to break than the source, will not be multibroken."),
+                List.of("", "If enabled, old, more performance heavy logic will be used to detect block breaks", "however might be more reliable if you see bugs.")
+        };
         for (int i = 0; i < options.length; i++) {
             String optionName = optionNames[i];
             boolean option = options[i];
             fileConfiguration.set(optionName, option);
+            fileConfiguration.setComments(optionName, optionComments[i]);
         }
+
         for (Map.Entry<String, Figure> entry : this.getConfigOptions().entrySet()) {
             String name = entry.getKey();
             String path = "config_options." + name;
@@ -72,7 +82,14 @@ public class ConfigManager {
         }
         List<String> materialNames = new ArrayList<>(ignoredMaterials.size());
         ignoredMaterials.forEach(material -> materialNames.add(material.toString()));
+
         fileConfiguration.set("ignored_materials", materialNames);
+        fileConfiguration.setComments("ignored_materials", List.of("", "List of blocks ignored by multibreaks."));
+
+        fileConfiguration.set("max_break_range", this.maxRange);
+        fileConfiguration.setComments("max_break_range",
+                List.of("", "The maximum range in blocks from which a player can break blocks with multibreak.",
+                        "Needed when for example increasing the block range attribute of a player."));
     }
 
     // first element is whether to save or not
@@ -99,7 +116,8 @@ public class ConfigManager {
         this.loadMultiConfigs(fileConfiguration);
         this.loadMaterialConfigs(fileConfiguration);
         boolean save2 = this.loadIgnoredMaterials(fileConfiguration);
-        return save1 || save2;
+        boolean save3 = this.loadMaxRange(fileConfiguration);
+        return save1 || save2 || save3;
     }
 
     private void loadMultiConfigs(FileConfiguration fileConfiguration) {
@@ -155,6 +173,16 @@ public class ConfigManager {
         return false;
     }
 
+    private boolean loadMaxRange(FileConfiguration fileConfiguration) {
+        if (fileConfiguration.getKeys(false).contains("max_break_range")) {
+            this.maxRange = fileConfiguration.getInt("max_break_range");
+        } else {
+            fileConfiguration.set("max_break_range", this.maxRange);
+            return true;
+        }
+        return false;
+    }
+
     public void updateDeleteConfig(FileConfiguration fileConfiguration, String name) {
         fileConfiguration.set("config_options." + name, null);
         ConfigurationSection section = fileConfiguration.getConfigurationSection("material_configs");
@@ -171,7 +199,7 @@ public class ConfigManager {
         fileConfiguration.set("material_configs." + material.name(), null);
     }
 
-    public HashMap<String, Figure> getConfigOptions() {
+    public Map<String, Figure> getConfigOptions() {
         return configOptions;
     }
 
@@ -179,11 +207,15 @@ public class ConfigManager {
         return options;
     }
 
-    public HashMap<Material, String> getMaterialOptions() {
+    public Map<Material, String> getMaterialOptions() {
         return materialOptions;
     }
 
-    public List<Material> getIgnoredMaterials() {
+    public EnumSet<Material> getIgnoredMaterials() {
         return ignoredMaterials;
+    }
+
+    public int getMaxRange() {
+        return maxRange;
     }
 }

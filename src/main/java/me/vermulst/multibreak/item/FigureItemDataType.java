@@ -11,7 +11,10 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
-public class FigureItemDataType implements PersistentDataType<PersistentDataContainer, FigureItemInfo> {
+public class FigureItemDataType implements PersistentDataType<PersistentDataContainer, FigureItemDataType.FigureItemInfo> {
+
+    public record FigureItemInfo(Figure figure) {}
+
 
     private final Plugin javaPlugin;
 

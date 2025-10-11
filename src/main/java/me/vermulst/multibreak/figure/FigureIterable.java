@@ -2,7 +2,9 @@ package me.vermulst.multibreak.figure;
 
 import org.bukkit.util.Vector;
 
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.Set;
 
 public abstract class FigureIterable extends Figure {
 
@@ -10,7 +12,8 @@ public abstract class FigureIterable extends Figure {
         super(width, height, depth);
     }
 
-    public HashSet<Vector> iterateOverBoundingBox(HashSet<Vector> boundingVectors, boolean rotated) {
+
+    public Set<Vector> iterateOverBoundingBox(Collection<Vector> boundingVectors, boolean rotated) {
         double[] boundingBox = calculateBoundingBox(boundingVectors);
 
         double step = rotated ? 0.5 : 1;
@@ -22,7 +25,7 @@ public abstract class FigureIterable extends Figure {
         double maxZ = boundingBox[5];
 
         // Iterate over the bounding box
-        HashSet<Vector> vectors = new HashSet<>();
+        Set<Vector> vectors = new HashSet<>();
         for (double x = minX; x <= maxX; x += step) {
             for (double y = minY; y <= maxY; y += step) {
                 for (double z = minZ; z <= maxZ; z += step) {
@@ -35,7 +38,7 @@ public abstract class FigureIterable extends Figure {
     }
 
 
-    public double[] calculateBoundingBox(HashSet<Vector> vectors) {
+    private double[] calculateBoundingBox(Collection<Vector> vectors) {
         double minX = Double.MAX_VALUE;
         double minY = Double.MAX_VALUE;
         double minZ = Double.MAX_VALUE;
