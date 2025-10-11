@@ -38,7 +38,7 @@ Example use:
 public void multiBreakStart(MultiBreakStartEvent e) {
 	FigureCircle figureCircle = new FigureCircle(10, 10, 3);
 	e.setFigure(figureCircle);
-	ArrayList<Block> blocks = e.getBlocks(); // get all of the blocks within the elipsoid
+	List<Block> blocks = e.getBlocks(); // get all of the blocks within the elipsoid
 }
 
 @EventHandler
@@ -49,7 +49,7 @@ public void multiBreakEnd(MultiBreakEndEvent e) {
 	} else {
 		p.sendMessage("Aborted breaking multiple blocks");
 	}
-	ArrayList<Block> blocks = e.getBlocks(); // get all of the blocks within the multibreak
+	List<Block> blocks = e.getBlocks(); // get all of the blocks within the multibreak
 }
 ```
 
