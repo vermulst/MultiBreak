@@ -28,12 +28,13 @@ public class BreakManager implements Listener {
     private final Main plugin;
 
     private final Map<UUID, Integer> multiBreakTask = new HashMap<>();
-    private final Map<UUID, MultiBreak> multiBlockHashMap = new HashMap<>();
+    private final Map<UUID, MultiBreak> multiBlockMap = new HashMap<>();
 
     public BreakManager(Main plugin) {
         this.plugin = plugin;
     }
 
+    @Deprecated
     @EventHandler(priority = EventPriority.HIGHEST)
     public void armSwingEvent(PlayerAnimationEvent e) {
         boolean legacy_mode = plugin.getConfigManager().getOptions()[1];
@@ -52,17 +53,7 @@ public class BreakManager implements Listener {
     public void multiBreakStart(BlockDamageEvent e) {
         boolean legacy_mode = plugin.getConfigManager().getOptions()[1];
         if (legacy_mode) return;
-        /*if (e.getInstaBreak()) {
-            Player p = e.getPlayer();
-            if (p.getGameMode().equals(GameMode.CREATIVE)) return;
-            MultiBreak multiBreak = this.getMultiBreak(p);
-            if (multiBreak == null) return;
-            Block blockMining = this.getTargetBlock(p);
-            if (blockMining == null) return;
-            multiBreak.tick(this.getPlugin(), blockMining);
-        } else {*/
-            this.scheduleMultiBreak(e.getPlayer());
-        //}
+        this.scheduleMultiBreak(e.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -74,7 +65,7 @@ public class BreakManager implements Listener {
         MultiBreakEndEvent event = new MultiBreakEndEvent(p, multiBreak, false);
         event.callEvent();
         if (multiBreak == null) return;
-        this.end(p, multiBreak, false);
+        this.endMultiBreak(p, multiBreak, false);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -86,7 +77,7 @@ public class BreakManager implements Listener {
         event.callEvent();
         if (event.isCancelled()) return;
         if (event.getMultiBreak() == null) return;
-        this.end(p, event.getMultiBreak(), true);
+        this.endMultiBreak(p, event.getMultiBreak(), true);
     }
 
     private boolean ignoreMultiBreak(BlockBreakEvent e) {
@@ -113,18 +104,18 @@ public class BreakManager implements Listener {
         getMultiBreakTask().put(p.getUniqueId(), taskID);
     }
 
-    public void end(Player p, MultiBreak multiBreak, boolean finished) {
+    public void endMultiBreak(Player p, MultiBreak multiBreak, boolean finished) {
         UUID uuid = p.getUniqueId();
         multiBreak.end(finished, getPlugin());
-        this.getMultiBlockHashMap().remove(uuid);
+        this.getMultiBlockMap().remove(uuid);
         if (!this.getMultiBreakTask().containsKey(uuid)) return;
         Bukkit.getScheduler().cancelTask(this.getMultiBreakTask().get(uuid));
     }
 
     public MultiBreak getMultiBreak(Player p) {
         if (p.getGameMode().equals(GameMode.CREATIVE)) return null;
-        if (multiBlockHashMap.containsKey(p.getUniqueId())) {
-            MultiBreak multiBreak = multiBlockHashMap.get(p.getUniqueId());
+        if (multiBlockMap.containsKey(p.getUniqueId())) {
+            MultiBreak multiBreak = multiBlockMap.get(p.getUniqueId());
             if (!multiBreak.hasEnded()) return multiBreak;
         }
         //init
@@ -140,7 +131,7 @@ public class BreakManager implements Listener {
         MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, blockMining, blockFace.getDirection(), fair_mode, ignoredMaterials);
         if (!event.callEvent()) return null;
         MultiBreak multiBreak1 = event.getMultiBreak();
-        multiBlockHashMap.put(p.getUniqueId(), multiBreak1);
+        multiBlockMap.put(p.getUniqueId(), multiBreak1);
         return multiBreak1;
     }
 
@@ -181,7 +172,7 @@ public class BreakManager implements Listener {
         return multiBreakTask;
     }
 
-    public Map<UUID, MultiBreak> getMultiBlockHashMap() {
-        return multiBlockHashMap;
+    public Map<UUID, MultiBreak> getMultiBlockMap() {
+        return multiBlockMap;
     }
 }

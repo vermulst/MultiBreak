@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -15,7 +16,7 @@ public class MultiBlock {
     private final Block block;
     private final boolean isVisible;
     private boolean breakThisBlock = true;
-    private ArrayList<ItemStack> drops;
+    private List<ItemStack> drops;
     private final int sourceID = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
 
     public MultiBlock(Block block) {
@@ -75,7 +76,7 @@ public class MultiBlock {
         this.drops = drops;
     }
 
-    public ArrayList<ItemStack> getDrops() {
+    public List<ItemStack> getDrops() {
         return drops;
     }
 }

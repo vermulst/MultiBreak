@@ -36,77 +36,41 @@ public class MultiBreakCommand implements CommandExecutor {
                 p.sendMessage(Component.text("Please enter a valid figure type").color(TextColor.color(255, 85, 85)));
                 return true;
             }
-            int width;
-            int height;
-            int depth;
-            try {
-                width = Integer.parseInt(args[1]);
-                height = Integer.parseInt(args[2]);
-                depth = Integer.parseInt(args[3]);
-            } catch(Exception e) {
-                p.sendMessage(Component.text("Please enter valid width, height and depth").color(TextColor.color(255, 85, 85)));
-                return true;
-            }
-            short rotationWidth = 0;
-            short rotationHeight = 0;
-            short rotationDepth = 0;
-            if (args.length >= 5) {
-                try {
-                    rotationWidth = Short.parseShort(args[4]);
-                } catch (Exception e) {
-                    p.sendMessage(Component.text("Not a valid rotation for Width").color(TextColor.color(255, 85, 85)));
-                    return true;
-                }
-            }
-            if (args.length >= 6) {
-                try {
-                    rotationHeight = Short.parseShort(args[5]);
-                } catch (Exception e) {
-                    p.sendMessage(Component.text("Not a valid rotation for Height").color(TextColor.color(255, 85, 85)));
-                    return true;
-                }
 
-            }
-            if (args.length >= 7) {
-                try {
-                    rotationDepth = Short.parseShort(args[6]);
-                } catch (Exception e) {
-                    p.sendMessage(Component.text("Not a valid rotation for Depth").color(TextColor.color(255, 85, 85)));
-                    return true;
-                }
-            }
+            String[] failMessages = new String[]{
+                    "Please enter valid width, height and depth",
+                    "Please enter valid width, height and depth",
+                    "Please enter valid width, height and depth"
+            };
+            int[] dimensions = this.parseInts(args, 1, 3, failMessages, p);
+            int width = dimensions != null ? dimensions[0] : 0;
+            int height = dimensions != null ? dimensions[1] : 0;
+            int depth = dimensions != null ? dimensions[2] : 0;
 
-            int offSetWidth = 0;
-            int offSetHeight = 0;
-            int offSetDepth = 0;
-            if (args.length >= 8) {
-                try {
-                    offSetWidth = Integer.parseInt(args[7]);
-                } catch (Exception e) {
-                    p.sendMessage(Component.text("Not a valid offset for Width").color(TextColor.color(255, 85, 85)));
-                    return true;
-                }
-            }
-            if (args.length >= 9) {
-                try {
-                    offSetHeight = Integer.parseInt(args[8]);
-                } catch (Exception e) {
-                    p.sendMessage(Component.text("Not a valid offset for Height").color(TextColor.color(255, 85, 85)));
-                    return true;
-                }
 
-            }
-            if (args.length >= 10) {
-                try {
-                    offSetDepth = Integer.parseInt(args[9]);
-                } catch (Exception e) {
-                    p.sendMessage(Component.text("Not a valid offset for Depth").color(TextColor.color(255, 85, 85)));
-                    return true;
-                }
-            }
+            failMessages = new String[]{
+                    "Not a valid rotation for Width",
+                    "Not a valid rotation for Height",
+                    "Not a valid rotation for Depth"
+            };
+            short[] rotations = this.parseShorts(args, 4, 6, failMessages, p);
+            short rotationWidth = rotations != null ? rotations[0] : 0;
+            short rotationHeight = rotations != null ? rotations[1] : 0;
+            short rotationDepth = rotations != null ? rotations[2] : 0;
+
+            failMessages = new String[]{
+                    "Not a valid offset for Width",
+                    "Not a valid offset for Height",
+                    "Not a valid offset for Depth"
+            };
+            int[] offsets = this.parseInts(args, 7, 9, failMessages, p);
+            int offsetWidth = offsets != null ? offsets[0] : 0;
+            int offsetHeight = offsets != null ? offsets[1] : 0;
+            int offsetDepth = offsets != null ? offsets[2] : 0;
+
             Figure figure = figureType.build(width, height, depth);
             figure.setRotations(rotationWidth, rotationHeight, rotationDepth);
-            figure.setOffsets(offSetWidth, offSetHeight, offSetDepth);
+            figure.setOffsets(offsetWidth, offsetHeight, offsetDepth);
             FigureItemDataType.FigureItemInfo figureItemInfo = new FigureItemDataType.FigureItemInfo(figure);
             FigureItemDataType figureItemDataType = new FigureItemDataType(this.plugin);
             p.getInventory().setItemInMainHand(figureItemDataType.set(item, figureItemInfo));
@@ -116,6 +80,38 @@ public class MultiBreakCommand implements CommandExecutor {
         }
         return false;
     }
+
+
+    private int[] parseInts(String[] args, int start, int end, String[] failMessages, Player p) {
+        int[] parsedInts = new int[end - start];
+        for (int i = start; i <= end; i++) {
+            if (args.length < i) continue;
+            String arg = args[i];
+            try {
+                parsedInts[i] = Integer.parseInt(arg);
+            } catch(Exception e) {
+                p.sendMessage(Component.text(failMessages[i]).color(TextColor.color(255, 85, 85)));
+                return null;
+            }
+        }
+        return parsedInts;
+    }
+
+    private short[] parseShorts(String[] args, int start, int end, String[] failMessages, Player p) {
+        short[] parsedShorts = new short[end - start];
+        for (int i = start; i <= end; i++) {
+            if (args.length < i) continue;
+            String arg = args[i];
+            try {
+                parsedShorts[i] = Short.parseShort(arg);
+            } catch(Exception e) {
+                p.sendMessage(Component.text(failMessages[i]).color(TextColor.color(255, 85, 85)));
+                return null;
+            }
+        }
+        return parsedShorts;
+    }
+
 
 
 }
