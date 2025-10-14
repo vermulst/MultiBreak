@@ -28,7 +28,6 @@ public class MultiConfigTabCompleter implements TabCompleter {
             case 1 -> {
                 completions.add("apply");
                 completions.add("create");
-                completions.add("reload");
                 completions.add("delete");
                 completions.add("menu");
             }

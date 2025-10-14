@@ -39,12 +39,6 @@ public class MultiConfigCommand implements CommandExecutor {
                 case "create" -> {
                     return this.createConfig(p, args);
                 }
-                case "reload" -> {
-                    this.getPlugin().reloadConfig();
-                    this.getPlugin().getConfigManager().load(this.getPlugin().getConfig());
-                    p.sendMessage(Component.text("Config reloaded").color(TextColor.color(85, 255, 85)));
-                    return true;
-                }
                 case "delete" -> {
                     return this.deleteConfig(p, args);
                 }

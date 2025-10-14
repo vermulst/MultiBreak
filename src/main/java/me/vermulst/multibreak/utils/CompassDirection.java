@@ -1,4 +1,4 @@
-package me.vermulst.multibreak;
+package me.vermulst.multibreak.utils;
 
 import org.bukkit.Location;
 

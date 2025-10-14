@@ -1,14 +1,10 @@
 package me.vermulst.multibreak;
 
-import me.vermulst.multibreak.commands.MultiBreakCommand;
-import me.vermulst.multibreak.commands.MultiBreakTabCompleter;
-import me.vermulst.multibreak.commands.MultiConfigCommand;
-import me.vermulst.multibreak.commands.MultiConfigTabCompleter;
 import me.vermulst.multibreak.config.ConfigManager;
 import me.vermulst.multibreak.multibreak.BreakManager;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Material;
-import org.bukkit.command.PluginCommand;
+import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Arrays;
@@ -27,23 +23,24 @@ public final class Main extends JavaPlugin {
         int pluginId = 20516;
         new Metrics(this, pluginId);
 
+        // config
         this.configManager = new ConfigManager();
         if (this.getConfigManager().load(this.getConfig())) {
             this.saveConfig();
         }
 
-        BreakManager breakManager = new BreakManager(this);
-        this.getServer().getPluginManager().registerEvents(breakManager, this);
+        // events
+        Listener[] events = new Listener[] {
+                new BreakManager(this)
+        };
+        for (Listener event : events) {
+            this.getServer().getPluginManager().registerEvents(event, this);
+        }
 
-        //multibreak command
-        PluginCommand multibreakCommand = this.getServer().getPluginCommand("multibreak");
-        multibreakCommand.setExecutor(new MultiBreakCommand(this));
-        multibreakCommand.setTabCompleter(new MultiBreakTabCompleter());
-
-        //multiconfig command
-        PluginCommand multiconfigCommand = this.getServer().getPluginCommand("multiconfig");
-        multiconfigCommand.setExecutor(new MultiConfigCommand(this));
-        multiconfigCommand.setTabCompleter(new MultiConfigTabCompleter(this.getConfigManager()));
+        // commands
+        Commands commands = new Commands();
+        commands.init(this);
+        commands.register(this);
     }
 
     @Override

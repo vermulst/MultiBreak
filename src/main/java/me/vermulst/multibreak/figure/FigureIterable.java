@@ -37,7 +37,6 @@ public abstract class FigureIterable extends Figure {
         return vectors;
     }
 
-
     private double[] calculateBoundingBox(Collection<Vector> vectors) {
         double minX = Double.MAX_VALUE;
         double minY = Double.MAX_VALUE;

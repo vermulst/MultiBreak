@@ -1,6 +1,6 @@
 package me.vermulst.multibreak.figure;
 
-import me.vermulst.multibreak.CompassDirection;
+import me.vermulst.multibreak.utils.CompassDirection;
 import org.bukkit.util.Vector;
 
 public class VectorTransformer {

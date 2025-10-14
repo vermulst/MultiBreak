@@ -1,7 +1,7 @@
 package me.vermulst.multibreak.multibreak;
 
 import com.destroystokyo.paper.ParticleBuilder;
-import me.vermulst.multibreak.CompassDirection;
+import me.vermulst.multibreak.utils.CompassDirection;
 import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.Matrix4x4;
