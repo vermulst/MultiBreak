@@ -1,7 +1,6 @@
 package me.vermulst.multibreak.commands;
 
 import me.vermulst.multibreak.config.ConfigManager;
-import me.vermulst.multibreak.config.ConfigOption;
 import me.vermulst.multibreak.figure.types.FigureType;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -13,10 +12,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MultiConfigTabCompleter implements TabCompleter {
+public class MultiPresetTabCompleter implements TabCompleter {
 
     private final ConfigManager configManager;
-    public MultiConfigTabCompleter(ConfigManager configManager) {
+    public MultiPresetTabCompleter(ConfigManager configManager) {
         this.configManager = configManager;
     }
 

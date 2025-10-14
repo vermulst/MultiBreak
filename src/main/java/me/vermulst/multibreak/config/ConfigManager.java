@@ -23,6 +23,12 @@ public class ConfigManager {
     private final boolean[] options = new boolean[optionNames.length];
     private static final String[] optionNames = new String[]{"fair_mode", "legacy_mode"};
 
+    private static final String OLD_MATERIAL_PRESETS_PATH = "material_configs";
+    private static final String NEW_MATERIAL_PRESETS_PATH = "material_presets";
+
+    private static final String OLD_PRESETS_PATH = "config_options";
+    private static final String NEW_PRESETS_PATH = "presets";
+
     public Inventory getMenu() {
         Inventory inventory = Bukkit.createInventory(null, 54, Component.text("Configurations"));
         int index = 0;
@@ -41,17 +47,12 @@ public class ConfigManager {
     }
 
     public void save(FileConfiguration fileConfiguration) {
-        /*fileConfiguration.options().setHeader(List.of(
-                "legacy_mode: If enabled, old, more performance heavy logic will be used to detect block breaks, however might be more reliable if you see bugs.",
-                "fair_mode: If enabled, blocks that take longer to break than the source, will not be multibroken.",
-                "max_break_range: The maximum range (in blocks) from which a player can break blocks with multibreak. Only needed when increasing the block range attribute of a player.",
-                "ignored_materials: List of blocks ignored by multibreaks."
-        ));*/
-
         List<String>[] optionComments = new List[]{
                 List.of("If enabled, blocks that take longer to break than the source, will not be multibroken."),
                 List.of("", "If enabled, old, more performance heavy logic will be used to detect block breaks", "however might be more reliable if you see bugs.")
         };
+
+        /** Boolean options **/
         for (int i = 0; i < options.length; i++) {
             String optionName = optionNames[i];
             boolean option = options[i];
@@ -59,9 +60,11 @@ public class ConfigManager {
             fileConfiguration.setComments(optionName, optionComments[i]);
         }
 
+        /** Presets **/
+        fileConfiguration.set(OLD_PRESETS_PATH, null);
         for (Map.Entry<String, Figure> entry : this.getConfigOptions().entrySet()) {
             String name = entry.getKey();
-            String path = "config_options." + name;
+            String path = "presets." + name;
             String figurePath = path + ".figure.";
             Figure figure = entry.getValue();
             fileConfiguration.set(figurePath + "type", figure.getFigureType().name());
@@ -77,22 +80,42 @@ public class ConfigManager {
             fileConfiguration.set(figurePath + "height_offset", figure.getOffSetHeight());
             fileConfiguration.set(figurePath + "depth_offset", figure.getOffSetDepth());
         }
+
+        /** Material presets **/
+        fileConfiguration.set(OLD_MATERIAL_PRESETS_PATH, null);
         for (Map.Entry<Material, String> entry : materialOptions.entrySet()) {
-            fileConfiguration.set("material_configs." + entry.getKey().name(), entry.getValue());
+            fileConfiguration.set("material_presets." + entry.getKey().name(), entry.getValue());
         }
+
+        /** Ignored materials **/
         List<String> materialNames = new ArrayList<>(ignoredMaterials.size());
         ignoredMaterials.forEach(material -> materialNames.add(material.toString()));
-
         fileConfiguration.set("ignored_materials", materialNames);
         fileConfiguration.setComments("ignored_materials", List.of("", "List of blocks ignored by multibreaks."));
 
+        /** Max range **/
         fileConfiguration.set("max_break_range", this.maxRange);
         fileConfiguration.setComments("max_break_range",
                 List.of("", "The maximum range in blocks from which a player can break blocks with multibreak.",
                         "Needed when for example increasing the block range attribute of a player."));
     }
 
-    // first element is whether to save or not
+    /** Load the config from file
+     *
+     * @param fileConfiguration - config
+     * @return true if the config file needs to be saved (defaults were inserted)
+     */
+    public boolean load(FileConfiguration fileConfiguration) {
+        this.configOptions = new HashMap<>();
+        this.materialOptions = new HashMap<>();
+        boolean save1 = this.loadOptions(fileConfiguration);
+        this.loadPresets(fileConfiguration);
+        this.loadMaterialPresets(fileConfiguration);
+        boolean save2 = this.loadIgnoredMaterials(fileConfiguration);
+        boolean save3 = this.loadMaxRange(fileConfiguration);
+        return save1 || save2 || save3;
+    }
+
     public boolean loadOptions(FileConfiguration fileConfiguration) {
         boolean save = false;
         int index = 0;
@@ -109,51 +132,53 @@ public class ConfigManager {
         return save;
     }
 
-    public boolean load(FileConfiguration fileConfiguration) {
-        this.configOptions = new HashMap<>();
-        this.materialOptions = new HashMap<>();
-        boolean save1 = this.loadOptions(fileConfiguration);
-        this.loadMultiConfigs(fileConfiguration);
-        this.loadMaterialConfigs(fileConfiguration);
-        boolean save2 = this.loadIgnoredMaterials(fileConfiguration);
-        boolean save3 = this.loadMaxRange(fileConfiguration);
-        return save1 || save2 || save3;
-    }
+    private void loadPresets(FileConfiguration fileConfiguration) {
+        String path = null;
+        if (fileConfiguration.getKeys(false).contains(NEW_PRESETS_PATH)) {
+            path = NEW_PRESETS_PATH;
+        } else if (fileConfiguration.getKeys(false).contains(OLD_PRESETS_PATH)) {
+            path = OLD_PRESETS_PATH;
+        }
+        if (path == null) return;
 
-    private void loadMultiConfigs(FileConfiguration fileConfiguration) {
-        if (fileConfiguration.getKeys(false).contains("config_options")) {
-            ConfigurationSection section = fileConfiguration.getConfigurationSection("config_options");
-            for (String name : section.getKeys(false)) {
-                ConfigurationSection section1 = section.getConfigurationSection(name).getConfigurationSection("figure");
-                if (section1 == null) continue;
-                FigureType figureType = FigureType.valueOf(section1.getString("type"));
-                int width = section1.getInt("width");
-                int height = section1.getInt("height");
-                int depth = section1.getInt("depth");
+        ConfigurationSection section = fileConfiguration.getConfigurationSection(path);
+        for (String name : section.getKeys(false)) {
+            ConfigurationSection section1 = section.getConfigurationSection(name).getConfigurationSection("figure");
+            if (section1 == null) continue;
+            FigureType figureType = FigureType.valueOf(section1.getString("type"));
+            int width = section1.getInt("width");
+            int height = section1.getInt("height");
+            int depth = section1.getInt("depth");
 
-                short width_rotation = (short) section1.getInt("width_rotation");
-                short height_rotation = (short) section1.getInt("height_rotation");
-                short depth_rotation = (short) section1.getInt("depth_rotation");
+            short width_rotation = (short) section1.getInt("width_rotation");
+            short height_rotation = (short) section1.getInt("height_rotation");
+            short depth_rotation = (short) section1.getInt("depth_rotation");
 
-                int width_offset = section1.getInt("width_offset");
-                int height_offset = section1.getInt("height_offset");
-                int depth_offset = section1.getInt("depth_offset");
-                Figure figure = figureType.build(width, height, depth);
-                figure.setRotations(width_rotation, height_rotation, depth_rotation);
-                figure.setOffsets(width_offset, height_offset, depth_offset);
-                this.getConfigOptions().put(name, figure);
-            }
+            int width_offset = section1.getInt("width_offset");
+            int height_offset = section1.getInt("height_offset");
+            int depth_offset = section1.getInt("depth_offset");
+            Figure figure = figureType.build(width, height, depth);
+            figure.setRotations(width_rotation, height_rotation, depth_rotation);
+            figure.setOffsets(width_offset, height_offset, depth_offset);
+            this.getConfigOptions().put(name, figure);
         }
     }
 
-    private void loadMaterialConfigs(FileConfiguration fileConfiguration) {
-        if (fileConfiguration.getKeys(false).contains("material_configs")) {
-            ConfigurationSection section = fileConfiguration.getConfigurationSection("material_configs");
-            for (String itemtype : section.getKeys(false)) {
-                String configOption = section.getString(itemtype);
-                Material material = Material.valueOf(itemtype);
-                this.getMaterialOptions().put(material, configOption);
-            }
+    private void loadMaterialPresets(FileConfiguration fileConfiguration) {
+        String path = null;
+
+        if (fileConfiguration.getKeys(false).contains(NEW_MATERIAL_PRESETS_PATH)) {
+            path = NEW_MATERIAL_PRESETS_PATH;
+        } else if (fileConfiguration.getKeys(false).contains(OLD_MATERIAL_PRESETS_PATH)) {
+            path = OLD_MATERIAL_PRESETS_PATH;
+        }
+        if (path == null) return;
+        ConfigurationSection section = fileConfiguration.getConfigurationSection(path);
+        if (section == null) return;
+        for (String itemtype : section.getKeys(false)) {
+            String configOption = section.getString(itemtype);
+            Material material = Material.valueOf(itemtype);
+            this.getMaterialOptions().put(material, configOption);
         }
     }
 
@@ -185,7 +210,14 @@ public class ConfigManager {
 
     public void updateDeleteConfig(FileConfiguration fileConfiguration, String name) {
         fileConfiguration.set("config_options." + name, null);
-        ConfigurationSection section = fileConfiguration.getConfigurationSection("material_configs");
+        String path = null;
+        if (fileConfiguration.getKeys(false).contains(NEW_MATERIAL_PRESETS_PATH)) {
+            path = NEW_MATERIAL_PRESETS_PATH;
+        } else if (fileConfiguration.getKeys(false).contains(OLD_MATERIAL_PRESETS_PATH)) {
+            path = OLD_MATERIAL_PRESETS_PATH;
+        }
+        if (path == null) return;
+        ConfigurationSection section = fileConfiguration.getConfigurationSection(path);
         if (section == null) return;
         for (String materialName : section.getKeys(false)) {
             if (name.equals(section.get(materialName))) {

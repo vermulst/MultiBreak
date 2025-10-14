@@ -17,8 +17,8 @@ public class Commands {
         commands.put("multibreak", new MultiBreakCommand(plugin));
         tabCompleters.put("multibreak", new MultiBreakTabCompleter());
 
-        commands.put("multiconfig", new MultiConfigCommand(plugin));
-        tabCompleters.put("multiconfig", new MultiConfigTabCompleter(plugin.getConfigManager()));
+        commands.put("multipreset", new MultiPresetCommand(plugin));
+        tabCompleters.put("multipreset", new MultiPresetTabCompleter(plugin.getConfigManager()));
 
         commands.put("multireload", new MultiReloadCommand(plugin));
         tabCompleters.put("multireload", new NullTabCompleter());

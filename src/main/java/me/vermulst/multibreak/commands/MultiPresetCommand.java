@@ -18,10 +18,10 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 
-public class MultiConfigCommand implements CommandExecutor {
+public class MultiPresetCommand implements CommandExecutor {
 
     private final Main plugin;
-    public MultiConfigCommand(Main plugin) {
+    public MultiPresetCommand(Main plugin) {
         this.plugin = plugin;
     }
 
@@ -118,7 +118,7 @@ public class MultiConfigCommand implements CommandExecutor {
 
     public boolean applyConfig(@NotNull Player p, @NotNull String[] args) {
         if (args.length < 2) {
-            p.sendMessage(Component.text("That config does not exist").color(TextColor.color(255, 85, 85)));
+            p.sendMessage(Component.text("That preset does not exist").color(TextColor.color(255, 85, 85)));
             return true;
         }
         String configOptionName = args[1];
