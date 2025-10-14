@@ -10,8 +10,12 @@ commands:
     description: multi break
     usage: /multibreak
     permission: multibreak.admin
-  multiconfig:
+  multipreset:
     description: create a multibreak config to apply fast
     usage: /multiconfig
     permission: multibreak.admin
     aliases: [multiconfiguration]
+  multireload:
+    description: reload the multibreak config
+    usage: /multireload
+    permission: multibreak.admin

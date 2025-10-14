@@ -209,7 +209,8 @@ public class ConfigManager {
     }
 
     public void updateDeleteConfig(FileConfiguration fileConfiguration, String name) {
-        fileConfiguration.set("config_options." + name, null);
+        fileConfiguration.set(OLD_PRESETS_PATH + "." + name, null);
+        fileConfiguration.set(NEW_PRESETS_PATH + "." + name, null);
         String path = null;
         if (fileConfiguration.getKeys(false).contains(NEW_MATERIAL_PRESETS_PATH)) {
             path = NEW_MATERIAL_PRESETS_PATH;
@@ -225,10 +226,6 @@ public class ConfigManager {
                 this.getMaterialOptions().remove(Material.valueOf(materialName));
             }
         }
-    }
-
-    public void updateDeleteMaterial(FileConfiguration fileConfiguration, Material material) {
-        fileConfiguration.set("material_configs." + material.name(), null);
     }
 
     public Map<String, Figure> getConfigOptions() {
