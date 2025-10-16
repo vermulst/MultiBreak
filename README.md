@@ -1,7 +1,9 @@
 
 # Releases
 [**Spigot**](https://www.spigotmc.org/resources/multibreak-1-18-1-20.113810/)
+
 [**Paper**](https://hangar.papermc.io/vermulst/MultiBreak)
+
 [**Modrinth**](https://modrinth.com/plugin/multibreak)
 
 # API usage
