@@ -208,7 +208,7 @@ public class ConfigManager {
         return false;
     }
 
-    public void updateDeleteConfig(FileConfiguration fileConfiguration, String name) {
+    public void updateDeletePreset(FileConfiguration fileConfiguration, String name) {
         fileConfiguration.set(OLD_PRESETS_PATH + "." + name, null);
         fileConfiguration.set(NEW_PRESETS_PATH + "." + name, null);
         String path = null;

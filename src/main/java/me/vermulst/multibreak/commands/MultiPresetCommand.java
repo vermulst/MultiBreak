@@ -34,13 +34,13 @@ public class MultiPresetCommand implements CommandExecutor {
             String option = args[0];
             switch (option) {
                 case "apply" -> {
-                    return this.applyConfig(p, args);
+                    return this.applyPreset(p, args);
                 }
                 case "create" -> {
-                    return this.createConfig(p, args);
+                    return this.createPreset(p, args);
                 }
                 case "delete" -> {
-                    return this.deleteConfig(p, args);
+                    return this.deletePreset(p, args);
                 }
                 case "menu" -> {
                     return this.openMenu(p);
@@ -59,27 +59,27 @@ public class MultiPresetCommand implements CommandExecutor {
         return true;
     }
 
-    public boolean deleteConfig(@NotNull Player p, @NotNull String[] args) {
+    public boolean deletePreset(@NotNull Player p, @NotNull String[] args) {
         if (args.length < 2) {
-            p.sendMessage(Component.text("Enter a config name").color(TextColor.color(255, 85, 85)));
+            p.sendMessage(Component.text("Enter a preset name").color(TextColor.color(255, 85, 85)));
             return true;
         }
-        String configName = args[1];
-        Figure figure = this.getConfigManager().getConfigOptions().get(configName);
-        this.getConfigManager().getConfigOptions().remove(configName);
-        FigureMessages.sendDeleteMessage(p, figure, configName);
+        String presetName = args[1];
+        Figure figure = this.getConfigManager().getConfigOptions().get(presetName);
+        this.getConfigManager().getConfigOptions().remove(presetName);
+        FigureMessages.sendDeleteMessage(p, figure, presetName);
         p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1f);
-        this.getPlugin().getConfigManager().updateDeleteConfig(this.getPlugin().getConfig(), configName);
+        this.getPlugin().getConfigManager().updateDeletePreset(this.getPlugin().getConfig(), presetName);
         this.getPlugin().saveConfig();
         return true;
     }
 
-    public boolean createConfig(@NotNull Player p, @NotNull String[] args) {
+    public boolean createPreset(@NotNull Player p, @NotNull String[] args) {
         if (args.length < 2) {
-            p.sendMessage(Component.text("Enter a config name").color(TextColor.color(255, 85, 85)));
+            p.sendMessage(Component.text("Enter a preset name").color(TextColor.color(255, 85, 85)));
             return true;
         }
-        String configName = args[1];
+        String presetName = args[1];
         if (args.length < 3) {
             return this.enterValidOption(p);
         }
@@ -107,8 +107,8 @@ public class MultiPresetCommand implements CommandExecutor {
         figure.setRotations((short) rotations[0], (short) rotations[1], (short) rotations[2]);
         figure.setOffsets(offsets[0], offsets[1], offsets[2]);
 
-        this.getConfigManager().getConfigOptions().put(configName, figure);
-        FigureMessages.sendCreateMessage(p, figure, configName);
+        this.getConfigManager().getConfigOptions().put(presetName, figure);
+        FigureMessages.sendCreateMessage(p, figure, presetName);
         p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1f);
         this.getPlugin().getConfigManager().save(this.getPlugin().getConfig());
         this.getPlugin().saveConfig();
@@ -116,7 +116,7 @@ public class MultiPresetCommand implements CommandExecutor {
     }
 
 
-    public boolean applyConfig(@NotNull Player p, @NotNull String[] args) {
+    public boolean applyPreset(@NotNull Player p, @NotNull String[] args) {
         if (args.length < 2) {
             p.sendMessage(Component.text("That preset does not exist").color(TextColor.color(255, 85, 85)));
             return true;
@@ -127,11 +127,10 @@ public class MultiPresetCommand implements CommandExecutor {
         }
         String applyTo = args[2];
         Figure figure = this.getConfigManager().getConfigOptions().get(configOptionName);
-        FigureItemDataType.FigureItemInfo figureItemInfo = new FigureItemDataType.FigureItemInfo(figure);
         FigureItemDataType figureItemDataType = new FigureItemDataType(this.getPlugin());
         if ("holding".equals(applyTo)) {
             ItemStack item = p.getInventory().getItemInMainHand();
-            item = figureItemDataType.set(item, figureItemInfo);
+            item = figureItemDataType.set(item, figure);
             p.getInventory().setItemInMainHand(item);
             FigureMessages.sendApplyMessage(p, figure, false, item.getType());
             p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1f);

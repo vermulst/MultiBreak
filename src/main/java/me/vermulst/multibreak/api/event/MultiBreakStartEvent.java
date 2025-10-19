@@ -1,4 +1,4 @@
-package me.vermulst.multibreak.multibreak.event;
+package me.vermulst.multibreak.api.event;
 
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.multibreak.MultiBlock;

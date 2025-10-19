@@ -4,8 +4,8 @@ import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.config.ConfigManager;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.item.FigureItemDataType;
-import me.vermulst.multibreak.multibreak.event.MultiBreakEndEvent;
-import me.vermulst.multibreak.multibreak.event.MultiBreakStartEvent;
+import me.vermulst.multibreak.api.event.MultiBreakEndEvent;
+import me.vermulst.multibreak.api.event.MultiBreakStartEvent;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -137,23 +137,18 @@ public class BreakManager implements Listener {
 
     public Figure getFigure(ItemStack tool) {
         if (tool.getItemMeta() == null) return null;
-        FigureItemDataType.FigureItemInfo figureItemInfo = this.getFigureItemInfo(tool);
-        if (figureItemInfo == null) {
-            Material material = tool.getType();
-            ConfigManager configManager = this.getPlugin().getConfigManager();
-            if (configManager.getMaterialOptions().containsKey(material)) {
-                String configOptionName = configManager.getMaterialOptions().get(material);
-                return configManager.getConfigOptions().get(configOptionName);
-            }
-            return null;
-        } else {
-            return figureItemInfo.figure();
-        }
-    }
-
-    public FigureItemDataType.FigureItemInfo getFigureItemInfo(ItemStack item) {
         FigureItemDataType figureItemDataType = new FigureItemDataType(this.getPlugin());
-        return figureItemDataType.get(item);
+        Figure figure = figureItemDataType.get(tool);
+        if (figure != null) return figure;
+
+        // Fallback on material figures
+        Material material = tool.getType();
+        ConfigManager configManager = this.getPlugin().getConfigManager();
+        if (configManager.getMaterialOptions().containsKey(material)) {
+            String configOptionName = configManager.getMaterialOptions().get(material);
+            return configManager.getConfigOptions().get(configOptionName);
+        }
+        return null;
     }
 
     public Block getTargetBlock(Player p) {

@@ -1,5 +1,6 @@
 package me.vermulst.multibreak;
 
+import me.vermulst.multibreak.api.MultiBreakAPI;
 import me.vermulst.multibreak.config.ConfigManager;
 import me.vermulst.multibreak.multibreak.BreakManager;
 import org.bstats.bukkit.Metrics;
@@ -19,9 +20,11 @@ public final class Main extends JavaPlugin {
 
     @Override
     public void onEnable() {
-
+        // bStats
         int pluginId = 20516;
         new Metrics(this, pluginId);
+
+        MultiBreakAPI.init(this);
 
         // config
         this.configManager = new ConfigManager();

@@ -19,6 +19,7 @@ public class MultiBreakTabCompleter implements TabCompleter {
                 for (FigureType figureType : FigureType.values()) {
                     completions.add(figureType.name());
                 }
+                completions.add("remove");
             }
             case 2 -> {
                 completions.add("Width");
