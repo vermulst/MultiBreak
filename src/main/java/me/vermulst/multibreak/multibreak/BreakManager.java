@@ -27,7 +27,6 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Level;
 
 public class BreakManager implements Listener {
 
@@ -80,9 +79,10 @@ public class BreakManager implements Listener {
         Player p = e.getPlayer();
         MultiBreak multiBreak = this.getMultiBreak(p);
         Block block = e.getBlock();
-        // Mismatch
+
+        // Mismatch (player switched to an instamine-block while breaking)
         if (!block.equals(multiBreak.getBlock())) {
-            multiBreak = this.getMultiBreak(p, block);
+            multiBreak = this.initMultiBreak(p, block);
         }
         MultiBreakEndEvent event = new MultiBreakEndEvent(p, multiBreak, true);
         event.callEvent();
@@ -132,10 +132,10 @@ public class BreakManager implements Listener {
             }
         }
         Block blockMining = this.getTargetBlock(p);
-        return this.getMultiBreak(p, blockMining);
+        return this.initMultiBreak(p, blockMining);
     }
 
-    public MultiBreak getMultiBreak(Player p, Block block) {
+    public MultiBreak initMultiBreak(Player p, Block block) {
         ItemStack tool = p.getInventory().getItemInMainHand();
         Figure figure = this.getFigure(tool);
         BlockFace blockFace = this.getBlockFace(p);
@@ -173,27 +173,6 @@ public class BreakManager implements Listener {
 
     public BlockFace getBlockFace(Player p) {
         return p.getTargetBlockFace(plugin.getConfigManager().getMaxRange());
-    }
-
-    public Block getTargetBlockManual(Player p) {
-        int maxRange = plugin.getConfigManager().getMaxRange();
-        Location loc = p.getEyeLocation();
-        Vector direction = loc.getDirection();
-        double step = 0.05; // Small step for higher precision
-
-        // Iterate small steps along the direction vector
-        for (double i = 0; i < maxRange; i += step) {
-            Vector dirClone = direction.clone();
-            dirClone.multiply(i);
-            Location checkLoc = loc.clone().add(dirClone);
-            Block block = checkLoc.getBlock();
-
-            // Check if the block is solid (not air, not liquid)
-            if (block.getType().isSolid() && block.getType() != Material.WATER && block.getType() != Material.LAVA) {
-                return block; // Return the first solid block found
-            }
-        }
-        return null; // If nothing is hit within max range
     }
 
     public Main getPlugin() {
