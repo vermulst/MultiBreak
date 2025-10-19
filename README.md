@@ -4,6 +4,8 @@
 
 [**Paper**](https://hangar.papermc.io/vermulst/MultiBreak)
 
+[**Modrinth**](https://modrinth.com/plugin/multibreak)
+
 # API usage
 
 ## Maven
