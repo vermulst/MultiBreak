@@ -17,9 +17,16 @@ public final class Main extends JavaPlugin {
 
     private ConfigManager configManager;
     private final Set<Material> nonOccluding = Arrays.stream(Material.values()).filter(material -> !material.isOccluding()).collect(Collectors.toSet());
+    private static Main INSTANCE;
+
+    public static Main getInstance() {
+        return INSTANCE;
+    }
 
     @Override
     public void onEnable() {
+        INSTANCE = this;
+
         // bStats
         int pluginId = 20516;
         new Metrics(this, pluginId);

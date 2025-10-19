@@ -19,6 +19,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import java.util.*;
+import java.util.logging.Level;
 
 public class MultiBreak {
 
@@ -26,8 +27,8 @@ public class MultiBreak {
     private final Block block;
     private final Vector playerDirection;
     private int progressTicks;
+    private float progressBroken;
     private List<MultiBlock> multiBlocks = new ArrayList<>();
-    private final float destroySpeed;
     private boolean ended = false;
     private final boolean fair_mode;
     private final EnumSet<Material> ignoredMaterials;
@@ -41,8 +42,9 @@ public class MultiBreak {
         this.ignoredMaterials = ignoredMaterials;
         this.initBlocks(figure, playerDirection);
         float breakSpeed = this.getBlock().getBreakSpeed(this.getPlayer());
+        float destroySpeed = 0.000001f + (1 / breakSpeed);
+        this.progressBroken = ((float) 1) / destroySpeed;
         this.checkValid(breakSpeed);
-        this.destroySpeed = 0.000001f + (1 / breakSpeed);
     }
 
     public void setFigure(Figure figure) {
@@ -168,13 +170,15 @@ public class MultiBreak {
     }
 
     public void updateBlockAnimationPacket() {
-        float stage = ((float) this.getProgressTicks() / this.getDestroySpeed());
-        stage = Math.min(stage, 1);
-        stage = Math.max(stage, 0);
+        float breakSpeed = this.getBlock().getBreakSpeed(this.getPlayer());
+        float destroySpeed = 0.000001f + (1 / breakSpeed);
+        this.progressBroken += ((float) 1) / destroySpeed;
+        this.progressBroken = Math.min(this.progressBroken, 1);
+        this.progressBroken = Math.max(this.progressBroken, 0);
         for (MultiBlock multiBlock : this.getMultiBlocks()) {
             if (multiBlock.getBlock().equals(this.getBlock())) continue;
             if (!multiBlock.isVisible()) continue;
-            multiBlock.writeStage(this.getPlayer(), stage);
+            multiBlock.writeStage(this.getPlayer(), this.progressBroken);
         }
     }
 
@@ -220,10 +224,6 @@ public class MultiBreak {
         return blocks;
     }
 
-    public float getDestroySpeed() {
-        return destroySpeed;
-    }
-
     public boolean hasEnded() {
         return ended;
     }
@@ -236,7 +236,6 @@ public class MultiBreak {
                 ", playerDirection=" + playerDirection +
                 ", progressTicks=" + progressTicks +
                 ", multiBlocks=" + multiBlocks +
-                ", destroySpeed=" + destroySpeed +
                 ", ended=" + ended +
                 '}';
     }
