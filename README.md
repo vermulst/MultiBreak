@@ -39,12 +39,28 @@ dependencies {
 }
 ```
 
-## Example use
+## Events
 ```java
+
+@EventHandler
+public void multiBreakAllow(MultiBreakAllowEvent e) {
+	if (Material.IRON_PICKAXE.equals(e.getItem().getType()) {
+		e.setAllowed(true);
+		// Now all iron pickaxes will call the MultiBreakStartEvent
+	}
+}
+
 @EventHandler
 public void multiBreakStart(MultiBreakStartEvent e) {
-	FigureCircle figureCircle = new FigureCircle(10, 10, 3);
-	e.setFigure(figureCircle);
+	Figure figure = new FigureLinear(3, 3, 1);
+	e.setFigure(figure);
+
+	// replaces list in the config
+	e.includeOnly(EnumSet.of(Material.GRASS_BLOCK, Material.STONE, Material.DIRT));
+
+	// add to list in the config
+	e.exclude(Material.DIRT)
+
 	List<Block> blocks = e.getBlocks(); // get all of the blocks within the elipsoid
 }
 
@@ -57,6 +73,25 @@ public void multiBreakEnd(MultiBreakEndEvent e) {
 		p.sendMessage("Aborted breaking multiple blocks");
 	}
 	List<Block> blocks = e.getBlocks(); // get all of the blocks within the multibreak
+}
+```
+
+## Item data types
+
+```java
+
+public void giveItem() {
+	.
+	.
+	// no need to use "e.setFigure(figure)" when applied to an itemstack
+	MultiBreakAPI.setFigure(@NotNull ItemStack itemStack, @NotNull Figure figure)
+
+	if (!MultiBreakAPI.hasFigure(@NotNull ItemStack itemStack)) return;
+	Figure figure = MultiBreakAPI.getFigure(@NotNull ItemStack itemStack)
+	figure.getWidth();
+	// use for whatever you want (e.g. lore)
+	.
+	.
 }
 ```
 
