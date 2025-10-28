@@ -39,9 +39,6 @@ dependencies {
 }
 ```
 
-# API
-
-
 ## Events
 ```java
 
