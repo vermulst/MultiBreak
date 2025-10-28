@@ -50,9 +50,6 @@ public void multiBreakAllow(MultiBreakAllowEvent e) {
 	}
 }
 
-
-
-
 @EventHandler
 public void multiBreakStart(MultiBreakStartEvent e) {
 	Figure figure = new FigureLinear(3, 3, 1);
