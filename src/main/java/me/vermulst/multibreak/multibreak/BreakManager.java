@@ -17,17 +17,12 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageAbortEvent;
 import org.bukkit.event.block.BlockDamageEvent;
-import org.bukkit.event.player.PlayerAnimationEvent;
-import org.bukkit.event.player.PlayerAnimationType;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.util.Vector;
 
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Level;
 
 public class BreakManager implements Listener {
 
@@ -40,7 +35,6 @@ public class BreakManager implements Listener {
         this.plugin = plugin;
     }
 
-    /** Modern entry point */
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void multiBreakStart(BlockDamageEvent e) {
