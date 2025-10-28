@@ -14,7 +14,6 @@ commands:
     description: create a multibreak config to apply fast
     usage: /multiconfig
     permission: multibreak.admin
-    aliases: [multiconfiguration]
   multireload:
     description: reload the multibreak config
     usage: /multireload

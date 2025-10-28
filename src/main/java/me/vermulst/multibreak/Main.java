@@ -2,11 +2,14 @@ package me.vermulst.multibreak;
 
 import me.vermulst.multibreak.api.MultiBreakAPI;
 import me.vermulst.multibreak.config.ConfigManager;
+import me.vermulst.multibreak.figure.FigureIterable;
+import me.vermulst.multibreak.figure.types.FigureType;
 import me.vermulst.multibreak.multibreak.BreakManager;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Material;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.Vector;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -38,6 +41,7 @@ public final class Main extends JavaPlugin {
         if (this.getConfigManager().load(this.getConfig())) {
             this.saveConfig();
         }
+
 
         // events
         Listener[] events = new Listener[] {
