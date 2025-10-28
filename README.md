@@ -86,14 +86,19 @@ public void multiBreakEnd(MultiBreakEndEvent e) {
 
 ```java
 
-// no need to use "e.setFigure(figure)" when applied to an itemstack
-MultiBreakAPI.setFigure(@NotNull ItemStack itemStack, @NotNull Figure figure)
+public void giveItem() {
+	.
+	.
+	// no need to use "e.setFigure(figure)" when applied to an itemstack
+	MultiBreakAPI.setFigure(@NotNull ItemStack itemStack, @NotNull Figure figure)
 
-
-MultiBreakAPI.hasFigure(@NotNull ItemStack itemStack)
-Figure figure = MultiBreakAPI.getFigure(@NotNull ItemStack itemStack)
-figure.getWidth();
-// use for whatever you want (e.g. lore)
+	if (!MultiBreakAPI.hasFigure(@NotNull ItemStack itemStack)) return;
+	Figure figure = MultiBreakAPI.getFigure(@NotNull ItemStack itemStack)
+	figure.getWidth();
+	// use for whatever you want (e.g. lore)
+	.
+	.
+}
 ```
 
 [![](https://jitpack.io/v/vermulst/MultiBreak.svg)](https://jitpack.io/#vermulst/MultiBreak)
