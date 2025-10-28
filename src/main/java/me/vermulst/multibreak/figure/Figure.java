@@ -6,11 +6,10 @@ import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.Material;
 import org.bukkit.util.Vector;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public abstract class Figure {
 
@@ -34,6 +33,26 @@ public abstract class Figure {
 
     public abstract Set<Vector> getVectors(boolean rotated);
     public abstract FigureType getFigureType();
+
+
+
+    public Set<Vector> applyRotation(Set<Vector> vectors, Figure figure) {
+        HashSet<Vector> rotatedVectors = new HashSet<>();
+        Matrix4x4 rotationMatrix = new Matrix4x4();
+        rotationMatrix.setRotationX(figure.getRotationWidth() * (Math.PI / 180));
+        rotationMatrix.setRotationY(figure.getRotationHeight() * (Math.PI / 180));
+        rotationMatrix.setRotationZ(figure.getRotationDepth() * (Math.PI / 180));
+
+        for (Vector vector : vectors) {
+            rotationMatrix.transform(vector);
+            vector.setX(Math.round(vector.getX()));
+            vector.setY(Math.round(vector.getY()));
+            vector.setZ(Math.round(vector.getZ()));
+            rotatedVectors.add(new Vector(Math.round(vector.getX()), Math.round(vector.getY()), Math.round(vector.getZ())));
+        }
+        return rotatedVectors;
+    }
+
 
 
     public void setOffsets(int offSetWidth, int offSetHeight, int offSetDepth) {
@@ -141,4 +160,5 @@ public abstract class Figure {
     public short getRotationDepth() {
         return rotationDepth;
     }
+
 }

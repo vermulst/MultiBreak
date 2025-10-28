@@ -1,6 +1,8 @@
 package me.vermulst.multibreak.figure.types;
 
 import me.vermulst.multibreak.figure.Figure;
+import me.vermulst.multibreak.figure.FigureIterable;
+import org.bukkit.block.Block;
 import org.bukkit.util.Vector;
 
 import java.util.HashSet;
