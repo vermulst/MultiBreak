@@ -26,10 +26,9 @@ public class ConfigManager {
     private int fairModeTicksLeeway = 1;
 
     private final boolean[] options = new boolean[] {
-            false,  // legacy mode
             true // fair mode
     };
-    private static final String[] optionNames = new String[]{"legacy_mode", "fair_mode"};
+    private static final String[] optionNames = new String[]{"fair_mode"};
 
     private static final String OLD_MATERIAL_PRESETS_PATH = "material_configs";
     private static final String NEW_MATERIAL_PRESETS_PATH = "material_presets";
@@ -56,8 +55,7 @@ public class ConfigManager {
 
     public void save(FileConfiguration fileConfiguration) {
         List<String>[] optionComments = new List[]{
-                List.of("If enabled, blocks that take longer to break than the source, will not be multibroken."),
-                List.of("", "If enabled, old, more performance heavy logic will be used to detect block breaks", "however might be more reliable if you see bugs.")
+                List.of("If enabled, blocks that take longer to break than the source, will not be multibroken.")
         };
 
         /** Boolean options **/
@@ -137,7 +135,9 @@ public class ConfigManager {
         save = save || this.loadIgnoredMaterials(fileConfiguration);
         save = save || this.loadMaxRange(fileConfiguration);
         save = save || this.loadFairModeLeeway(fileConfiguration);
-        if (save) this.save(fileConfiguration);
+        if (save) {
+            this.save(fileConfiguration);
+        }
         return save;
     }
 

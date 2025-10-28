@@ -1,6 +1,7 @@
 package me.vermulst.multibreak.multibreak;
 
 import me.vermulst.multibreak.Main;
+import me.vermulst.multibreak.api.event.MultiBreakAllowEvent;
 import me.vermulst.multibreak.config.ConfigManager;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.item.FigureItemDataType;
@@ -39,42 +40,25 @@ public class BreakManager implements Listener {
         this.plugin = plugin;
     }
 
-    /** Legacy entry point */
-
-
-    @Deprecated
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void armSwingEvent(PlayerAnimationEvent e) {
-        boolean legacy_mode = plugin.getConfigManager().getOptions()[0];
-        if (!legacy_mode) return;
-        if (!e.getAnimationType().equals(PlayerAnimationType.ARM_SWING)) return;
-        Player p = e.getPlayer();
-        if (p.getGameMode().equals(GameMode.CREATIVE)) return;
-        MultiBreak multiBreak = getOrCreateMultiBreak(p);
-        if (multiBreak == null) return;
-        Block blockMining = this.getTargetBlock(p);
-        if (blockMining == null) return;
-        multiBreak.tick(this.getPlugin(), blockMining);
-    }
-
     /** Modern entry point */
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void multiBreakStart(BlockDamageEvent e) {
-        boolean legacy_mode = plugin.getConfigManager().getOptions()[0];
-        if (legacy_mode) return;
+        Player p = e.getPlayer();
+        boolean allowed = this.hasFigure(e.getItemInHand());
+        MultiBreakAllowEvent multiBreakAllowEvent = new MultiBreakAllowEvent(allowed, p, e.getItemInHand(), e.getBlock());
+        multiBreakAllowEvent.callEvent();
+        if (!multiBreakAllowEvent.isAllowed()) return;
         this.scheduleMultiBreak(e.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void multiBreakStop(BlockDamageAbortEvent e) {
-        boolean legacy_mode = plugin.getConfigManager().getOptions()[0];
-        if (legacy_mode) return;
         Player p = e.getPlayer();
         MultiBreak multiBreak = this.getOrCreateMultiBreak(p);
+        if (multiBreak == null) return;
         MultiBreakEndEvent event = new MultiBreakEndEvent(p, multiBreak, false);
         event.callEvent();
-        if (multiBreak == null) return;
         this.endMultiBreak(p, multiBreak, false);
     }
 
@@ -116,43 +100,10 @@ public class BreakManager implements Listener {
      * @param p - player breaking
      */
     public void scheduleMultiBreak(Player p) {
-        int taskID = new BukkitRunnable() {
-            @Override
-            public void run() {
-                MultiBreak multiBreak = getOrCreateMultiBreak(p);
-                if (multiBreak == null) return;
-
-                // check if direction changed
-                BlockFace blockFace = getBlockFace(p);
-                if (blockFace == null) {
-                    cancel();
-                    return;
-                }
-                Vector direction = blockFace.getDirection();
-                if (!multiBreak.getPlayerDirection().equals(direction)) {
-                    multiBreak = replaceMultiBreak(p, multiBreak);
-                    scheduleMultiBreak(p);
-                }
-                multiBreak.tick();
-            }
-        }.runTaskTimer(getPlugin(), 1, 1).getTaskId();
+        Block block = this.getTargetBlock(p);
+        MultiBreakRunnable multiBreakRunnable = new MultiBreakRunnable(block, p, this);
+        int taskID = multiBreakRunnable.runTaskTimer(getPlugin(), 1, 1).getTaskId();
         getMultiBreakTask().put(p.getUniqueId(), taskID);
-    }
-
-    /** Replaces multibreak while preserving progress
-     *
-     * @param p - player breaking
-     * @param multiBreak - multibreak to replaced
-     * @return replaced multibreak
-     */
-    public MultiBreak replaceMultiBreak(Player p, MultiBreak multiBreak) {
-        endMultiBreak(p, multiBreak, false);
-        float progressBroken = multiBreak.getProgressBroken();
-        int progressTicks = multiBreak.getProgressTicks();
-        multiBreak = getOrCreateMultiBreak(p);
-        multiBreak.setProgressBroken(progressBroken);
-        multiBreak.setProgressTicks(progressTicks);
-        return multiBreak;
     }
 
 
@@ -187,9 +138,12 @@ public class BreakManager implements Listener {
         MultiBreak multiBreak = new MultiBreak(p, block, figure, blockFace.getDirection());
         MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, block, blockFace.getDirection(), includedMaterials, ignoredMaterials);
         if (!event.callEvent()) return null;
+        includedMaterials = event.getIncludedMaterials();
+        ignoredMaterials = event.getExcludedMaterials();
         multiBreak = event.getMultiBreak();
+        if (!multiBreak.isValid(includedMaterials, ignoredMaterials)) return null;
         float breakSpeed = multiBreak.getBlock().getBreakSpeed(p);
-        multiBreak.checkValid(breakSpeed, event.getIncludedMaterials(), event.getExcludedMaterials());
+        multiBreak.checkValid(breakSpeed, includedMaterials, ignoredMaterials);
         multiBlockMap.put(p.getUniqueId(), multiBreak);
         return multiBreak;
     }
@@ -214,6 +168,16 @@ public class BreakManager implements Listener {
             return configManager.getConfigOptions().get(configOptionName);
         }
         return null;
+    }
+
+    public boolean hasFigure(ItemStack tool) {
+        if (tool.getItemMeta() == null) return false;
+        FigureItemDataType figureItemDataType = new FigureItemDataType(this.getPlugin());
+        boolean toolHasMultibreak = figureItemDataType.has(tool);
+        Material material = tool.getType();
+        ConfigManager configManager = this.getPlugin().getConfigManager();
+        boolean materialHasMultibreak = configManager.getMaterialOptions().containsKey(material);
+        return toolHasMultibreak || materialHasMultibreak;
     }
 
     public Block getTargetBlock(Player p) {

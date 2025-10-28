@@ -48,6 +48,17 @@ public class MultiBreak {
         this.initBlocks(figure, this.playerDirection);
     }
 
+    public boolean isValid(EnumSet<Material> includedMaterials, EnumSet<Material> excludedMaterials) {
+        Material mainBlockType = this.getBlock().getType();
+        if (includedMaterials != null && !includedMaterials.isEmpty() && !includedMaterials.contains(mainBlockType)) {
+            return false;
+        }
+        if (excludedMaterials != null && !excludedMaterials.isEmpty() && excludedMaterials.contains(mainBlockType)) {
+            return false;
+        }
+        return true;
+    }
+
     public void checkValid(float breakSpeed, EnumSet<Material> includedMaterials, EnumSet<Material> excludedMaterials) {
         if (includedMaterials != null && !includedMaterials.isEmpty()) {
             this.getMultiBlocks().removeIf(multiBlock -> !includedMaterials.contains(multiBlock.getBlock().getType()));
@@ -57,7 +68,7 @@ public class MultiBreak {
         }
         this.getMultiBlocks().removeIf(multiBlock -> multiBlock.getBlock().getType().equals(Material.AIR));
         ConfigManager config = Main.getInstance().getConfigManager();
-        boolean fairMode = config.getOptions()[1];
+        boolean fairMode = config.getOptions()[0];
         if (!fairMode) return;
         float fairModeLeeway = Main.getInstance().getConfigManager().getFairModeTicksLeeway() * 0.05f;
         this.getMultiBlocks().removeIf(multiBlock -> multiBlock.getBlock().getBreakSpeed(this.getPlayer()) + fairModeLeeway < breakSpeed);
