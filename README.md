@@ -19,7 +19,7 @@
 <dependency>
 	<groupId>com.github.vermulst</groupId>
 	<artifactId>MultiBreak</artifactId>
-	<version>v0.9</version>
+	<version>v1.0.0</version>
 	<scope>provided</scope>
 </dependency>
 ```
@@ -35,7 +35,7 @@ repositories {
 ```
 ```groovy
 dependencies {
-	compileOnly 'com.github.vermulst:MultiBreak:v0.9'
+	compileOnly 'com.github.vermulst:MultiBreak:v1.0.0'
 }
 ```
 
