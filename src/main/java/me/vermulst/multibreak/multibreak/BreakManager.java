@@ -21,12 +21,12 @@ import org.bukkit.event.player.PlayerAnimationType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Level;
 
 public class BreakManager implements Listener {
 
@@ -39,45 +39,53 @@ public class BreakManager implements Listener {
         this.plugin = plugin;
     }
 
+    /** Legacy entry point */
+
+
     @Deprecated
     @EventHandler(priority = EventPriority.HIGHEST)
     public void armSwingEvent(PlayerAnimationEvent e) {
-        boolean legacy_mode = plugin.getConfigManager().getOptions()[1];
+        boolean legacy_mode = plugin.getConfigManager().getOptions()[0];
         if (!legacy_mode) return;
         if (!e.getAnimationType().equals(PlayerAnimationType.ARM_SWING)) return;
         Player p = e.getPlayer();
         if (p.getGameMode().equals(GameMode.CREATIVE)) return;
-        MultiBreak multiBreak = getMultiBreak(p);
+        MultiBreak multiBreak = getOrCreateMultiBreak(p);
         if (multiBreak == null) return;
         Block blockMining = this.getTargetBlock(p);
         if (blockMining == null) return;
         multiBreak.tick(this.getPlugin(), blockMining);
     }
 
+    /** Modern entry point */
+
     @EventHandler(priority = EventPriority.LOWEST)
     public void multiBreakStart(BlockDamageEvent e) {
-        boolean legacy_mode = plugin.getConfigManager().getOptions()[1];
+        boolean legacy_mode = plugin.getConfigManager().getOptions()[0];
         if (legacy_mode) return;
         this.scheduleMultiBreak(e.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void multiBreakStop(BlockDamageAbortEvent e) {
-        boolean legacy_mode = plugin.getConfigManager().getOptions()[1];
+        boolean legacy_mode = plugin.getConfigManager().getOptions()[0];
         if (legacy_mode) return;
         Player p = e.getPlayer();
-        MultiBreak multiBreak = this.getMultiBreak(p);
+        MultiBreak multiBreak = this.getOrCreateMultiBreak(p);
         MultiBreakEndEvent event = new MultiBreakEndEvent(p, multiBreak, false);
         event.callEvent();
         if (multiBreak == null) return;
         this.endMultiBreak(p, multiBreak, false);
     }
 
+    /** Block broken */
+
     @EventHandler(priority = EventPriority.MONITOR)
     public void breakBlockType(BlockBreakEvent e) {
         if (this.ignoreMultiBreak(e)) return;
         Player p = e.getPlayer();
-        MultiBreak multiBreak = this.getMultiBreak(p);
+        MultiBreak multiBreak = this.getOrCreateMultiBreak(p);
+        if (multiBreak == null) return;
         Block block = e.getBlock();
 
         // Mismatch (player switched to an instamine-block while breaking)
@@ -103,17 +111,50 @@ public class BreakManager implements Listener {
     }
 
 
+    /** Schedules multibreak ticking task
+     *
+     * @param p - player breaking
+     */
     public void scheduleMultiBreak(Player p) {
         int taskID = new BukkitRunnable() {
             @Override
             public void run() {
-                MultiBreak multiBreak = getMultiBreak(p);
+                MultiBreak multiBreak = getOrCreateMultiBreak(p);
                 if (multiBreak == null) return;
+
+                // check if direction changed
+                BlockFace blockFace = getBlockFace(p);
+                if (blockFace == null) {
+                    cancel();
+                    return;
+                }
+                Vector direction = blockFace.getDirection();
+                if (!multiBreak.getPlayerDirection().equals(direction)) {
+                    multiBreak = replaceMultiBreak(p, multiBreak);
+                    scheduleMultiBreak(p);
+                }
                 multiBreak.tick();
             }
         }.runTaskTimer(getPlugin(), 1, 1).getTaskId();
         getMultiBreakTask().put(p.getUniqueId(), taskID);
     }
+
+    /** Replaces multibreak while preserving progress
+     *
+     * @param p - player breaking
+     * @param multiBreak - multibreak to replaced
+     * @return replaced multibreak
+     */
+    public MultiBreak replaceMultiBreak(Player p, MultiBreak multiBreak) {
+        endMultiBreak(p, multiBreak, false);
+        float progressBroken = multiBreak.getProgressBroken();
+        int progressTicks = multiBreak.getProgressTicks();
+        multiBreak = getOrCreateMultiBreak(p);
+        multiBreak.setProgressBroken(progressBroken);
+        multiBreak.setProgressTicks(progressTicks);
+        return multiBreak;
+    }
+
 
     public void endMultiBreak(Player p, MultiBreak multiBreak, boolean finished) {
         UUID uuid = p.getUniqueId();
@@ -123,7 +164,7 @@ public class BreakManager implements Listener {
         Bukkit.getScheduler().cancelTask(this.getMultiBreakTask().get(uuid));
     }
 
-    public MultiBreak getMultiBreak(Player p) {
+    public MultiBreak getOrCreateMultiBreak(Player p) {
         if (p.getGameMode().equals(GameMode.CREATIVE)) return null;
         if (multiBlockMap.containsKey(p.getUniqueId())) {
             MultiBreak multiBreak = multiBlockMap.get(p.getUniqueId());
@@ -141,16 +182,24 @@ public class BreakManager implements Listener {
         BlockFace blockFace = this.getBlockFace(p);
         if (block == null || blockFace == null) return null;
         ConfigManager config = plugin.getConfigManager();
-        boolean fair_mode = config.getOptions()[0];
+        EnumSet<Material> includedMaterials = config.getIncludedMaterials();
         EnumSet<Material> ignoredMaterials = config.getIgnoredMaterials();
-        MultiBreak multiBreak = new MultiBreak(p, block, figure, blockFace.getDirection(), fair_mode, ignoredMaterials);
-        MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, block, blockFace.getDirection(), fair_mode, ignoredMaterials);
+        MultiBreak multiBreak = new MultiBreak(p, block, figure, blockFace.getDirection());
+        MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, block, blockFace.getDirection(), includedMaterials, ignoredMaterials);
         if (!event.callEvent()) return null;
-        MultiBreak multiBreak1 = event.getMultiBreak();
-        multiBlockMap.put(p.getUniqueId(), multiBreak1);
-        return multiBreak1;
+        multiBreak = event.getMultiBreak();
+        float breakSpeed = multiBreak.getBlock().getBreakSpeed(p);
+        multiBreak.checkValid(breakSpeed, event.getIncludedMaterials(), event.getExcludedMaterials());
+        multiBlockMap.put(p.getUniqueId(), multiBreak);
+        return multiBreak;
     }
 
+    /** Retrieves the Figure associated with the given tool ItemStack.
+     * Also checks for material-based presets, with itemstack data as priority.
+     *
+     * @param tool The ItemStack representing the tool.
+     * @return The Figure associated with the tool, or null if none is found.
+     */
     public Figure getFigure(ItemStack tool) {
         if (tool.getItemMeta() == null) return null;
         FigureItemDataType figureItemDataType = new FigureItemDataType(this.getPlugin());
