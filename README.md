@@ -48,10 +48,11 @@ dependencies {
 @EventHandler
 public void multiBreakAllow(MultiBreakAllowEvent e) {
 	if (Material.IRON_PICKAXE.equals(e.getItem().getType()) {
-		e.setAllowed(true)
+		e.setAllowed(true);
+		// Now all iron pickaxes will call the MultiBreakStartEvent
 	}
 }
-/** Now all iron pickaxes will call the MultiBreakStartEvent */
+
 
 
 
