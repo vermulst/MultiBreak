@@ -19,7 +19,9 @@ public class MultiReloadCommand implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         this.getPlugin().reloadConfig();
-        this.getPlugin().getConfigManager().load(this.getPlugin().getConfig());
+        if (this.getPlugin().getConfigManager().load(this.getPlugin().getConfig())) {
+            this.getPlugin().saveConfig();
+        }
         sender.sendMessage(Component.text("Config reloaded").color(TextColor.color(85, 255, 85)));
         return true;
     }

@@ -69,6 +69,7 @@ publishing {
 }
 
 shadowJar {
+    archiveFileName = "MultiBreak-${version}.jar"
     relocate 'org.bstats', 'me.vermulst.multibreak.dependencies.bstats'
 }
 

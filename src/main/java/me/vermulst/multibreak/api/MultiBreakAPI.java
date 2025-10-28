@@ -4,6 +4,7 @@ import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.item.FigureItemDataType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -15,6 +16,7 @@ public final class MultiBreakAPI {
     private MultiBreakAPI() {
     }
 
+    @ApiStatus.Internal
     public static void init(@NotNull Plugin plugin) {
         if (DATA_TYPE_INSTANCE != null) {
             throw new IllegalStateException("MultiBreakAPI already initialized!");
