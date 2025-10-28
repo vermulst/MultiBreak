@@ -1,5 +1,6 @@
 package me.vermulst.multibreak.config;
 
+import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.types.FigureType;
 import net.kyori.adventure.text.Component;
@@ -12,16 +13,23 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.*;
+import java.util.logging.Level;
+import java.util.stream.Stream;
 
 public class ConfigManager {
 
     private Map<String, Figure> configOptions;
     private Map<Material, String> materialOptions;
+    private final EnumSet<Material> includedMaterials = EnumSet.noneOf(Material.class);
     private final EnumSet<Material> ignoredMaterials = EnumSet.noneOf(Material.class);
     private int maxRange = 10;
+    private int fairModeTicksLeeway = 1;
 
-    private final boolean[] options = new boolean[optionNames.length];
-    private static final String[] optionNames = new String[]{"fair_mode", "legacy_mode"};
+    private final boolean[] options = new boolean[] {
+            false,  // legacy mode
+            true // fair mode
+    };
+    private static final String[] optionNames = new String[]{"legacy_mode", "fair_mode"};
 
     private static final String OLD_MATERIAL_PRESETS_PATH = "material_configs";
     private static final String NEW_MATERIAL_PRESETS_PATH = "material_presets";
@@ -60,6 +68,13 @@ public class ConfigManager {
             fileConfiguration.setComments(optionName, optionComments[i]);
         }
 
+        /** Max range **/
+        fileConfiguration.set("fair_mode_leeway", this.fairModeTicksLeeway);
+        fileConfiguration.setComments("fair_mode_leeway",
+                List.of("", "The amount of ticks which will count as being in range within fair mode.",
+                        "For example, when set to 1, blocks that would take 5 ticks to break while the source block takes 6 ticks, will still be broken.",
+                        "1 is the recommended value."));
+
         /** Presets **/
         fileConfiguration.set(OLD_PRESETS_PATH, null);
         for (Map.Entry<String, Figure> entry : this.getConfigOptions().entrySet()) {
@@ -87,11 +102,18 @@ public class ConfigManager {
             fileConfiguration.set("material_presets." + entry.getKey().name(), entry.getValue());
         }
 
+        /** Included materials **/
+        List<String> includedMaterialNames = new ArrayList<>(includedMaterials.size());
+        includedMaterials.forEach(material -> includedMaterialNames.add(material.toString()));
+        fileConfiguration.set("included_materials", includedMaterialNames);
+        fileConfiguration.setComments("included_materials", List.of("", "List of block types strictly included by multibreaks."
+        , "if empty, all block types count"));
+
         /** Ignored materials **/
-        List<String> materialNames = new ArrayList<>(ignoredMaterials.size());
-        ignoredMaterials.forEach(material -> materialNames.add(material.toString()));
-        fileConfiguration.set("ignored_materials", materialNames);
-        fileConfiguration.setComments("ignored_materials", List.of("", "List of blocks ignored by multibreaks."));
+        List<String> ignoredMaterialNames = new ArrayList<>(ignoredMaterials.size());
+        ignoredMaterials.forEach(material -> ignoredMaterialNames.add(material.toString()));
+        fileConfiguration.set("ignored_materials", ignoredMaterialNames);
+        fileConfiguration.setComments("ignored_materials", List.of("", "List of block types ignored by multibreaks."));
 
         /** Max range **/
         fileConfiguration.set("max_break_range", this.maxRange);
@@ -108,12 +130,15 @@ public class ConfigManager {
     public boolean load(FileConfiguration fileConfiguration) {
         this.configOptions = new HashMap<>();
         this.materialOptions = new HashMap<>();
-        boolean save1 = this.loadOptions(fileConfiguration);
-        this.loadPresets(fileConfiguration);
-        this.loadMaterialPresets(fileConfiguration);
-        boolean save2 = this.loadIgnoredMaterials(fileConfiguration);
-        boolean save3 = this.loadMaxRange(fileConfiguration);
-        return save1 || save2 || save3;
+        boolean save = this.loadOptions(fileConfiguration);
+        save = save || this.loadPresets(fileConfiguration);
+        save = save || this.loadMaterialPresets(fileConfiguration);
+        save = save || this.loadIncludedMaterials(fileConfiguration);
+        save = save || this.loadIgnoredMaterials(fileConfiguration);
+        save = save || this.loadMaxRange(fileConfiguration);
+        save = save || this.loadFairModeLeeway(fileConfiguration);
+        if (save) this.save(fileConfiguration);
+        return save;
     }
 
     public boolean loadOptions(FileConfiguration fileConfiguration) {
@@ -124,22 +149,22 @@ public class ConfigManager {
                 this.options[index] = fileConfiguration.getBoolean(option);
             } else {
                 save = true;
-                this.options[index] = false;
-                fileConfiguration.set(option, false);
             }
             index++;
         }
         return save;
     }
 
-    private void loadPresets(FileConfiguration fileConfiguration) {
+    private boolean loadPresets(FileConfiguration fileConfiguration) {
         String path = null;
+        boolean save = false;
         if (fileConfiguration.getKeys(false).contains(NEW_PRESETS_PATH)) {
             path = NEW_PRESETS_PATH;
         } else if (fileConfiguration.getKeys(false).contains(OLD_PRESETS_PATH)) {
             path = OLD_PRESETS_PATH;
+            save = true;
         }
-        if (path == null) return;
+        if (path == null) return save;
 
         ConfigurationSection section = fileConfiguration.getConfigurationSection(path);
         for (String name : section.getKeys(false)) {
@@ -162,47 +187,75 @@ public class ConfigManager {
             figure.setOffsets(width_offset, height_offset, depth_offset);
             this.getConfigOptions().put(name, figure);
         }
+        return save;
     }
 
-    private void loadMaterialPresets(FileConfiguration fileConfiguration) {
+    private boolean loadMaterialPresets(FileConfiguration fileConfiguration) {
         String path = null;
-
+        boolean save = false;
         if (fileConfiguration.getKeys(false).contains(NEW_MATERIAL_PRESETS_PATH)) {
             path = NEW_MATERIAL_PRESETS_PATH;
         } else if (fileConfiguration.getKeys(false).contains(OLD_MATERIAL_PRESETS_PATH)) {
             path = OLD_MATERIAL_PRESETS_PATH;
+            save = true;
         }
-        if (path == null) return;
+        if (path == null) return save;
         ConfigurationSection section = fileConfiguration.getConfigurationSection(path);
-        if (section == null) return;
+        if (section == null) return save;
         for (String itemtype : section.getKeys(false)) {
             String configOption = section.getString(itemtype);
             Material material = Material.valueOf(itemtype);
             this.getMaterialOptions().put(material, configOption);
         }
+        return save;
+    }
+
+    private boolean loadIncludedMaterials(FileConfiguration fileConfiguration) {
+        List<String> defaultIgnoredNames = new ArrayList<>();
+
+        boolean save = setIfMissing(fileConfiguration, "included_materials", defaultIgnoredNames);
+        this.includedMaterials.clear();
+        List<String> materialNames = fileConfiguration.getStringList("included_materials");
+        for (String matName : materialNames) {
+            Material mat = Material.getMaterial(matName);
+            if (mat == null) continue;
+            this.includedMaterials.add(mat);
+        }
+        return save;
     }
 
     private boolean loadIgnoredMaterials(FileConfiguration fileConfiguration) {
-        if (fileConfiguration.getKeys(false).contains("ignored_materials")) {
-            List<String> materialNames = fileConfiguration.getStringList("ignored_materials");
-            for (String matName : materialNames) {
-                this.ignoredMaterials.add(Material.getMaterial(matName));
-            }
-        } else {
-            List<String> ignoredMaterials = new ArrayList<>();
-            ignoredMaterials.add(Material.BEDROCK.toString());
-            fileConfiguration.set("ignored_materials", ignoredMaterials);
-            this.ignoredMaterials.add(Material.BEDROCK);
-            return true;
+        List<String> defaultIgnoredNames = Stream.of(Material.BEDROCK)
+                .map(Enum::toString)
+                .toList();
+
+        boolean save = setIfMissing(fileConfiguration, "ignored_materials", defaultIgnoredNames);
+        this.ignoredMaterials.clear();
+        List<String> materialNames = fileConfiguration.getStringList("ignored_materials");
+        for (String matName : materialNames) {
+            Material mat = Material.getMaterial(matName);
+            if (mat == null) continue;
+            this.ignoredMaterials.add(mat);
         }
-        return false;
+        return save;
     }
 
+
     private boolean loadMaxRange(FileConfiguration fileConfiguration) {
-        if (fileConfiguration.getKeys(false).contains("max_break_range")) {
-            this.maxRange = fileConfiguration.getInt("max_break_range");
-        } else {
-            fileConfiguration.set("max_break_range", this.maxRange);
+        boolean save = setIfMissing(fileConfiguration, "max_break_range", this.maxRange);
+        if (!save) this.maxRange = fileConfiguration.getInt("max_break_range");
+        return save;
+    }
+
+    private boolean loadFairModeLeeway(FileConfiguration fileConfiguration) {
+        boolean save = setIfMissing(fileConfiguration, "fair_mode_leeway", this.maxRange);
+        if (!save) this.fairModeTicksLeeway = fileConfiguration.getInt("fair_mode_leeway");
+        return save;
+    }
+
+    private boolean setIfMissing(ConfigurationSection config, String key, Object defaultValue) {
+        if (!config.getKeys(false).contains(key)) {
+            config.set(key, defaultValue);
             return true;
         }
         return false;
@@ -240,11 +293,19 @@ public class ConfigManager {
         return materialOptions;
     }
 
+    public EnumSet<Material> getIncludedMaterials() {
+        return includedMaterials;
+    }
+
     public EnumSet<Material> getIgnoredMaterials() {
         return ignoredMaterials;
     }
 
     public int getMaxRange() {
         return maxRange;
+    }
+
+    public int getFairModeTicksLeeway() {
+        return fairModeTicksLeeway;
     }
 }
