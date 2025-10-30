@@ -43,24 +43,22 @@ dependencies {
 ```java
 
 @EventHandler
-public void multiBreakAllow(MultiBreakAllowEvent e) {
-	if (Material.IRON_PICKAXE.equals(e.getItem().getType()) {
-		e.setAllowed(true);
-		// Now all iron pickaxes will call the MultiBreakStartEvent
-	}
+public void figureRequest(RequestFigureEvent e) {
+	if (!Material.IRON_PICKAXE.equals(e.getItem().getType()) return;
+	Figure figure = e.getFigure(); // get figure on the tool
+	Figure newFigure = new FigureLinear(3, 3, 1);
+	e.setFigure(newFigure);
 }
 
 @EventHandler
 public void multiBreakStart(MultiBreakStartEvent e) {
-	Figure figure = new FigureLinear(3, 3, 1);
-	e.setFigure(figure);
-
 	// replaces list in the config
 	e.includeOnly(EnumSet.of(Material.GRASS_BLOCK, Material.STONE, Material.DIRT));
 
 	// add to list in the config
 	e.exclude(Material.DIRT)
 
+	Figure figure = e.getFigure(); // get the figure being used
 	List<Block> blocks = e.getBlocks(); // get all of the blocks within the elipsoid
 }
 
