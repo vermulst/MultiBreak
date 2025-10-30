@@ -43,7 +43,7 @@ dependencies {
 ```java
 
 @EventHandler
-public void figureRequest(RequestFigureEvent e) {
+public void figureRequest(FetchFigureEvent e) {
 	if (!Material.IRON_PICKAXE.equals(e.getItem().getType()) return;
 	Figure figure = e.getFigure(); // get figure on the tool
 	Figure newFigure = new FigureLinear(3, 3, 1);
