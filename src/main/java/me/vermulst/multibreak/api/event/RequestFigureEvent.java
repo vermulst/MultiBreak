@@ -1,8 +1,6 @@
 package me.vermulst.multibreak.api.event;
 
 import me.vermulst.multibreak.figure.Figure;
-import me.vermulst.multibreak.multibreak.MultiBreak;
-import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -10,23 +8,21 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
-public class MultiBreakAllowEvent extends Event {
-
+public class RequestFigureEvent extends Event {
     private static final HandlerList HANDLERS_LIST = new HandlerList();
 
     private final Player player;
     private final ItemStack item;
-    private final Block block;
+    private boolean cancelled = false;
 
-    // set to true if you want to run the MultiBreakStartEvent
-    private boolean allowed;
+    // set to null to prevent any multibreaking
+    private Figure figure;
 
 
-    public MultiBreakAllowEvent(boolean allowed, Player p, ItemStack item, Block block) {
-        this.allowed = allowed;
+    public RequestFigureEvent(Figure figure, Player p, ItemStack item) {
+        this.figure = figure;
         this.player = p;
         this.item = item;
-        this.block = block;
     }
 
     @Override
@@ -42,19 +38,23 @@ public class MultiBreakAllowEvent extends Event {
         return player;
     }
 
-    public Block getBlock() {
-        return block;
+    public Figure getFigure() {
+        return figure;
     }
 
-    public boolean isAllowed() {
-        return allowed;
-    }
-
-    public void setAllowed(boolean allowed) {
-        this.allowed = allowed;
+    public void setFigure(Figure figure) {
+        this.figure = figure;
     }
 
     public ItemStack getItem() {
         return item;
+    }
+
+    public boolean isCancelled() {
+        return cancelled;
+    }
+
+    public void setCancelled(boolean cancelled) {
+        this.cancelled = cancelled;
     }
 }

@@ -20,19 +20,17 @@ public class MultiBreakStartEvent extends Event {
     private boolean isCancelled;
 
     private final Player player;
-    private final Vector playerDirection;
     private final Block block;
-    private MultiBreak multiBreak;
+    private final MultiBreak multiBreak;
 
 
     private EnumSet<Material> includedMaterials;
     private EnumSet<Material> excludedMaterials;
 
 
-    public MultiBreakStartEvent(Player p, MultiBreak multiBreak, Block block, Vector playerDirection, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
+    public MultiBreakStartEvent(Player p, MultiBreak multiBreak, Block block, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
         this.player = p;
         this.multiBreak = multiBreak;
-        this.playerDirection = playerDirection;
         this.block = block;
         this.includedMaterials = includedMaterials;
         this.excludedMaterials = ignoredMaterials;
@@ -57,14 +55,6 @@ public class MultiBreakStartEvent extends Event {
 
     public void setCancelled(boolean cancelled) {
         this.isCancelled = cancelled;
-    }
-
-    public void setFigure(Figure figure) {
-        if (this.multiBreak == null) {
-            this.multiBreak = new MultiBreak(this.getPlayer(), block, figure, this.getPlayerDirection());
-        } else {
-            this.getMultiBreak().initBlocks(figure, this.getPlayerDirection());
-        }
     }
 
     public MultiBreak getMultiBreak() {
@@ -104,10 +94,6 @@ public class MultiBreakStartEvent extends Event {
 
     public void include(Material material) {
         this.includedMaterials.add(material);
-    }
-
-    public Vector getPlayerDirection() {
-        return playerDirection;
     }
 
     public Block getBlock() {

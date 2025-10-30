@@ -1,5 +1,6 @@
 package me.vermulst.multibreak.multibreak;
 
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
@@ -14,13 +15,15 @@ import java.util.concurrent.ThreadLocalRandom;
 public class MultiBlock {
 
     private final Block block;
-    private final boolean isVisible;
+    private boolean isVisible;
     private boolean breakThisBlock = true;
+    private final Material type;
     private List<ItemStack> drops;
     private final int sourceID = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
 
     public MultiBlock(Block block) {
         this.block = block;
+        this.type = block.getType();
         this.isVisible = this.initVisibility(block);
     }
 
@@ -28,7 +31,7 @@ public class MultiBlock {
         for (BlockFace face : BlockFace.values()) {
             if (face.isCartesian()) { // Filter for the 6 cardinal directions
                 Block adjacent = b.getRelative(face);
-                if (adjacent.isEmpty() || adjacent.isLiquid()) {
+                if (adjacent.isEmpty() || (adjacent.isLiquid() && adjacent.getType() != Material.POWDER_SNOW)) {
                     return true;
                 }
                 if (!adjacent.getType().isOccluding()) {
@@ -43,12 +46,20 @@ public class MultiBlock {
         p.sendBlockDamage(this.getBlock().getLocation(), stage, sourceID);
     }
 
+    public boolean mismatchesType() {
+        return this.block.getType() != this.type;
+    }
+
     public Block getBlock() {
         return block;
     }
 
     public boolean isVisible() {
         return isVisible;
+    }
+
+    public void setVisible(boolean visible) {
+        isVisible = visible;
     }
 
     @Override
@@ -78,5 +89,9 @@ public class MultiBlock {
 
     public List<ItemStack> getDrops() {
         return drops;
+    }
+
+    public Material getType() {
+        return type;
     }
 }

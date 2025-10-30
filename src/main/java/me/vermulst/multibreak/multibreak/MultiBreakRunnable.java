@@ -1,6 +1,7 @@
 package me.vermulst.multibreak.multibreak;
 
 import me.vermulst.multibreak.Main;
+import me.vermulst.multibreak.figure.Figure;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
@@ -11,13 +12,15 @@ import java.util.logging.Level;
 
 public class MultiBreakRunnable extends BukkitRunnable {
 
-    private Block block;
     private final Player p;
+    private Block block;
+    private final Figure figure;
     private final BreakManager breakManager;
 
-    public MultiBreakRunnable(Block block, Player p, BreakManager breakManager) {
-        this.block = block;
+    public MultiBreakRunnable(Player p, Block block, Figure figure, BreakManager breakManager) {
         this.p = p;
+        this.block = block;
+        this.figure = figure;
         this.breakManager = breakManager;
     }
 
@@ -32,10 +35,14 @@ public class MultiBreakRunnable extends BukkitRunnable {
             }
             block = null;
         }
-        MultiBreak multiBreak = breakManager.getOrCreateMultiBreak(p);
+        MultiBreak multiBreak = breakManager.getMultiBreak(p);
         if (multiBreak == null) {
-            cancel();
-            return;
+            Block blockMining = breakManager.getTargetBlock(p);
+            multiBreak = breakManager.initMultiBreak(p, blockMining, this.figure);
+            if (multiBreak == null) {
+                cancel();
+                return;
+            }
         }
         BlockFace blockFace = getBlockFace(p);
         if (blockFace == null) {
@@ -50,7 +57,7 @@ public class MultiBreakRunnable extends BukkitRunnable {
                 cancel();
                 return;
             }
-            breakManager.scheduleMultiBreak(p);
+            breakManager.scheduleMultiBreak(p, this.figure);
         }
         multiBreak.tick();
     }
@@ -70,7 +77,7 @@ public class MultiBreakRunnable extends BukkitRunnable {
         this.breakManager.endMultiBreak(p, multiBreak, false);
         float progressBroken = multiBreak.getProgressBroken();
         int progressTicks = multiBreak.getProgressTicks();
-        multiBreak = this.breakManager.getOrCreateMultiBreak(p);
+        multiBreak = this.breakManager.initMultiBreak(p, this.block, this.figure);
         if (multiBreak == null) return null;
         multiBreak.setProgressBroken(progressBroken);
         multiBreak.setProgressTicks(progressTicks);
