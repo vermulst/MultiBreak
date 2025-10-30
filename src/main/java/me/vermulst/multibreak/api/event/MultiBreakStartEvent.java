@@ -24,16 +24,10 @@ public class MultiBreakStartEvent extends Event {
     private final MultiBreak multiBreak;
 
 
-    private EnumSet<Material> includedMaterials;
-    private EnumSet<Material> excludedMaterials;
-
-
-    public MultiBreakStartEvent(Player p, MultiBreak multiBreak, Block block, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
+    public MultiBreakStartEvent(Player p, MultiBreak multiBreak, Block block) {
         this.player = p;
         this.multiBreak = multiBreak;
         this.block = block;
-        this.includedMaterials = includedMaterials;
-        this.excludedMaterials = ignoredMaterials;
     }
 
     @Override
@@ -70,30 +64,6 @@ public class MultiBreakStartEvent extends Event {
             blocks.add(this.getBlock());
         }
         return blocks;
-    }
-
-    public EnumSet<Material> getIncludedMaterials() {
-        return includedMaterials;
-    }
-
-    public EnumSet<Material> getExcludedMaterials() {
-        return excludedMaterials;
-    }
-
-    public void excludeOnly(EnumSet<Material> excludedMaterials) {
-        this.excludedMaterials = excludedMaterials;
-    }
-
-    public void includeOnly(EnumSet<Material> includedMaterials) {
-        this.includedMaterials = includedMaterials;
-    }
-
-    public void exclude(Material material) {
-        this.excludedMaterials.add(material);
-    }
-
-    public void include(Material material) {
-        this.includedMaterials.add(material);
     }
 
     public Block getBlock() {

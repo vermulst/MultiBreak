@@ -1,14 +1,13 @@
 package me.vermulst.multibreak.api.event;
 
 import me.vermulst.multibreak.figure.Figure;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
-public class RequestFigureEvent extends Event {
+public class FetchFigureEvent extends Event {
     private static final HandlerList HANDLERS_LIST = new HandlerList();
 
     private final Player player;
@@ -19,7 +18,7 @@ public class RequestFigureEvent extends Event {
     private Figure figure;
 
 
-    public RequestFigureEvent(Figure figure, Player p, ItemStack item) {
+    public FetchFigureEvent(Figure figure, Player p, ItemStack item) {
         this.figure = figure;
         this.player = p;
         this.item = item;
@@ -57,4 +56,7 @@ public class RequestFigureEvent extends Event {
     public void setCancelled(boolean cancelled) {
         this.cancelled = cancelled;
     }
+
+
+
 }

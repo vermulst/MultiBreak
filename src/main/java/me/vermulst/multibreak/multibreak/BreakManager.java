@@ -2,7 +2,8 @@ package me.vermulst.multibreak.multibreak;
 
 import com.destroystokyo.paper.event.server.ServerTickEndEvent;
 import me.vermulst.multibreak.Main;
-import me.vermulst.multibreak.api.event.RequestFigureEvent;
+import me.vermulst.multibreak.api.event.FetchFigureEvent;
+import me.vermulst.multibreak.api.event.FilterBlocksEvent;
 import me.vermulst.multibreak.config.ConfigManager;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.item.FigureItemDataType;
@@ -115,7 +116,16 @@ public class BreakManager implements Listener {
             }
             Figure figure = this.getFigure(p);
             if (figure == null) return;
+
+            ConfigManager config = plugin.getConfigManager();
+            EnumSet<Material> includedMaterials = config.getIncludedMaterials();
+            EnumSet<Material> ignoredMaterials = config.getIgnoredMaterials();
+            FilterBlocksEvent filterBlocksEvent = new FilterBlocksEvent(figure, p, p.getInventory().getItemInMainHand(), includedMaterials, ignoredMaterials);
+            filterBlocksEvent.callEvent();
+
             Set<Block> blocks = figure.getBlocks(p, targetBlock);
+            this.filter(blocks, filterBlocksEvent.getIncludedMaterials(), filterBlocksEvent.getExcludedMaterials());
+
             float baseProgressPerTick = targetBlock.getBreakSpeed(p);
             if (baseProgressPerTick == Float.POSITIVE_INFINITY) return;
             float slowDownFactor = this.getSlowDownFactor(p, blocks, baseProgressPerTick);
@@ -132,6 +142,19 @@ public class BreakManager implements Listener {
             );
             attribute.addModifier(slowDownModifier);
         }
+    }
+
+    public void filter(Set<Block> blocks, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
+        blocks.removeIf(block -> {
+            Material mainBlockType = block.getType();
+            if (includedMaterials != null && !includedMaterials.isEmpty() && !includedMaterials.contains(mainBlockType)) {
+                return true;
+            }
+            if (ignoredMaterials != null && !ignoredMaterials.isEmpty() && ignoredMaterials.contains(mainBlockType)) {
+                return true;
+            }
+            return false;
+        });
     }
 
     public float getSlowDownFactor(Player p, Set<Block> blocks, float baseProgressPerTick) {
@@ -242,10 +265,12 @@ public class BreakManager implements Listener {
         EnumSet<Material> includedMaterials = config.getIncludedMaterials();
         EnumSet<Material> ignoredMaterials = config.getIgnoredMaterials();
         MultiBreak multiBreak = new MultiBreak(p, block, blockFace.getDirection(), figure);
-        MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, block, includedMaterials, ignoredMaterials);
+        MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, block);
         if (!event.callEvent()) return null;
-        includedMaterials = event.getIncludedMaterials();
-        ignoredMaterials = event.getExcludedMaterials();
+        FilterBlocksEvent filterBlocksEvent = new FilterBlocksEvent(figure, p, p.getInventory().getItemInMainHand(), includedMaterials, ignoredMaterials);
+        filterBlocksEvent.callEvent();
+        includedMaterials = filterBlocksEvent.getIncludedMaterials();
+        ignoredMaterials = filterBlocksEvent.getExcludedMaterials();
         multiBreak = event.getMultiBreak();
         if (!multiBreak.isValid(includedMaterials, ignoredMaterials)) return null;
         float progressPerTick = multiBreak.getBlock().getBreakSpeed(p);
@@ -284,13 +309,13 @@ public class BreakManager implements Listener {
                 figure = configManager.getConfigOptions().get(configOptionName);
             }
         }
-        RequestFigureEvent requestFigureEvent = new RequestFigureEvent(figure, p, tool);
-        requestFigureEvent.callEvent();
-        if (requestFigureEvent.isCancelled()) {
+        FetchFigureEvent fetchFigureEvent = new FetchFigureEvent(figure, p, tool);
+        fetchFigureEvent.callEvent();
+        if (fetchFigureEvent.isCancelled()) {
             figureCache.put(p.getUniqueId(), null);
             return null;
         }
-        figure = requestFigureEvent.getFigure();
+        figure = fetchFigureEvent.getFigure();
         figureCache.put(p.getUniqueId(), figure);
         return figure;
     }
