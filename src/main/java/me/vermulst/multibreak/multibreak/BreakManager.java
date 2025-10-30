@@ -174,7 +174,6 @@ public class BreakManager implements Listener {
         if (multiBreak == null) {
             Figure figure = this.getFigure(p);
             multiBreak = this.initMultiBreak(p, e.getBlock(), figure);
-            p.sendMessage("created new multibreak");
             if (multiBreak == null) return;
         }
         Block block = e.getBlock();
