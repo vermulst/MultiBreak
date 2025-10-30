@@ -13,7 +13,8 @@ import java.util.logging.Level;
 public class MultiBreakRunnable extends BukkitRunnable {
 
     private final Player p;
-    private Block block;
+    private final Block block;
+    private boolean init = false;
     private final Figure figure;
     private final BreakManager breakManager;
 
@@ -28,12 +29,12 @@ public class MultiBreakRunnable extends BukkitRunnable {
     @Override
     public void run() {
         // check once, if block changed since from tick 0 -> 1.
-        if (block != null) {
+        if (!init) {
             if (block.getType().isAir() && !breakManager.getTargetBlock(p).equals(block)) {
                 cancel();
                 return;
             }
-            block = null;
+            init = true;
         }
         MultiBreak multiBreak = breakManager.getMultiBreak(p);
         if (multiBreak == null) {
