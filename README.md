@@ -19,7 +19,7 @@
 <dependency>
 	<groupId>com.github.vermulst</groupId>
 	<artifactId>MultiBreak</artifactId>
-	<version>v1.0.0</version>
+	<version>v1.1.0-prerelease</version>
 	<scope>provided</scope>
 </dependency>
 ```
@@ -35,7 +35,7 @@ repositories {
 ```
 ```groovy
 dependencies {
-	compileOnly 'com.github.vermulst:MultiBreak:v1.0.0'
+	compileOnly 'com.github.vermulst:MultiBreak:v1.1.0-prerelease'
 }
 ```
 
@@ -43,7 +43,7 @@ dependencies {
 ```java
 
 @EventHandler
-public void figureRequest(RequestFigureEvent e) {
+public void figureRequest(FetchFigureEvent e) {
 	if (!Material.IRON_PICKAXE.equals(e.getItem().getType()) return;
 	Figure figure = e.getFigure(); // get figure on the tool
 	Figure newFigure = new FigureLinear(3, 3, 1);
@@ -51,13 +51,13 @@ public void figureRequest(RequestFigureEvent e) {
 }
 
 @EventHandler
-public void multiBreakStart(MultiBreakStartEvent e) {
-	// replaces list in the config
+public void filterBlocks(FilterBlocksEvent e) {
 	e.includeOnly(EnumSet.of(Material.GRASS_BLOCK, Material.STONE, Material.DIRT));
-
-	// add to list in the config
 	e.exclude(Material.DIRT)
+}
 
+@EventHandler
+public void multiBreakStart(MultiBreakStartEvent e) {
 	Figure figure = e.getFigure(); // get the figure being used
 	List<Block> blocks = e.getBlocks(); // get all of the blocks within the elipsoid
 }
