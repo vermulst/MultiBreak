@@ -1,27 +1,18 @@
 package me.vermulst.multibreak.multibreak;
 
 import com.destroystokyo.paper.ParticleBuilder;
-import me.vermulst.multibreak.config.ConfigManager;
-import me.vermulst.multibreak.utils.CompassDirection;
+import me.vermulst.multibreak.config.Config;
 import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.figure.Figure;
-import me.vermulst.multibreak.figure.Matrix4x4;
-import me.vermulst.multibreak.figure.VectorTransformer;
 import org.bukkit.*;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
-import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import java.util.*;
-import java.util.logging.Level;
 
 public class MultiBreak {
 
@@ -67,9 +58,7 @@ public class MultiBreak {
             this.getMultiBlocks().removeIf(multiBlock -> excludedMaterials.contains(multiBlock.getBlock().getType()));
         }
         this.getMultiBlocks().removeIf(multiBlock -> multiBlock.getBlock().getType().equals(Material.AIR));
-        ConfigManager config = Main.getInstance().getConfigManager();
-        boolean fairMode = config.getOptions()[0];
-
+        boolean fairMode = Config.getInstance().isFairModeEnabled();
         if (!fairMode) return;
         List<MultiBlock> toRemove = new ArrayList<>();
         for (MultiBlock multiBlock : this.getMultiBlocks()) {
@@ -114,7 +103,7 @@ public class MultiBreak {
         this.getMultiBlocks().removeAll(blocksToRemove);
     }
 
-    public void end(boolean finished, Main plugin) {
+    public void end(boolean finished) {
         this.ended = true;
         for (MultiBlock multiBlock : this.getMultiBlocks()) {
             multiBlock.writeStage(this.getPlayer(), 0);
@@ -133,8 +122,8 @@ public class MultiBreak {
             BlockData blockData = block.getBlockData().clone();
             Location location = block.getLocation();
 
-            if (plugin.getConfigManager().getIgnoredMaterials().contains(blockType)) continue;
-            block.setMetadata("multi-broken", new FixedMetadataValue(plugin, true));
+            if (Config.getInstance().getIgnoredMaterials().contains(blockType)) continue;
+            block.setMetadata("multi-broken", new FixedMetadataValue(Main.getInstance(), true));
             boolean broken = this.getPlayer().breakBlock(block);
             if (!broken) continue;
             if (multiBlock.getDrops() != null) {

@@ -1,14 +1,11 @@
 package me.vermulst.multibreak.multibreak;
 
-import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.figure.Figure;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
-
-import java.util.logging.Level;
 
 public class MultiBreakRunnable extends BukkitRunnable {
 
@@ -30,7 +27,7 @@ public class MultiBreakRunnable extends BukkitRunnable {
     public void run() {
         // check once, if block changed since from tick 0 -> 1.
         if (!init) {
-            if (block.getType().isAir() && !breakManager.getTargetBlock(p).equals(block)) {
+            if (block.getType().isAir() && !BreakUtils.getTargetBlock(p).equals(block)) {
                 cancel();
                 return;
             }
@@ -38,14 +35,14 @@ public class MultiBreakRunnable extends BukkitRunnable {
         }
         MultiBreak multiBreak = breakManager.getMultiBreak(p);
         if (multiBreak == null) {
-            Block blockMining = breakManager.getTargetBlock(p);
+            Block blockMining = BreakUtils.getTargetBlock(p);
             multiBreak = breakManager.initMultiBreak(p, blockMining, this.figure);
             if (multiBreak == null) {
                 cancel();
                 return;
             }
         }
-        BlockFace blockFace = getBlockFace(p);
+        BlockFace blockFace = BreakUtils.getBlockFace(p);
         if (blockFace == null) {
             cancel();
             return;
@@ -61,10 +58,6 @@ public class MultiBreakRunnable extends BukkitRunnable {
             breakManager.scheduleMultiBreak(p, this.figure);
         }
         multiBreak.tick();
-    }
-
-    public BlockFace getBlockFace(Player p) {
-        return p.getTargetBlockFace(Main.getInstance().getConfigManager().getMaxRange());
     }
 
 

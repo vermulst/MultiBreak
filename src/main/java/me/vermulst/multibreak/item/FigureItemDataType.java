@@ -1,5 +1,6 @@
 package me.vermulst.multibreak.item;
 
+import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.types.FigureType;
 import org.bukkit.NamespacedKey;
@@ -8,7 +9,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataAdapterContext;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
 public class FigureItemDataType implements PersistentDataType<PersistentDataContainer, Figure> {
@@ -42,17 +42,10 @@ public class FigureItemDataType implements PersistentDataType<PersistentDataCont
         }
     }
 
-
-
     public Figure figure;
-    private final Plugin javaPlugin;
-
-    public FigureItemDataType(Plugin javaPlugin) {
-        this.javaPlugin = javaPlugin;
-    }
 
     public ItemStack set(ItemStack itemStack, Figure figure) {
-        NamespacedKey key = new NamespacedKey(this.javaPlugin, "figure_info");
+        NamespacedKey key = new NamespacedKey(Main.getInstance(), "figure_info");
         ItemMeta itemMeta = itemStack.getItemMeta();
         PersistentDataContainer customItemTagContainer = itemMeta.getPersistentDataContainer();
         customItemTagContainer.set(key, this, figure);
@@ -64,7 +57,7 @@ public class FigureItemDataType implements PersistentDataType<PersistentDataCont
         ItemMeta meta = itemStack.getItemMeta();
         if (meta == null) return null;
         PersistentDataContainer customItemTagContainer = meta.getPersistentDataContainer();
-        NamespacedKey key = new NamespacedKey(this.javaPlugin, "figure_info");
+        NamespacedKey key = new NamespacedKey(Main.getInstance(), "figure_info");
 
         Figure figure = customItemTagContainer.get(key, this);
         if (figure != null) return figure;
@@ -83,7 +76,7 @@ public class FigureItemDataType implements PersistentDataType<PersistentDataCont
     }
 
     public ItemStack remove(ItemStack itemStack) {
-        NamespacedKey key = new NamespacedKey(this.javaPlugin, "figure_info");
+        NamespacedKey key = new NamespacedKey(Main.getInstance(), "figure_info");
         ItemMeta itemMeta = itemStack.getItemMeta();
         PersistentDataContainer customItemTagContainer = itemMeta.getPersistentDataContainer();
         customItemTagContainer.remove(key);
@@ -98,7 +91,7 @@ public class FigureItemDataType implements PersistentDataType<PersistentDataCont
         }
 
         PersistentDataContainer customItemTagContainer = meta.getPersistentDataContainer();
-        NamespacedKey key = new NamespacedKey(this.javaPlugin, "figure_info");
+        NamespacedKey key = new NamespacedKey(Main.getInstance(), "figure_info");
 
         // The Primitive Type (P) for Figure is PersistentDataContainer, which maps to TAG_CONTAINER.
         return customItemTagContainer.has(key, PersistentDataType.TAG_CONTAINER);
@@ -167,7 +160,7 @@ public class FigureItemDataType implements PersistentDataType<PersistentDataCont
 
 
     private NamespacedKey key(String key) {
-        return new NamespacedKey(javaPlugin, key);
+        return new NamespacedKey(Main.getInstance(), key);
     }
 
     private int getOrDefault(Integer integer, int defaultValue) {

@@ -1,13 +1,11 @@
 package me.vermulst.multibreak.multibreak;
 
-import com.destroystokyo.paper.event.server.ServerTickEndEvent;
 import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.api.event.FetchFigureEvent;
 import me.vermulst.multibreak.api.event.FilterBlocksEvent;
-import me.vermulst.multibreak.config.ConfigManager;
+import me.vermulst.multibreak.config.Config;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.item.FigureItemDataType;
-import me.vermulst.multibreak.api.event.MultiBreakEndEvent;
 import me.vermulst.multibreak.api.event.MultiBreakStartEvent;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -16,64 +14,20 @@ import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockDamageAbortEvent;
-import org.bukkit.event.block.BlockDamageEvent;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.player.PlayerItemHeldEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
 
-public class BreakManager implements Listener {
-
-    private final Main plugin;
-
+public class BreakManager {
     private final Map<UUID, Integer> multiBreakTask = new HashMap<>();
     private final Map<UUID, MultiBreak> multiBlockMap = new HashMap<>();
-
-    public BreakManager(Main plugin) {
-        this.plugin = plugin;
-    }
-
     private final Map<UUID, Figure> figureCache = new HashMap<>();
     private final Map<UUID, Block> lastTargetBlock = new HashMap<>();
 
-    @EventHandler
-    public void joinEvent(PlayerJoinEvent e) {
-        this.refresh(e.getPlayer());
-    }
-
-    @EventHandler
-    public void itemHeld(PlayerItemHeldEvent e) {
-        this.refresh(e.getPlayer());
-    }
-
-    @EventHandler
-    public void inventoryClick(InventoryClickEvent e) {
-        this.refresh((Player) e.getWhoClicked());
-    }
-
-    @EventHandler
-    public void dragEvent(InventoryDragEvent e) {
-        this.refresh((Player) e.getWhoClicked());
-    }
-
-    @EventHandler
-    public void swapOffhand(PlayerSwapHandItemsEvent e) {
-        this.refresh(e.getPlayer());
-    }
-
-
-    private void refresh(Player p) {
-        boolean fairMode = Main.getInstance().getConfigManager().getOptions()[0];
+    protected void refresh(Player p) {
+        boolean fairMode = Config.getInstance().isFairModeEnabled();
         if (!fairMode) return;
         UUID uuid = p.getUniqueId();
         figureCache.remove(uuid);
@@ -86,18 +40,9 @@ public class BreakManager implements Listener {
         }.runTaskLater(Main.getInstance(), 1L);
     }
 
-    @EventHandler
-    public void tickEvent(ServerTickEndEvent e) {
-        boolean fairMode = Main.getInstance().getConfigManager().getOptions()[0];
-        if (!fairMode) return;
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            this.setBreakSpeed(p);
-        }
-    }
-
-    public void setBreakSpeed(Player p) {
+    protected void setBreakSpeed(Player p) {
         UUID uuid = p.getUniqueId();
-        Block targetBlock = this.getTargetBlock(p);
+        Block targetBlock = BreakUtils.getTargetBlock(p);
         if (targetBlock == null) {
             lastTargetBlock.remove(uuid);
             return;
@@ -117,7 +62,7 @@ public class BreakManager implements Listener {
             Figure figure = this.getFigure(p);
             if (figure == null) return;
 
-            ConfigManager config = plugin.getConfigManager();
+            Config config = Config.getInstance();
             EnumSet<Material> includedMaterials = config.getIncludedMaterials();
             EnumSet<Material> ignoredMaterials = config.getIgnoredMaterials();
             FilterBlocksEvent filterBlocksEvent = new FilterBlocksEvent(figure, p, p.getInventory().getItemInMainHand(), includedMaterials, ignoredMaterials);
@@ -134,17 +79,16 @@ public class BreakManager implements Listener {
             }
             double currentAttributeTotal = p.getAttribute(Attribute.BLOCK_BREAK_SPEED).getValue();
             double newAttributeTotal = currentAttributeTotal * slowDownFactor;
-            double currentAttributePlayer = p.getAttribute(Attribute.BLOCK_BREAK_SPEED).getBaseValue();
             AttributeModifier slowDownModifier = new AttributeModifier(
                     new NamespacedKey(Main.getInstance(), "MultiBreakSlowdown"),
-                    -(currentAttributePlayer - newAttributeTotal),
+                    -(currentAttributeTotal - newAttributeTotal),
                     AttributeModifier.Operation.ADD_NUMBER
             );
             attribute.addModifier(slowDownModifier);
         }
     }
 
-    public void filter(Set<Block> blocks, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
+    protected void filter(Set<Block> blocks, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
         blocks.removeIf(block -> {
             Material mainBlockType = block.getType();
             if (includedMaterials != null && !includedMaterials.isEmpty() && !includedMaterials.contains(mainBlockType)) {
@@ -157,7 +101,7 @@ public class BreakManager implements Listener {
         });
     }
 
-    public float getSlowDownFactor(Player p, Set<Block> blocks, float baseProgressPerTick) {
+    protected float getSlowDownFactor(Player p, Set<Block> blocks, float baseProgressPerTick) {
         float lowestProgressPerTick = baseProgressPerTick;
         for (Block block : blocks) {
             float progressPerTick = block.getBreakSpeed(p);
@@ -168,85 +112,38 @@ public class BreakManager implements Listener {
         return lowestProgressPerTick / baseProgressPerTick;
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void multiBreakStart(BlockDamageEvent e) {
-        Player p = e.getPlayer();
-        ItemStack item = e.getItemInHand();
-        Figure figure = this.getFigure(p, item);
-        if (figure == null) return;
-        this.scheduleMultiBreak(e.getPlayer(), figure);
-    }
-
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void multiBreakStop(BlockDamageAbortEvent e) {
-        Player p = e.getPlayer();
-        MultiBreak multiBreak = this.getMultiBreak(p);
-        if (multiBreak == null) return;
-        MultiBreakEndEvent event = new MultiBreakEndEvent(p, multiBreak, false);
-        event.callEvent();
-        this.endMultiBreak(p, multiBreak, false);
-    }
-
-    /** Block broken */
-
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void breakBlockType(BlockBreakEvent e) {
-        if (this.ignoreMultiBreak(e)) return;
-        Player p = e.getPlayer();
-        MultiBreak multiBreak = this.getMultiBreak(p);
-        if (multiBreak == null) {
-            Figure figure = this.getFigure(p);
-            multiBreak = this.initMultiBreak(p, e.getBlock(), figure);
-            if (multiBreak == null) return;
-        }
-        Block block = e.getBlock();
-
-        // Mismatch (player switched to an instamine-block while breaking)
-        if (!block.equals(multiBreak.getBlock())) {
-            Figure figure = this.getFigure(p);
-            multiBreak = this.initMultiBreak(p, block, figure);
-        }
-        MultiBreakEndEvent event = new MultiBreakEndEvent(p, multiBreak, true);
-        event.callEvent();
-        if (event.isCancelled()) return;
-        if (event.getMultiBreak() == null) return;
-        this.endMultiBreak(p, event.getMultiBreak(), true);
-    }
-
-    private boolean ignoreMultiBreak(BlockBreakEvent e) {
+    protected boolean ignoreMultiBreak(BlockBreakEvent e) {
         Block block = e.getBlock();
         boolean b1 = block.hasMetadata("multi-broken");
-        boolean b2 = plugin.getConfigManager().getIgnoredMaterials().contains(block.getType());
+        boolean b2 = Config.getInstance().getIgnoredMaterials().contains(block.getType());
         boolean b3 = e.isCancelled();
         if (block.hasMetadata("multi-broken")) {
-            block.removeMetadata("multi-broken", getPlugin());
+            block.removeMetadata("multi-broken", Main.getInstance());
         }
         return b1 || b2 || b3;
     }
-
 
     /** Schedules multibreak ticking task
      *
      * @param p - player breaking
      */
-    public void scheduleMultiBreak(Player p, Figure figure) {
-        Block block = this.getTargetBlock(p);
+    protected void scheduleMultiBreak(Player p, Figure figure) {
+        Block block = BreakUtils.getTargetBlock(p);
         MultiBreakRunnable multiBreakRunnable = new MultiBreakRunnable(p, block, figure, this);
-        int taskID = multiBreakRunnable.runTaskTimer(getPlugin(), 1, 1).getTaskId();
-        getMultiBreakTask().put(p.getUniqueId(), taskID);
+        int taskID = multiBreakRunnable.runTaskTimer(Main.getInstance(), 1, 1).getTaskId();
+        multiBreakTask.put(p.getUniqueId(), taskID);
     }
 
-
-    public void endMultiBreak(Player p, MultiBreak multiBreak, boolean finished) {
+    protected void endMultiBreak(Player p, MultiBreak multiBreak, boolean finished) {
         UUID uuid = p.getUniqueId();
-        multiBreak.end(finished, getPlugin());
-        this.getMultiBlockMap().remove(uuid);
-        if (!this.getMultiBreakTask().containsKey(uuid)) return;
-        Bukkit.getScheduler().cancelTask(this.getMultiBreakTask().get(uuid));
-        this.getMultiBreakTask().remove(uuid);
+        multiBreak.end(finished);
+        multiBlockMap.remove(uuid);
+        if (!multiBreakTask.containsKey(uuid)) return;
+        Bukkit.getScheduler().cancelTask(multiBreakTask.get(uuid));
+        multiBreakTask.remove(uuid);
     }
 
-    public MultiBreak getMultiBreak(Player p) {
+    protected MultiBreak getMultiBreak(Player p) {
         if (p.getGameMode().equals(GameMode.CREATIVE)) return null;
         if (multiBlockMap.containsKey(p.getUniqueId())) {
             MultiBreak multiBreak = multiBlockMap.get(p.getUniqueId());
@@ -257,11 +154,11 @@ public class BreakManager implements Listener {
         return null;
     }
 
-    public MultiBreak initMultiBreak(Player p, Block block, Figure figure) {
+    protected MultiBreak initMultiBreak(Player p, Block block, Figure figure) {
         if (block == null) return null;
-        BlockFace blockFace = this.getBlockFace(p);
+        BlockFace blockFace = BreakUtils.getBlockFace(p);
         if (blockFace == null) return null;
-        ConfigManager config = plugin.getConfigManager();
+        Config config = Config.getInstance();
         EnumSet<Material> includedMaterials = config.getIncludedMaterials();
         EnumSet<Material> ignoredMaterials = config.getIgnoredMaterials();
         MultiBreak multiBreak = new MultiBreak(p, block, blockFace.getDirection(), figure);
@@ -279,7 +176,7 @@ public class BreakManager implements Listener {
         return multiBreak;
     }
 
-    public Figure getFigure(Player p) {
+    protected Figure getFigure(Player p) {
         ItemStack tool = p.getInventory().getItemInMainHand();
         return this.getFigure(p, tool);
     }
@@ -291,7 +188,7 @@ public class BreakManager implements Listener {
      * @param tool The ItemStack representing the tool.
      * @return The Figure associated with the tool, or null if none is found.
      */
-    public Figure getFigure(Player p, ItemStack tool) {
+    protected Figure getFigure(Player p, ItemStack tool) {
         if (figureCache.containsKey(p.getUniqueId())) {
             return figureCache.get(p.getUniqueId());
         }
@@ -299,14 +196,14 @@ public class BreakManager implements Listener {
             figureCache.put(p.getUniqueId(), null);
             return null;
         }
-        FigureItemDataType figureItemDataType = new FigureItemDataType(this.getPlugin());
+        FigureItemDataType figureItemDataType = new FigureItemDataType();
         Figure figure = figureItemDataType.get(tool);
         if (figure == null) {
             Material material = tool.getType();
-            ConfigManager configManager = this.getPlugin().getConfigManager();
-            if (configManager.getMaterialOptions().containsKey(material)) {
-                String configOptionName = configManager.getMaterialOptions().get(material);
-                figure = configManager.getConfigOptions().get(configOptionName);
+            Config config = Config.getInstance();
+            if (config.getMaterialOptions().containsKey(material)) {
+                String configOptionName = config.getMaterialOptions().get(material);
+                figure = config.getConfigOptions().get(configOptionName);
             }
         }
         FetchFigureEvent fetchFigureEvent = new FetchFigureEvent(figure, p, tool);
@@ -318,25 +215,5 @@ public class BreakManager implements Listener {
         figure = fetchFigureEvent.getFigure();
         figureCache.put(p.getUniqueId(), figure);
         return figure;
-    }
-
-    public Block getTargetBlock(Player p) {
-        return p.getTargetBlockExact(plugin.getConfigManager().getMaxRange());
-    }
-
-    public BlockFace getBlockFace(Player p) {
-        return p.getTargetBlockFace(plugin.getConfigManager().getMaxRange());
-    }
-
-    public Main getPlugin() {
-        return plugin;
-    }
-
-    public Map<UUID, Integer> getMultiBreakTask() {
-        return multiBreakTask;
-    }
-
-    public Map<UUID, MultiBreak> getMultiBlockMap() {
-        return multiBlockMap;
     }
 }

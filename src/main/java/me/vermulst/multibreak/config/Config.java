@@ -1,6 +1,5 @@
 package me.vermulst.multibreak.config;
 
-import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.types.FigureType;
 import net.kyori.adventure.text.Component;
@@ -13,17 +12,15 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.*;
-import java.util.logging.Level;
 import java.util.stream.Stream;
 
-public class ConfigManager {
+public class Config {
 
     private Map<String, Figure> configOptions;
     private Map<Material, String> materialOptions;
     private final EnumSet<Material> includedMaterials = EnumSet.noneOf(Material.class);
     private final EnumSet<Material> ignoredMaterials = EnumSet.noneOf(Material.class);
     private int maxRange = 10;
-    private int fairModeTicksLeeway = 1;
 
     private final boolean[] options = new boolean[] {
             true // fair mode
@@ -35,6 +32,15 @@ public class ConfigManager {
 
     private static final String OLD_PRESETS_PATH = "config_options";
     private static final String NEW_PRESETS_PATH = "presets";
+
+    private static final Config INSTANCE = new Config();
+
+    private Config() {
+    }
+
+    public static Config getInstance() {
+        return INSTANCE;
+    }
 
     public Inventory getMenu() {
         Inventory inventory = Bukkit.createInventory(null, 54, Component.text("Configurations"));
@@ -67,11 +73,11 @@ public class ConfigManager {
         }
 
         /** Max range **/
-        fileConfiguration.set("fair_mode_leeway", this.fairModeTicksLeeway);
+ /*       fileConfiguration.set("fair_mode_leeway", this.fairModeTicksLeeway);
         fileConfiguration.setComments("fair_mode_leeway",
                 List.of("", "The amount of ticks which will count as being in range within fair mode.",
                         "For example, when set to 1, blocks that would take 5 ticks to break while the source block takes 6 ticks, will still be broken.",
-                        "1 is the recommended value."));
+                        "1 is the recommended value."));*/
 
         /** Presets **/
         fileConfiguration.set(OLD_PRESETS_PATH, null);
@@ -134,7 +140,6 @@ public class ConfigManager {
         save = save || this.loadIncludedMaterials(fileConfiguration);
         save = save || this.loadIgnoredMaterials(fileConfiguration);
         save = save || this.loadMaxRange(fileConfiguration);
-        save = save || this.loadFairModeLeeway(fileConfiguration);
         if (save) {
             this.save(fileConfiguration);
         }
@@ -247,12 +252,6 @@ public class ConfigManager {
         return save;
     }
 
-    private boolean loadFairModeLeeway(FileConfiguration fileConfiguration) {
-        boolean save = setIfMissing(fileConfiguration, "fair_mode_leeway", this.maxRange);
-        if (!save) this.fairModeTicksLeeway = fileConfiguration.getInt("fair_mode_leeway");
-        return save;
-    }
-
     private boolean setIfMissing(ConfigurationSection config, String key, Object defaultValue) {
         if (!config.getKeys(false).contains(key)) {
             config.set(key, defaultValue);
@@ -285,10 +284,6 @@ public class ConfigManager {
         return configOptions;
     }
 
-    public boolean[] getOptions() {
-        return options;
-    }
-
     public Map<Material, String> getMaterialOptions() {
         return materialOptions;
     }
@@ -305,7 +300,7 @@ public class ConfigManager {
         return maxRange;
     }
 
-    public int getFairModeTicksLeeway() {
-        return fairModeTicksLeeway;
+    public boolean isFairModeEnabled() {
+        return this.options[0]; // Assuming 'options' holds the config values
     }
 }

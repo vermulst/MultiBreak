@@ -1,6 +1,6 @@
 package me.vermulst.multibreak.commands;
 
-import me.vermulst.multibreak.config.ConfigManager;
+import me.vermulst.multibreak.config.Config;
 import me.vermulst.multibreak.figure.types.FigureType;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -14,10 +14,6 @@ import java.util.List;
 
 public class MultiPresetTabCompleter implements TabCompleter {
 
-    private final ConfigManager configManager;
-    public MultiPresetTabCompleter(ConfigManager configManager) {
-        this.configManager = configManager;
-    }
 
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
@@ -33,7 +29,7 @@ public class MultiPresetTabCompleter implements TabCompleter {
             case 2 -> {
                 switch (args[0]) {
                     case "apply", "delete" -> {
-                        completions.addAll(this.getConfigManager().getConfigOptions().keySet());
+                        completions.addAll(Config.getInstance().getConfigOptions().keySet());
                     }
                     case "create" -> {
                         completions.add("name");
@@ -112,9 +108,5 @@ public class MultiPresetTabCompleter implements TabCompleter {
         }
 
         return completions;
-    }
-
-    public ConfigManager getConfigManager() {
-        return configManager;
     }
 }

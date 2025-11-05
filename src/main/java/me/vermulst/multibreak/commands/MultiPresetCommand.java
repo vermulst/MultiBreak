@@ -4,7 +4,7 @@ import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.types.FigureType;
 import me.vermulst.multibreak.item.FigureItemDataType;
-import me.vermulst.multibreak.config.ConfigManager;
+import me.vermulst.multibreak.config.Config;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Material;
@@ -19,11 +19,6 @@ import org.jetbrains.annotations.NotNull;
 
 
 public class MultiPresetCommand implements CommandExecutor {
-
-    private final Main plugin;
-    public MultiPresetCommand(Main plugin) {
-        this.plugin = plugin;
-    }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
@@ -54,7 +49,7 @@ public class MultiPresetCommand implements CommandExecutor {
     }
 
     public boolean openMenu(@NotNull Player p) {
-        Inventory inventory = this.getConfigManager().getMenu();
+        Inventory inventory = Config.getInstance().getMenu();
         p.openInventory(inventory);
         return true;
     }
@@ -65,12 +60,13 @@ public class MultiPresetCommand implements CommandExecutor {
             return true;
         }
         String presetName = args[1];
-        Figure figure = this.getConfigManager().getConfigOptions().get(presetName);
-        this.getConfigManager().getConfigOptions().remove(presetName);
+        Config config = Config.getInstance();
+        Figure figure = config.getConfigOptions().get(presetName);
+        config.getConfigOptions().remove(presetName);
         FigureMessages.sendDeleteMessage(p, figure, presetName);
         p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1f);
-        this.getPlugin().getConfigManager().updateDeletePreset(this.getPlugin().getConfig(), presetName);
-        this.getPlugin().saveConfig();
+        Config.getInstance().updateDeletePreset(Main.getInstance().getConfig(), presetName);
+        Main.getInstance().saveConfig();
         return true;
     }
 
@@ -107,11 +103,11 @@ public class MultiPresetCommand implements CommandExecutor {
         figure.setRotations((short) rotations[0], (short) rotations[1], (short) rotations[2]);
         figure.setOffsets(offsets[0], offsets[1], offsets[2]);
 
-        this.getConfigManager().getConfigOptions().put(presetName, figure);
+        Config.getInstance().getConfigOptions().put(presetName, figure);
         FigureMessages.sendCreateMessage(p, figure, presetName);
         p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1f);
-        this.getPlugin().getConfigManager().save(this.getPlugin().getConfig());
-        this.getPlugin().saveConfig();
+        Config.getInstance().save(Main.getInstance().getConfig());
+        Main.getInstance().saveConfig();
         return true;
     }
 
@@ -122,12 +118,13 @@ public class MultiPresetCommand implements CommandExecutor {
             return true;
         }
         String configOptionName = args[1];
-        if (args.length < 3 || !this.getConfigManager().getConfigOptions().containsKey(configOptionName)) {
+        Config config = Config.getInstance();
+        if (args.length < 3 || !config.getConfigOptions().containsKey(configOptionName)) {
             return this.enterValidOption(p);
         }
         String applyTo = args[2];
-        Figure figure = this.getConfigManager().getConfigOptions().get(configOptionName);
-        FigureItemDataType figureItemDataType = new FigureItemDataType(this.getPlugin());
+        Figure figure = config.getConfigOptions().get(configOptionName);
+        FigureItemDataType figureItemDataType = new FigureItemDataType();
         if ("holding".equals(applyTo)) {
             ItemStack item = p.getInventory().getItemInMainHand();
             item = figureItemDataType.set(item, figure);
@@ -141,11 +138,11 @@ public class MultiPresetCommand implements CommandExecutor {
                 return true;
             }
             Material material = Material.valueOf(args[3]);
-            this.getConfigManager().getMaterialOptions().put(material, configOptionName);
+            config.getMaterialOptions().put(material, configOptionName);
             FigureMessages.sendApplyMessage(p, figure, true, material);
             p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1f);
-            this.getPlugin().getConfigManager().save(this.getPlugin().getConfig());
-            this.getPlugin().saveConfig();
+            Config.getInstance().save(Main.getInstance().getConfig());
+            Main.getInstance().saveConfig();
             return true;
         } else {
             return this.enterValidOption(p);
@@ -199,13 +196,5 @@ public class MultiPresetCommand implements CommandExecutor {
     public boolean enterValidOption(Player p) {
         p.sendMessage(Component.text("Enter a valid option").color(TextColor.color(255, 85, 85)));
         return true;
-    }
-
-    public ConfigManager getConfigManager() {
-        return this.getPlugin().getConfigManager();
-    }
-
-    public Main getPlugin() {
-        return plugin;
     }
 }

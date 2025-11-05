@@ -17,12 +17,12 @@ public final class MultiBreakAPI {
     }
 
     @ApiStatus.Internal
-    public static void init(@NotNull Plugin plugin) {
+    public static void init() {
         if (DATA_TYPE_INSTANCE != null) {
             throw new IllegalStateException("MultiBreakAPI already initialized!");
         }
         // Instantiate FigureItemDataType ONLY ONCE here
-        DATA_TYPE_INSTANCE = new FigureItemDataType(plugin);
+        DATA_TYPE_INSTANCE = new FigureItemDataType();
     }
 
     /**

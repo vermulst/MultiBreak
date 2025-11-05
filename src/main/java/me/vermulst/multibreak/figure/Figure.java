@@ -1,8 +1,7 @@
 package me.vermulst.multibreak.figure;
 
-import me.vermulst.multibreak.Main;
+import me.vermulst.multibreak.config.Config;
 import me.vermulst.multibreak.figure.types.FigureType;
-import me.vermulst.multibreak.multibreak.MultiBlock;
 import me.vermulst.multibreak.utils.CompassDirection;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -43,7 +42,7 @@ public abstract class Figure {
 
 
     public BlockFace getBlockFace(Player p) {
-        return p.getTargetBlockFace(Main.getInstance().getConfigManager().getMaxRange());
+        return p.getTargetBlockFace(Config.getInstance().getMaxRange());
     }
 
     public Set<Block> getBlocks(Player p, Block targetBlock) {

@@ -16,11 +16,6 @@ import org.jetbrains.annotations.NotNull;
 
 public class MultiBreakCommand implements CommandExecutor {
 
-    private final Plugin plugin;
-    public MultiBreakCommand(Plugin plugin) {
-        this.plugin = plugin;
-    }
-
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!(sender instanceof Player p)) {
@@ -47,7 +42,7 @@ public class MultiBreakCommand implements CommandExecutor {
     }
 
     private void handleRemoveCommand(Player p, ItemStack item) {
-        FigureItemDataType figureItemDataType = new FigureItemDataType(this.plugin);
+        FigureItemDataType figureItemDataType = new FigureItemDataType();
         if (!figureItemDataType.has(item)) {
             p.sendMessage(Component.text("The item in your hand is not a MultiBreak item").color(TextColor.color(255, 85, 85)));
             return;
@@ -104,7 +99,7 @@ public class MultiBreakCommand implements CommandExecutor {
         Figure figure = figureType.build(width, height, depth);
         figure.setRotations(rotationWidth, rotationHeight, rotationDepth);
         figure.setOffsets(offsetWidth, offsetHeight, offsetDepth);
-        FigureItemDataType figureItemDataType = new FigureItemDataType(this.plugin);
+        FigureItemDataType figureItemDataType = new FigureItemDataType();
         p.getInventory().setItemInMainHand(figureItemDataType.set(item, figure));
         FigureMessages.sendApplyMessage(p, figure, false, item.getType());
         p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1f);
