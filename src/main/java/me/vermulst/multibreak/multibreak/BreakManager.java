@@ -20,6 +20,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
+import java.util.logging.Level;
 
 public class BreakManager {
     private final Map<UUID, Integer> multiBreakTask = new HashMap<>();
@@ -27,66 +28,63 @@ public class BreakManager {
     private final Map<UUID, Figure> figureCache = new HashMap<>();
     private final Map<UUID, Block> lastTargetBlock = new HashMap<>();
 
-    protected void refresh(Player p) {
+    protected void refreshTool(Player p) {
         boolean fairMode = Config.getInstance().isFairModeEnabled();
         if (!fairMode) return;
-        UUID uuid = p.getUniqueId();
-        figureCache.remove(uuid);
-        lastTargetBlock.remove(uuid);
         new BukkitRunnable() {
             @Override
             public void run() {
-                setBreakSpeed(p);
+                UUID uuid = p.getUniqueId();
+                Figure previousFigure = figureCache.remove(uuid);
+                Figure newFigure = getFigure(p);
+                if (newFigure != null && newFigure.equals(previousFigure)) return;
+                lastTargetBlock.remove(uuid);
+                refreshBreakSpeed(p);
             }
         }.runTaskLater(Main.getInstance(), 1L);
     }
 
-    protected void setBreakSpeed(Player p) {
+    protected void refreshBreakSpeed(Player p) {
         UUID uuid = p.getUniqueId();
         Block targetBlock = BreakUtils.getTargetBlock(p);
         if (targetBlock == null) {
             lastTargetBlock.remove(uuid);
             return;
         }
-        if (!lastTargetBlock.containsKey(uuid)) {
-            lastTargetBlock.put(uuid, targetBlock);
-        } else {
-            Block lastBlock = lastTargetBlock.get(uuid);
-            if (!lastBlock.equals(targetBlock)) {
-                lastTargetBlock.put(uuid, targetBlock);
-            }
-            AttributeInstance attribute = p.getAttribute(Attribute.BLOCK_BREAK_SPEED);
-            AttributeModifier modifierToRemove = attribute.getModifier(new NamespacedKey(Main.getInstance(), "MultiBreakSlowdown"));
-            if (modifierToRemove != null) {
-                attribute.removeModifier(modifierToRemove);
-            }
-            Figure figure = this.getFigure(p);
-            if (figure == null) return;
+        if (lastTargetBlock.containsKey(uuid) && targetBlock.equals(lastTargetBlock.get(uuid))) return;
+        lastTargetBlock.put(uuid, targetBlock);
 
-            Config config = Config.getInstance();
-            EnumSet<Material> includedMaterials = config.getIncludedMaterials();
-            EnumSet<Material> ignoredMaterials = config.getIgnoredMaterials();
-            FilterBlocksEvent filterBlocksEvent = new FilterBlocksEvent(figure, p, p.getInventory().getItemInMainHand(), includedMaterials, ignoredMaterials);
-            filterBlocksEvent.callEvent();
-
-            Set<Block> blocks = figure.getBlocks(p, targetBlock);
-            this.filter(blocks, filterBlocksEvent.getIncludedMaterials(), filterBlocksEvent.getExcludedMaterials());
-
-            float baseProgressPerTick = targetBlock.getBreakSpeed(p);
-            if (baseProgressPerTick == Float.POSITIVE_INFINITY) return;
-            float slowDownFactor = this.getSlowDownFactor(p, blocks, baseProgressPerTick);
-            if (slowDownFactor == 1.0f) {
-                return;
-            }
-            double currentAttributeTotal = p.getAttribute(Attribute.BLOCK_BREAK_SPEED).getValue();
-            double newAttributeTotal = currentAttributeTotal * slowDownFactor;
-            AttributeModifier slowDownModifier = new AttributeModifier(
-                    new NamespacedKey(Main.getInstance(), "MultiBreakSlowdown"),
-                    -(currentAttributeTotal - newAttributeTotal),
-                    AttributeModifier.Operation.ADD_NUMBER
-            );
-            attribute.addModifier(slowDownModifier);
+        AttributeInstance attribute = p.getAttribute(Attribute.BLOCK_BREAK_SPEED);
+        AttributeModifier modifierToRemove = attribute.getModifier(new NamespacedKey(Main.getInstance(), "MultiBreakSlowdown"));
+        if (modifierToRemove != null) {
+            attribute.removeModifier(modifierToRemove);
         }
+        Figure figure = this.getFigure(p);
+        if (figure == null) return;
+
+        Config config = Config.getInstance();
+        EnumSet<Material> includedMaterials = config.getIncludedMaterials();
+        EnumSet<Material> ignoredMaterials = config.getIgnoredMaterials();
+        FilterBlocksEvent filterBlocksEvent = new FilterBlocksEvent(figure, p, p.getInventory().getItemInMainHand(), includedMaterials, ignoredMaterials);
+        filterBlocksEvent.callEvent();
+
+        Set<Block> blocks = figure.getBlocks(p, targetBlock);
+        this.filter(blocks, filterBlocksEvent.getIncludedMaterials(), filterBlocksEvent.getExcludedMaterials());
+
+        float baseProgressPerTick = targetBlock.getBreakSpeed(p);
+        if (baseProgressPerTick == Float.POSITIVE_INFINITY) return;
+        float slowDownFactor = this.getSlowDownFactor(p, blocks, baseProgressPerTick);
+        if (slowDownFactor == 1.0f) {
+            return;
+        }
+        double currentAttributeTotal = p.getAttribute(Attribute.BLOCK_BREAK_SPEED).getValue();
+        double newAttributeTotal = currentAttributeTotal * slowDownFactor;
+        AttributeModifier slowDownModifier = new AttributeModifier(
+                new NamespacedKey(Main.getInstance(), "MultiBreakSlowdown"),
+                -(currentAttributeTotal - newAttributeTotal),
+                AttributeModifier.Operation.ADD_NUMBER
+        );
+        attribute.addModifier(slowDownModifier);
     }
 
     /** Schedules multibreak ticking task

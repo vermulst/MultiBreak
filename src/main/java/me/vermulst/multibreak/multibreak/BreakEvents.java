@@ -5,6 +5,7 @@ import me.vermulst.multibreak.api.event.MultiBreakEndEvent;
 import me.vermulst.multibreak.config.Config;
 import me.vermulst.multibreak.figure.Figure;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -13,12 +14,15 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageAbortEvent;
 import org.bukkit.event.block.BlockDamageEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
-import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.*;
 
 public class BreakEvents implements Listener {
 
@@ -28,37 +32,106 @@ public class BreakEvents implements Listener {
     }
 
     @EventHandler
+    public void pickupIntoHand(EntityPickupItemEvent e) {
+        if (!(e.getEntity() instanceof Player p)) return;
+        PlayerInventory inventory = p.getInventory();
+        ItemStack[] items = inventory.getContents();
+        int heldSlot = inventory.getHeldItemSlot();
+        if (items[heldSlot] != null) return;
+        int firstEmptySlot = -1;
+        for (int i = 0; i < 9; i++) {
+            if (items[i] == null) {
+                firstEmptySlot = i;
+                break;
+            }
+        }
+        if (firstEmptySlot == heldSlot) {
+            breakManager.refreshTool(p);
+        }
+    }
+
+    @EventHandler
+    public void emptyHeldSlot(PlayerDropItemEvent e) {
+        Player p = e.getPlayer();
+        if (p.getInventory().getItemInMainHand().getType() != Material.AIR) return;
+        breakManager.refreshTool(p);
+    }
+
+
+    @EventHandler
     public void joinEvent(PlayerJoinEvent e) {
-        breakManager.refresh(e.getPlayer());
+        breakManager.refreshTool(e.getPlayer());
     }
 
     @EventHandler
-    public void itemHeld(PlayerItemHeldEvent e) {
-        breakManager.refresh(e.getPlayer());
+    public void hotbarSwap(PlayerItemHeldEvent e) {
+        breakManager.refreshTool(e.getPlayer());
     }
 
     @EventHandler
-    public void inventoryClick(InventoryClickEvent e) {
-        breakManager.refresh((Player) e.getWhoClicked());
+    public void offhandSwap(PlayerSwapHandItemsEvent e) {
+        breakManager.refreshTool(e.getPlayer());
     }
 
     @EventHandler
-    public void dragEvent(InventoryDragEvent e) {
-        breakManager.refresh((Player) e.getWhoClicked());
+    public void heldItemClick(InventoryClickEvent e) {
+        if (!(e.getWhoClicked() instanceof Player p)) return;
+
+        // 1. Handle SHIFT_CLICK: Assumes it might affect the held slot by moving an item in.
+        if (ClickType.SHIFT_LEFT.equals(e.getClick())) {
+            breakManager.refreshTool(p);
+            return;
+        }
+
+        // 2. Handle NUMBER_KEY: Player is swapping with a hotbar slot.
+        int playerHeldSlotRelative = p.getInventory().getHeldItemSlot();
+        if (ClickType.NUMBER_KEY.equals(e.getClick())) {
+            // Hotbar buttons are 0-8. If the button used matches the held slot, refresh.
+            if (e.getHotbarButton() == playerHeldSlotRelative) {
+                breakManager.refreshTool(p);
+                return;
+            }
+        }
+
+        // 3. Handle DIRECT CLICK: Player clicked directly on their held slot in the GUI.
+        Inventory topInv = e.getInventory();
+        int playerHeldSlotRaw = this.getPlayerHeldSlotRaw(p, topInv);
+        if (e.getRawSlot() == playerHeldSlotRaw) {
+            breakManager.refreshTool(p);
+        }
     }
 
     @EventHandler
-    public void swapOffhand(PlayerSwapHandItemsEvent e) {
-        breakManager.refresh(e.getPlayer());
+    public void dragIntoHeldItemEvent(InventoryDragEvent e) {
+        if (!(e.getWhoClicked() instanceof Player p)) return;
+        Inventory topInv = e.getInventory();
+        int playerHeldSlotRaw = this.getPlayerHeldSlotRaw(p, topInv);
+
+        if (e.getRawSlots().contains(playerHeldSlotRaw)) {
+            breakManager.refreshTool(p);
+        }
     }
 
+
+    private int getPlayerHeldSlotRaw(Player p, Inventory topInv) {
+        int playerHeldSlotRaw = (topInv.getSize() + 27) + p.getInventory().getHeldItemSlot();
+
+        /** Weird minecraft edge cases */
+        if (topInv instanceof CraftingInventory) {
+            playerHeldSlotRaw += 4;
+        } else if (topInv instanceof CrafterInventory) {
+            playerHeldSlotRaw--;
+        }
+
+        return playerHeldSlotRaw;
+    }
 
     @EventHandler
     public void tickEvent(ServerTickEndEvent e) {
         boolean fairMode = Config.getInstance().isFairModeEnabled();
         if (!fairMode) return;
         for (Player p : Bukkit.getOnlinePlayers()) {
-            breakManager.setBreakSpeed(p);
+            breakManager.refreshBreakSpeed(p);
         }
     }
 

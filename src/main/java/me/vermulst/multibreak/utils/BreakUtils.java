@@ -6,7 +6,6 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 
 public class BreakUtils {
-
     public static BlockFace getBlockFace(Player p) {
         return p.getTargetBlockFace(Config.getInstance().getMaxRange());
     }
