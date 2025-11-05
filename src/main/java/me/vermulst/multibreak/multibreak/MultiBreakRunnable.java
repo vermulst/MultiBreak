@@ -1,6 +1,7 @@
 package me.vermulst.multibreak.multibreak;
 
 import me.vermulst.multibreak.figure.Figure;
+import me.vermulst.multibreak.utils.BreakUtils;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;

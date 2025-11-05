@@ -1,4 +1,4 @@
-package me.vermulst.multibreak.multibreak;
+package me.vermulst.multibreak.utils;
 
 import me.vermulst.multibreak.config.Config;
 import org.bukkit.block.Block;

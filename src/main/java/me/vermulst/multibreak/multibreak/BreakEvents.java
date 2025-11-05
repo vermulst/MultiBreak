@@ -85,7 +85,7 @@ public class BreakEvents implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void breakBlockType(BlockBreakEvent e) {
-        if (breakManager.ignoreMultiBreak(e)) return;
+        if (!breakManager.isMultiBreak(e)) return;
         Player p = e.getPlayer();
         MultiBreak multiBreak = breakManager.getMultiBreak(p);
         if (multiBreak == null) {

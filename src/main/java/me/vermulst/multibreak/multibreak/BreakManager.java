@@ -7,6 +7,7 @@ import me.vermulst.multibreak.config.Config;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.item.FigureItemDataType;
 import me.vermulst.multibreak.api.event.MultiBreakStartEvent;
+import me.vermulst.multibreak.utils.BreakUtils;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -88,41 +89,6 @@ public class BreakManager {
         }
     }
 
-    protected void filter(Set<Block> blocks, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
-        blocks.removeIf(block -> {
-            Material mainBlockType = block.getType();
-            if (includedMaterials != null && !includedMaterials.isEmpty() && !includedMaterials.contains(mainBlockType)) {
-                return true;
-            }
-            if (ignoredMaterials != null && !ignoredMaterials.isEmpty() && ignoredMaterials.contains(mainBlockType)) {
-                return true;
-            }
-            return false;
-        });
-    }
-
-    protected float getSlowDownFactor(Player p, Set<Block> blocks, float baseProgressPerTick) {
-        float lowestProgressPerTick = baseProgressPerTick;
-        for (Block block : blocks) {
-            float progressPerTick = block.getBreakSpeed(p);
-            if (progressPerTick < lowestProgressPerTick) {
-                lowestProgressPerTick = progressPerTick;
-            }
-        }
-        return lowestProgressPerTick / baseProgressPerTick;
-    }
-
-    protected boolean ignoreMultiBreak(BlockBreakEvent e) {
-        Block block = e.getBlock();
-        boolean b1 = block.hasMetadata("multi-broken");
-        boolean b2 = Config.getInstance().getIgnoredMaterials().contains(block.getType());
-        boolean b3 = e.isCancelled();
-        if (block.hasMetadata("multi-broken")) {
-            block.removeMetadata("multi-broken", Main.getInstance());
-        }
-        return b1 || b2 || b3;
-    }
-
     /** Schedules multibreak ticking task
      *
      * @param p - player breaking
@@ -141,17 +107,6 @@ public class BreakManager {
         if (!multiBreakTask.containsKey(uuid)) return;
         Bukkit.getScheduler().cancelTask(multiBreakTask.get(uuid));
         multiBreakTask.remove(uuid);
-    }
-
-    protected MultiBreak getMultiBreak(Player p) {
-        if (p.getGameMode().equals(GameMode.CREATIVE)) return null;
-        if (multiBlockMap.containsKey(p.getUniqueId())) {
-            MultiBreak multiBreak = multiBlockMap.get(p.getUniqueId());
-            if (!multiBreak.hasEnded()) {
-                return multiBreak;
-            }
-        }
-        return null;
     }
 
     protected MultiBreak initMultiBreak(Player p, Block block, Figure figure) {
@@ -174,6 +129,41 @@ public class BreakManager {
         multiBreak.checkValid(progressPerTick, includedMaterials, ignoredMaterials);
         multiBlockMap.put(p.getUniqueId(), multiBreak);
         return multiBreak;
+    }
+
+    protected boolean isMultiBreak(BlockBreakEvent e) {
+        Block block = e.getBlock();
+        boolean wasMultiBroken = block.hasMetadata("multi-broken");
+        boolean isIgnoredMaterial = Config.getInstance().getIgnoredMaterials().contains(block.getType());
+        boolean isCancelled = e.isCancelled();
+        if (wasMultiBroken) {
+            block.removeMetadata("multi-broken", Main.getInstance());
+        }
+        return !wasMultiBroken && !isIgnoredMaterial && !isCancelled;
+    }
+
+    protected void filter(Set<Block> blocks, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
+        blocks.removeIf(block -> {
+            Material mainBlockType = block.getType();
+            if (includedMaterials != null && !includedMaterials.isEmpty() && !includedMaterials.contains(mainBlockType)) {
+                return true;
+            }
+            if (ignoredMaterials != null && !ignoredMaterials.isEmpty() && ignoredMaterials.contains(mainBlockType)) {
+                return true;
+            }
+            return false;
+        });
+    }
+
+    protected float getSlowDownFactor(Player p, Set<Block> blocks, float baseProgressPerTick) {
+        float lowestProgressPerTick = baseProgressPerTick;
+        for (Block block : blocks) {
+            float progressPerTick = block.getBreakSpeed(p);
+            if (progressPerTick < lowestProgressPerTick) {
+                lowestProgressPerTick = progressPerTick;
+            }
+        }
+        return lowestProgressPerTick / baseProgressPerTick;
     }
 
     protected Figure getFigure(Player p) {
@@ -215,5 +205,16 @@ public class BreakManager {
         figure = fetchFigureEvent.getFigure();
         figureCache.put(p.getUniqueId(), figure);
         return figure;
+    }
+
+    protected MultiBreak getMultiBreak(Player p) {
+        if (p.getGameMode().equals(GameMode.CREATIVE)) return null;
+        if (multiBlockMap.containsKey(p.getUniqueId())) {
+            MultiBreak multiBreak = multiBlockMap.get(p.getUniqueId());
+            if (!multiBreak.hasEnded()) {
+                return multiBreak;
+            }
+        }
+        return null;
     }
 }
