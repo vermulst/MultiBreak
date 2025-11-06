@@ -27,25 +27,25 @@ public class MultiBreakRunnable extends BukkitRunnable {
     @Override
     public void run() {
         // check once, if block changed since from tick 0 -> 1.
+        MultiBreak multiBreak = breakManager.getMultiBreak(p);
         if (!init) {
             if (block.getType().isAir() && !BreakUtils.getTargetBlock(p).equals(block)) {
-                cancel();
+                cancelMultiBreak(multiBreak);
                 return;
             }
             init = true;
         }
-        MultiBreak multiBreak = breakManager.getMultiBreak(p);
         if (multiBreak == null) {
             Block blockMining = BreakUtils.getTargetBlock(p);
             multiBreak = breakManager.initMultiBreak(p, blockMining, this.figure);
             if (multiBreak == null) {
-                cancel();
+                cancelMultiBreak(null);
                 return;
             }
         }
         BlockFace blockFace = BreakUtils.getBlockFace(p);
         if (blockFace == null) {
-            cancel();
+            cancelMultiBreak(multiBreak);
             return;
         }
         // check if direction changed
@@ -53,14 +53,19 @@ public class MultiBreakRunnable extends BukkitRunnable {
         if (!multiBreak.getPlayerDirection().equals(direction)) {
             multiBreak = replaceMultiBreak(p, multiBreak);
             if (multiBreak == null) {
-                cancel();
+                cancelMultiBreak(null);
                 return;
             }
-            breakManager.scheduleMultiBreak(p, this.figure);
+            breakManager.scheduleMultiBreak(p, this.figure, this.block);
         }
         multiBreak.tick();
     }
 
+
+    public void cancelMultiBreak(MultiBreak multiBreak) {
+        breakManager.endMultiBreak(p, multiBreak, false);
+        if (!this.isCancelled()) cancel();
+    }
 
     /** Replaces multibreak while preserving progress
      *

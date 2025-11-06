@@ -13,10 +13,13 @@ import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.util.Vector;
 
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class MultiBreak {
 
-    private final Player p;
+    private final UUID playerUUID;
+    private Set<UUID> nearbyPlayers;
     private final Block block;
     private final Vector playerDirection;
     private int progressTicks;
@@ -24,9 +27,9 @@ public class MultiBreak {
     private List<MultiBlock> multiBlocks = new ArrayList<>();
     private boolean ended = false;
 
-
     public MultiBreak(Player p, Block block, Vector playerDirection, Figure figure) {
-        this.p = p;
+        this.playerUUID = p.getUniqueId();
+        this.nearbyPlayers = getNearbyPlayers(block.getLocation());
         this.block = block;
         this.playerDirection = playerDirection;
         this.initBlocks(figure);
@@ -35,8 +38,113 @@ public class MultiBreak {
         this.progressBroken = ((float) 1) / destroySpeedTicks;
     }
 
-    public void setFigure(Figure figure) {
-        this.initBlocks(figure);
+    public void initBlocks(Figure figure) {
+        Player p = this.getPlayer();
+        if (p == null) return;
+        this.multiBlocks = new ArrayList<>();
+        if (figure == null) return;
+        Set<Block> blocks = figure.getBlocks(p, this.getBlock());
+        for (Block block : blocks) {
+            MultiBlock multiBlock = new MultiBlock(block);
+            this.getMultiBlocks().add(multiBlock);
+        }
+    }
+
+    public void tick() {
+        if (this.getPlayer() == null) {
+            this.end(false);
+            return;
+        }
+        this.progressTicks++;
+        if (this.progressTicks % 20 == 0) this.checkPlayers();
+        this.checkRemove();
+        if (this.progressTicks % 2 == 0) this.playParticles();
+        updateBlockAnimationPacket();
+    }
+
+    public void end(boolean finished) {
+        this.ended = true;
+        this.writeStage(0);
+        if (!finished) return;
+        ParticleBuilder particleBuilder = new ParticleBuilder(Particle.BLOCK)
+                .count(16)
+                .offset(0.5, 0.5, 0.5);
+        World world = this.getBlock().getWorld();
+        int size = this.getMultiBlocks().size() - 1;
+        float volume = (float) (1 / Math.log(((size) + 1) * Math.E));
+        for (MultiBlock multiBlock : this.getMultiBlocks()) {
+            if (!multiBlock.breakThisBlock()) continue;
+            Block block = multiBlock.getBlock();
+            Material blockType = block.getType();
+            BlockData blockData = block.getBlockData().clone();
+            Location location = block.getLocation();
+
+            if (Config.getInstance().getIgnoredMaterials().contains(blockType)) continue;
+            block.setMetadata("multi-broken", new FixedMetadataValue(Main.getInstance(), true));
+            boolean broken = this.getPlayer().breakBlock(block);
+            if (!broken) continue;
+            if (multiBlock.getDrops() != null) {
+                for (ItemStack drop : multiBlock.getDrops()) {
+                    world.dropItemNaturally(location, drop);
+                }
+            }
+            world.playSound(location, blockData.getSoundGroup().getBreakSound(), volume, 1F);
+            if (multiBlock.isVisible()) {
+                particleBuilder.location(location.add(0.5, 0.5, 0.5))
+                        .data(blockData)
+                        .spawn();
+            }
+        }
+    }
+
+    public void updateBlockAnimationPacket() {
+        float breakSpeed = this.getBlock().getBreakSpeed(this.getPlayer());
+        float destroySpeed = 0.000001f + (1 / breakSpeed);
+        this.progressBroken += ((float) 1) / destroySpeed;
+        this.progressBroken = Math.min(this.progressBroken, 1.0f);
+        this.progressBroken = Math.max(this.progressBroken, 0.0f);
+        this.writeStage(this.progressBroken);
+    }
+
+    public void writeStage(float stage) {
+        this.writeStage(this.nearbyPlayers, stage);
+    }
+
+    public void writeStage(Collection<UUID> uuids, float stage) {
+        Collection<Player> onlinePlayers = uuids.stream()
+                .map(Bukkit::getPlayer)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        for (MultiBlock multiBlock : this.multiBlocks) {
+            if (multiBlock.getBlock().equals(this.getBlock())) continue;
+            if (!multiBlock.isVisible()) continue;
+            multiBlock.writeStage(onlinePlayers, stage);
+        }
+    }
+
+    public void checkPlayers() {
+        Set<UUID> oldNearbyPlayers = this.nearbyPlayers;
+        Location blockLoc = this.block.getLocation();
+
+        Set<UUID> newNearbyPlayers = this.getNearbyPlayers(blockLoc);
+
+        Set<UUID> departedPlayers = new HashSet<>(oldNearbyPlayers);
+        departedPlayers.removeAll(newNearbyPlayers);
+
+        this.writeStage(departedPlayers, 0);
+
+        this.nearbyPlayers = newNearbyPlayers;
+    }
+
+    public void checkRemove() {
+        List<MultiBlock> blocksToRemove = this.getMultiBlocks().stream()
+                .filter(MultiBlock::mismatchesType)
+                .toList();
+
+        this.writeStage(0);
+
+        this.getMultiBlocks().removeAll(blocksToRemove);
     }
 
     public boolean isValid(EnumSet<Material> includedMaterials, EnumSet<Material> excludedMaterials) {
@@ -73,74 +181,6 @@ public class MultiBreak {
     }
 
 
-
-    public void initBlocks(Figure figure) {
-        this.multiBlocks = new ArrayList<>();
-        if (figure == null) return;
-        Set<Block> blocks = figure.getBlocks(p, this.getBlock());
-        for (Block block : blocks) {
-            MultiBlock multiBlock = new MultiBlock(block);
-            this.getMultiBlocks().add(multiBlock);
-        }
-    }
-
-    public void tick() {
-        this.progressTicks++;
-        this.checkRemove();
-        if (this.progressTicks % 2 == 0) this.playParticles();
-        updateBlockAnimationPacket();
-    }
-
-    public void checkRemove() {
-        List<MultiBlock> blocksToRemove = this.getMultiBlocks().stream()
-                .filter(MultiBlock::mismatchesType)
-                .toList();
-
-        for (MultiBlock multiBlock : blocksToRemove) {
-            multiBlock.writeStage(this.getPlayer(), 0);
-        }
-
-        this.getMultiBlocks().removeAll(blocksToRemove);
-    }
-
-    public void end(boolean finished) {
-        this.ended = true;
-        for (MultiBlock multiBlock : this.getMultiBlocks()) {
-            multiBlock.writeStage(this.getPlayer(), 0);
-        }
-        if (!finished) return;
-        ParticleBuilder particleBuilder = new ParticleBuilder(Particle.BLOCK)
-                .count(16)
-                .offset(0.5, 0.5, 0.5);
-        World world = this.getBlock().getWorld();
-        int size = this.getMultiBlocks().size() - 1;
-        float volume = (float) (1 / Math.log(((size) + 1) * Math.E));
-        for (MultiBlock multiBlock : this.getMultiBlocks()) {
-            if (!multiBlock.breakThisBlock()) continue;
-            Block block = multiBlock.getBlock();
-            Material blockType = block.getType();
-            BlockData blockData = block.getBlockData().clone();
-            Location location = block.getLocation();
-
-            if (Config.getInstance().getIgnoredMaterials().contains(blockType)) continue;
-            block.setMetadata("multi-broken", new FixedMetadataValue(Main.getInstance(), true));
-            boolean broken = this.getPlayer().breakBlock(block);
-            if (!broken) continue;
-            if (multiBlock.getDrops() != null) {
-                for (ItemStack drop : multiBlock.getDrops()) {
-                    world.dropItemNaturally(location, drop);
-                }
-            }
-            world.playSound(location, blockData.getSoundGroup().getBreakSound(), volume, 1F);
-            if (multiBlock.isVisible()) {
-                particleBuilder.location(location.add(0.5, 0.5, 0.5))
-                        .data(blockData)
-                        .spawn();
-            }
-        }
-    }
-
-
     public void playParticles() {
         Vector finalOffset = new Vector(0.45, 0.45, 0.45);
         if (this.getPlayerDirection().getX() != 0) {
@@ -168,21 +208,20 @@ public class MultiBreak {
         }
     }
 
-    public void updateBlockAnimationPacket() {
-        float breakSpeed = this.getBlock().getBreakSpeed(this.getPlayer());
-        float destroySpeed = 0.000001f + (1 / breakSpeed);
-        this.progressBroken += ((float) 1) / destroySpeed;
-        this.progressBroken = Math.min(this.progressBroken, 1.0f);
-        this.progressBroken = Math.max(this.progressBroken, 0.0f);
-        for (MultiBlock multiBlock : this.getMultiBlocks()) {
-            if (multiBlock.getBlock().equals(this.getBlock())) continue;
-            if (!multiBlock.isVisible()) continue;
-            multiBlock.writeStage(this.getPlayer(), this.progressBroken);
-        }
+    public Set<UUID> getNearbyPlayers(Location blockLoc) {
+        return blockLoc.getWorld().getNearbyPlayers(blockLoc, 64).stream().map(Player::getUniqueId).collect(Collectors.toSet());
     }
 
     public Player getPlayer() {
-        return p;
+        return Bukkit.getPlayer(this.playerUUID);
+    }
+
+    public List<Block> getBlocks() {
+        List<Block> blocks = new ArrayList<>();
+        for (MultiBlock multiBlock : this.getMultiBlocks()) {
+            blocks.add(multiBlock.getBlock());
+        }
+        return blocks;
     }
 
     public Block getBlock() {
@@ -197,13 +236,12 @@ public class MultiBreak {
         return multiBlocks;
     }
 
+    public float getProgressBroken() {
+        return progressBroken;
+    }
 
-    public List<Block> getBlocks() {
-        List<Block> blocks = new ArrayList<>();
-        for (MultiBlock multiBlock : this.getMultiBlocks()) {
-            blocks.add(multiBlock.getBlock());
-        }
-        return blocks;
+    public Vector getPlayerDirection() {
+        return playerDirection;
     }
 
     public boolean hasEnded() {
@@ -218,65 +256,14 @@ public class MultiBreak {
         this.progressBroken = progressBroken;
     }
 
-    public float getProgressBroken() {
-        return progressBroken;
-    }
-
-    public Vector getPlayerDirection() {
-        return playerDirection;
-    }
-
     @Override
     public String toString() {
         return "MultiBreak{" +
-                "p=" + p +
+                "p=" + this.getPlayer() +
                 ", block=" + block +
                 ", progressTicks=" + progressTicks +
                 ", multiBlocks=" + multiBlocks +
                 ", ended=" + ended +
                 '}';
     }
-
-
-
-    /*public void slowDown(Player p, float slowDownFactor, ItemStack tool) {
-        double currentAttributeTotal = p.getAttribute(Attribute.BLOCK_BREAK_SPEED).getValue();
-        double newAttributeTotal = currentAttributeTotal * slowDownFactor;
-        double currentAttributePlayer = p.getAttribute(Attribute.BLOCK_BREAK_SPEED).getBaseValue();
-        double newAttributePlayer = currentAttributePlayer - (currentAttributePlayer - newAttributeTotal);
-
-        // store original player attribute
-        p.setMetadata("multibreak-original-break-speed", new FixedMetadataValue(Main.getInstance(), currentAttributePlayer));
-        AttributeInstance attribute = p.getAttribute(Attribute.BLOCK_BREAK_SPEED);
-        AttributeModifier slowDownModifier = new AttributeModifier(
-                new NamespacedKey(Main.getInstance(), "MultiBreakSlowdown"),
-                -(currentAttributePlayer - newAttributeTotal),
-                AttributeModifier.Operation.ADD_NUMBER
-        );
-        attribute.addModifier(slowDownModifier);
-    }
-
-    public float getSlowDownFactor(float baseProgressPerTick) {
-        float lowestProgressPerTick = baseProgressPerTick;
-        for (MultiBlock multiBlock : this.getMultiBlocks()) {
-            float progressPerTick = multiBlock.getBlock().getBreakSpeed(this.getPlayer());
-            if (progressPerTick < baseProgressPerTick) {
-                lowestProgressPerTick = progressPerTick;
-            }
-        }
-        return lowestProgressPerTick / baseProgressPerTick;
-    }
-
-    public void restore(Player p) {
-        if (!p.hasMetadata("multibreak-original-break-speed")) return;
-        AttributeInstance attribute = p.getAttribute(Attribute.BLOCK_BREAK_SPEED);
-        AttributeModifier modifierToRemove = attribute.getModifier(new NamespacedKey(Main.getInstance(), "MultiBreakSlowdown"));
-        if (modifierToRemove != null) {
-            attribute.removeModifier(modifierToRemove);
-        }
-
-        /*double originalValue = p.getMetadata("multibreak-original-break-speed").get(0).asDouble();
-        p.getAttribute(Attribute.PLAYER_BLOCK_BREAK_SPEED).setBaseValue(originalValue);//
-        p.removeMetadata("multibreak-original-break-speed", Main.getInstance());
-    }*/
 }

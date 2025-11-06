@@ -5,8 +5,10 @@ import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.types.FigureType;
 import me.vermulst.multibreak.item.FigureItemDataType;
 import me.vermulst.multibreak.config.Config;
+import me.vermulst.multibreak.multibreak.BreakManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
@@ -131,6 +133,7 @@ public class MultiPresetCommand implements CommandExecutor {
             p.getInventory().setItemInMainHand(item);
             FigureMessages.sendApplyMessage(p, figure, false, item.getType());
             p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1f);
+            BreakManager.getInstance().refreshTool(p);
             return true;
         } else if ("itemtype".equals(applyTo)) {
             if (args.length < 4) {
@@ -143,6 +146,11 @@ public class MultiPresetCommand implements CommandExecutor {
             p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1f);
             Config.getInstance().save(Main.getInstance().getConfig());
             Main.getInstance().saveConfig();
+            BreakManager breakManager = BreakManager.getInstance();
+            for (Player p1 : Bukkit.getOnlinePlayers()) {
+                if (!material.equals(p1.getInventory().getItemInMainHand().getType())) continue;
+                breakManager.refreshTool(p1);
+            }
             return true;
         } else {
             return this.enterValidOption(p);

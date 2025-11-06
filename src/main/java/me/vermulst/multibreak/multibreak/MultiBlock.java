@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -42,8 +43,10 @@ public class MultiBlock {
         return false;
     }
 
-    public void writeStage(Player p, float stage) {
-        p.sendBlockDamage(this.getBlock().getLocation(), stage, sourceID);
+    public void writeStage(Collection<Player> players, float stage) {
+        for (Player p : players) {
+            p.sendBlockDamage(this.getBlock().getLocation(), stage, sourceID);
+        }
     }
 
     public boolean mismatchesType() {

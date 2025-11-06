@@ -20,7 +20,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
-import java.util.logging.Level;
 
 public class BreakManager {
     private final Map<UUID, Integer> multiBreakTask = new HashMap<>();
@@ -28,7 +27,13 @@ public class BreakManager {
     private final Map<UUID, Figure> figureCache = new HashMap<>();
     private final Map<UUID, Block> lastTargetBlock = new HashMap<>();
 
-    protected void refreshTool(Player p) {
+    private static final BreakManager breakManager = new BreakManager();
+
+    public static BreakManager getInstance() {
+        return breakManager;
+    }
+
+    public void refreshTool(Player p) {
         boolean fairMode = Config.getInstance().isFairModeEnabled();
         if (!fairMode) return;
         new BukkitRunnable() {
@@ -91,8 +96,10 @@ public class BreakManager {
      *
      * @param p - player breaking
      */
-    protected void scheduleMultiBreak(Player p, Figure figure) {
-        Block block = BreakUtils.getTargetBlock(p);
+    protected void scheduleMultiBreak(Player p, Figure figure, Block block) {
+        if (multiBreakTask.containsKey(p.getUniqueId())) {
+            endMultiBreak(p, this.getMultiBreak(p), false);
+        }
         MultiBreakRunnable multiBreakRunnable = new MultiBreakRunnable(p, block, figure, this);
         int taskID = multiBreakRunnable.runTaskTimer(Main.getInstance(), 1, 1).getTaskId();
         multiBreakTask.put(p.getUniqueId(), taskID);
@@ -100,8 +107,10 @@ public class BreakManager {
 
     protected void endMultiBreak(Player p, MultiBreak multiBreak, boolean finished) {
         UUID uuid = p.getUniqueId();
-        multiBreak.end(finished);
-        multiBlockMap.remove(uuid);
+        if (multiBreak != null) {
+            multiBreak.end(finished);
+            multiBlockMap.remove(uuid);
+        }
         if (!multiBreakTask.containsKey(uuid)) return;
         Bukkit.getScheduler().cancelTask(multiBreakTask.get(uuid));
         multiBreakTask.remove(uuid);
@@ -206,7 +215,6 @@ public class BreakManager {
     }
 
     protected MultiBreak getMultiBreak(Player p) {
-        if (p.getGameMode().equals(GameMode.CREATIVE)) return null;
         if (multiBlockMap.containsKey(p.getUniqueId())) {
             MultiBreak multiBreak = multiBlockMap.get(p.getUniqueId());
             if (!multiBreak.hasEnded()) {
@@ -214,5 +222,9 @@ public class BreakManager {
             }
         }
         return null;
+    }
+
+    public Map<UUID, Integer> getMultiBreakTask() {
+        return multiBreakTask;
     }
 }

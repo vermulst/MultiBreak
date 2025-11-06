@@ -3,6 +3,7 @@ package me.vermulst.multibreak.commands;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.types.FigureType;
 import me.vermulst.multibreak.item.FigureItemDataType;
+import me.vermulst.multibreak.multibreak.BreakManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Sound;
@@ -37,6 +38,7 @@ public class MultiBreakCommand implements CommandExecutor {
         } else {
             this.handleSetCommand(p, item, args);
         }
+        BreakManager.getInstance().refreshTool(p);
 
         return true;
     }

@@ -34,7 +34,7 @@ public final class Main extends JavaPlugin {
 
         // events
         Listener[] events = new Listener[] {
-                new BreakEvents(new BreakManager())
+                new BreakEvents(BreakManager.getInstance())
         };
         for (Listener event : events) {
             this.getServer().getPluginManager().registerEvents(event, this);
