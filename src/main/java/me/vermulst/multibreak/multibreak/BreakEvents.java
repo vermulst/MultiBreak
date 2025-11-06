@@ -88,7 +88,9 @@ public class BreakEvents implements Listener {
         // 2. Handle NUMBER_KEY: Player is swapping with a hotbar slot.
         else if (ClickType.NUMBER_KEY.equals(e.getClick())) {
             int playerHeldSlotRelative = p.getInventory().getHeldItemSlot();
-            if (e.getHotbarButton() == playerHeldSlotRelative) {
+            Inventory topInv = e.getInventory();
+            // check if held item slot is involved
+            if ((e.getHotbarButton() == playerHeldSlotRelative) || (e.getRawSlot() == this.getPlayerHeldSlotRaw(p, topInv))) {
                 breakManager.refreshTool(p);
             }
         }
