@@ -2,8 +2,9 @@ package me.vermulst.multibreak;
 
 import me.vermulst.multibreak.api.MultiBreakAPI;
 import me.vermulst.multibreak.config.Config;
-import me.vermulst.multibreak.multibreak.BreakEvents;
+import me.vermulst.multibreak.multibreak.event.BreakEvents;
 import me.vermulst.multibreak.multibreak.BreakManager;
+import me.vermulst.multibreak.multibreak.event.ChangeToolEvents;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -32,9 +33,12 @@ public final class Main extends JavaPlugin {
             this.saveConfig();
         }
 
+        BreakManager breakManager = BreakManager.getInstance();
+
         // events
         Listener[] events = new Listener[] {
-                new BreakEvents(BreakManager.getInstance())
+                new BreakEvents(breakManager),
+                new ChangeToolEvents(breakManager),
         };
         for (Listener event : events) {
             this.getServer().getPluginManager().registerEvents(event, this);

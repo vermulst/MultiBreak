@@ -2,6 +2,7 @@ package me.vermulst.multibreak.figure.types;
 
 import me.vermulst.multibreak.figure.Figure;
 
+/** Keep order the same */
 public enum FigureType {
 
     LINEAR {

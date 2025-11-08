@@ -49,7 +49,7 @@ public class BreakManager {
         }.runTaskLater(Main.getInstance(), 1L);
     }
 
-    protected void refreshBreakSpeed(Player p) {
+    public void refreshBreakSpeed(Player p) {
         UUID uuid = p.getUniqueId();
         Block targetBlock = BreakUtils.getTargetBlock(p);
         if (targetBlock == null) {
@@ -96,7 +96,7 @@ public class BreakManager {
      *
      * @param p - player breaking
      */
-    protected void scheduleMultiBreak(Player p, Figure figure, Block block) {
+    public void scheduleMultiBreak(Player p, Figure figure, Block block) {
         if (multiBreakTask.containsKey(p.getUniqueId())) {
             endMultiBreak(p, this.getMultiBreak(p), false);
         }
@@ -105,7 +105,7 @@ public class BreakManager {
         multiBreakTask.put(p.getUniqueId(), taskID);
     }
 
-    protected void endMultiBreak(Player p, MultiBreak multiBreak, boolean finished) {
+    public void endMultiBreak(Player p, MultiBreak multiBreak, boolean finished) {
         UUID uuid = p.getUniqueId();
         if (multiBreak != null) {
             multiBreak.end(finished);
@@ -116,7 +116,7 @@ public class BreakManager {
         multiBreakTask.remove(uuid);
     }
 
-    protected MultiBreak initMultiBreak(Player p, Block block, Figure figure) {
+    public MultiBreak initMultiBreak(Player p, Block block, Figure figure) {
         if (block == null) return null;
         BlockFace blockFace = BreakUtils.getBlockFace(p);
         if (blockFace == null) return null;
@@ -138,7 +138,7 @@ public class BreakManager {
         return multiBreak;
     }
 
-    protected boolean isMultiBreak(BlockBreakEvent e) {
+    public boolean isMultiBreak(BlockBreakEvent e) {
         Block block = e.getBlock();
         boolean wasMultiBroken = block.hasMetadata("multi-broken");
         boolean isIgnoredMaterial = Config.getInstance().getIgnoredMaterials().contains(block.getType());
@@ -149,7 +149,7 @@ public class BreakManager {
         return !wasMultiBroken && !isIgnoredMaterial && !isCancelled;
     }
 
-    protected void filter(Set<Block> blocks, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
+    public void filter(Set<Block> blocks, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
         blocks.removeIf(block -> {
             Material mainBlockType = block.getType();
             if (includedMaterials != null && !includedMaterials.isEmpty() && !includedMaterials.contains(mainBlockType)) {
@@ -162,7 +162,7 @@ public class BreakManager {
         });
     }
 
-    protected float getSlowDownFactor(Player p, Set<Block> blocks, float baseProgressPerTick) {
+    public float getSlowDownFactor(Player p, Set<Block> blocks, float baseProgressPerTick) {
         float lowestProgressPerTick = baseProgressPerTick;
         for (Block block : blocks) {
             float progressPerTick = block.getBreakSpeed(p);
@@ -173,7 +173,7 @@ public class BreakManager {
         return lowestProgressPerTick / baseProgressPerTick;
     }
 
-    protected Figure getFigure(Player p) {
+    public Figure getFigure(Player p) {
         ItemStack tool = p.getInventory().getItemInMainHand();
         return this.getFigure(p, tool);
     }
@@ -185,7 +185,7 @@ public class BreakManager {
      * @param tool The ItemStack representing the tool.
      * @return The Figure associated with the tool, or null if none is found.
      */
-    protected Figure getFigure(Player p, ItemStack tool) {
+    public Figure getFigure(Player p, ItemStack tool) {
         if (figureCache.containsKey(p.getUniqueId())) {
             return figureCache.get(p.getUniqueId());
         }
@@ -214,7 +214,7 @@ public class BreakManager {
         return figure;
     }
 
-    protected MultiBreak getMultiBreak(Player p) {
+    public MultiBreak getMultiBreak(Player p) {
         if (multiBlockMap.containsKey(p.getUniqueId())) {
             MultiBreak multiBreak = multiBlockMap.get(p.getUniqueId());
             if (!multiBreak.hasEnded()) {

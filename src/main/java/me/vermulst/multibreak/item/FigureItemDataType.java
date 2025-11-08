@@ -13,6 +13,23 @@ import org.jetbrains.annotations.NotNull;
 
 public class FigureItemDataType implements PersistentDataType<PersistentDataContainer, Figure> {
 
+
+    private static final NamespacedKey KEY_WIDTH    = new NamespacedKey(Main.getInstance(), "width");
+    private static final NamespacedKey KEY_HEIGHT   = new NamespacedKey(Main.getInstance(), "height");
+    private static final NamespacedKey KEY_DEPTH    = new NamespacedKey(Main.getInstance(), "depth");
+
+    private static final NamespacedKey KEY_WIDTH_ROTATION  = new NamespacedKey(Main.getInstance(), "widthR");
+    private static final NamespacedKey KEY_HEIGHT_ROTATION = new NamespacedKey(Main.getInstance(), "heightR");
+    private static final NamespacedKey KEY_DEPTH_ROTATION  = new NamespacedKey(Main.getInstance(), "depthR");
+
+    private static final NamespacedKey KEY_WIDTH_OFFSET  = new NamespacedKey(Main.getInstance(), "widthO");
+    private static final NamespacedKey KEY_HEIGHT_OFFSET = new NamespacedKey(Main.getInstance(), "heightO");
+    private static final NamespacedKey KEY_DEPTH_OFFSET  = new NamespacedKey(Main.getInstance(), "depthO");
+
+    private static final NamespacedKey KEY_TYPE_ID  = new NamespacedKey(Main.getInstance(), "type_id");
+    private static final NamespacedKey KEY_FIGURE_INFO = new NamespacedKey(Main.getInstance(), "figure_info");
+
+
     public record FigureItemInfo(Figure figure) {}
     // A separate, temporary type to read the old data.
     private class LegacyFigureItemDataType implements PersistentDataType<PersistentDataContainer, FigureItemInfo> {
@@ -30,13 +47,11 @@ public class FigureItemDataType implements PersistentDataType<PersistentDataCont
         // the original FigureItemDataType's logic, just using FigureItemInfo.
         @Override
         public @NotNull PersistentDataContainer toPrimitive(FigureItemInfo figureInfo, PersistentDataAdapterContext persistentDataAdapterContext) {
-            // Re-using the outer class's toPrimitive logic directly on the Figure
             return FigureItemDataType.this.toPrimitive(figureInfo.figure(), persistentDataAdapterContext);
         }
 
         @Override
         public @NotNull FigureItemInfo fromPrimitive(PersistentDataContainer persistentDataContainer, @NotNull PersistentDataAdapterContext persistentDataAdapterContext) {
-            // Re-using the outer class's fromPrimitive logic to build the Figure, then wrap it
             Figure figure = FigureItemDataType.this.fromPrimitive(persistentDataContainer, persistentDataAdapterContext);
             return new FigureItemInfo(figure);
         }
@@ -45,10 +60,9 @@ public class FigureItemDataType implements PersistentDataType<PersistentDataCont
     public Figure figure;
 
     public ItemStack set(ItemStack itemStack, Figure figure) {
-        NamespacedKey key = new NamespacedKey(Main.getInstance(), "figure_info");
         ItemMeta itemMeta = itemStack.getItemMeta();
         PersistentDataContainer customItemTagContainer = itemMeta.getPersistentDataContainer();
-        customItemTagContainer.set(key, this, figure);
+        customItemTagContainer.set(KEY_FIGURE_INFO, this, figure);
         itemStack.setItemMeta(itemMeta);
         return itemStack;
     }
@@ -57,17 +71,16 @@ public class FigureItemDataType implements PersistentDataType<PersistentDataCont
         ItemMeta meta = itemStack.getItemMeta();
         if (meta == null) return null;
         PersistentDataContainer customItemTagContainer = meta.getPersistentDataContainer();
-        NamespacedKey key = new NamespacedKey(Main.getInstance(), "figure_info");
 
-        Figure figure = customItemTagContainer.get(key, this);
+        Figure figure = customItemTagContainer.get(KEY_FIGURE_INFO, this);
         if (figure != null) return figure;
 
         /** Fall back on record type and migrate to new type */
         LegacyFigureItemDataType legacyType = new LegacyFigureItemDataType();
-        FigureItemInfo oldInfo = customItemTagContainer.get(key, legacyType);
+        FigureItemInfo oldInfo = customItemTagContainer.get(KEY_FIGURE_INFO, legacyType);
         if (oldInfo != null) {
             figure = oldInfo.figure();
-            customItemTagContainer.remove(key);
+            customItemTagContainer.remove(KEY_FIGURE_INFO);
             this.set(itemStack, figure);
             return figure;
         }
@@ -91,10 +104,9 @@ public class FigureItemDataType implements PersistentDataType<PersistentDataCont
         }
 
         PersistentDataContainer customItemTagContainer = meta.getPersistentDataContainer();
-        NamespacedKey key = new NamespacedKey(Main.getInstance(), "figure_info");
 
         // The Primitive Type (P) for Figure is PersistentDataContainer, which maps to TAG_CONTAINER.
-        return customItemTagContainer.has(key, PersistentDataType.TAG_CONTAINER);
+        return customItemTagContainer.has(KEY_FIGURE_INFO, PersistentDataType.TAG_CONTAINER);
     }
 
     @Override
@@ -110,57 +122,50 @@ public class FigureItemDataType implements PersistentDataType<PersistentDataCont
     @Override
     public @NotNull PersistentDataContainer toPrimitive(Figure figureInfo, PersistentDataAdapterContext persistentDataAdapterContext) {
         PersistentDataContainer persistentDataContainer = persistentDataAdapterContext.newPersistentDataContainer();
-        persistentDataContainer.set(key("width"), PersistentDataType.INTEGER, figureInfo.getWidth());
-        persistentDataContainer.set(key("height"), PersistentDataType.INTEGER, figureInfo.getHeight());
-        persistentDataContainer.set(key("depth"), PersistentDataType.INTEGER, figureInfo.getDepth());
+        persistentDataContainer.set(KEY_WIDTH, PersistentDataType.INTEGER, figureInfo.getWidth());
+        persistentDataContainer.set(KEY_HEIGHT, PersistentDataType.INTEGER, figureInfo.getHeight());
+        persistentDataContainer.set(KEY_DEPTH, PersistentDataType.INTEGER, figureInfo.getDepth());
         if (figureInfo.getRotationWidth() != 0) {
-            persistentDataContainer.set(key("widthR"), PersistentDataType.SHORT, figureInfo.getRotationWidth());
+            persistentDataContainer.set(KEY_WIDTH_ROTATION, PersistentDataType.SHORT, figureInfo.getRotationWidth());
         }
         if (figureInfo.getRotationHeight() != 0) {
-            persistentDataContainer.set(key("heightR"), PersistentDataType.SHORT, figureInfo.getRotationHeight());
+            persistentDataContainer.set(KEY_HEIGHT_ROTATION, PersistentDataType.SHORT, figureInfo.getRotationHeight());
         }
         if (figureInfo.getRotationDepth() != 0) {
-            persistentDataContainer.set(key("depthR"), PersistentDataType.SHORT, figureInfo.getRotationDepth());
+            persistentDataContainer.set(KEY_DEPTH_ROTATION, PersistentDataType.SHORT, figureInfo.getRotationDepth());
         }
         if (figureInfo.getOffSetWidth() != 0) {
-            persistentDataContainer.set(key("widthO"), PersistentDataType.INTEGER, figureInfo.getOffSetWidth());
+            persistentDataContainer.set(KEY_WIDTH_OFFSET, PersistentDataType.INTEGER, figureInfo.getOffSetWidth());
         }
         if (figureInfo.getOffSetHeight() != 0) {
-            persistentDataContainer.set(key("heightO"), PersistentDataType.INTEGER, figureInfo.getOffSetHeight());
+            persistentDataContainer.set(KEY_HEIGHT_OFFSET, PersistentDataType.INTEGER, figureInfo.getOffSetHeight());
         }
         if (figureInfo.getOffSetDepth() != 0) {
-            persistentDataContainer.set(key("depthO"), PersistentDataType.INTEGER, figureInfo.getOffSetDepth());
+            persistentDataContainer.set(KEY_DEPTH_OFFSET, PersistentDataType.INTEGER, figureInfo.getOffSetDepth());
         }
-        persistentDataContainer.set(key("type_id"), PersistentDataType.INTEGER, figureInfo.getFigureType().ordinal());
-        //todo: add more options
+        persistentDataContainer.set(KEY_TYPE_ID, PersistentDataType.INTEGER, figureInfo.getFigureType().ordinal());
         return persistentDataContainer;
     }
 
     @Override
     public @NotNull Figure fromPrimitive(PersistentDataContainer persistentDataContainer, @NotNull PersistentDataAdapterContext persistentDataAdapterContext) {
-        int width = persistentDataContainer.getOrDefault(key("width"), PersistentDataType.INTEGER, 3);
-        int height = persistentDataContainer.getOrDefault(key("height"), PersistentDataType.INTEGER, 3);
-        int depth = persistentDataContainer.getOrDefault(key("depth"), PersistentDataType.INTEGER, 1);
+        int width = persistentDataContainer.getOrDefault(KEY_WIDTH, PersistentDataType.INTEGER, 3);
+        int height = persistentDataContainer.getOrDefault(KEY_HEIGHT, PersistentDataType.INTEGER, 3);
+        int depth = persistentDataContainer.getOrDefault(KEY_DEPTH, PersistentDataType.INTEGER, 1);
 
-        int figureTypeOrdinal = persistentDataContainer.getOrDefault(key("type_id"), PersistentDataType.INTEGER, 0);
+        int figureTypeOrdinal = persistentDataContainer.getOrDefault(KEY_TYPE_ID, PersistentDataType.INTEGER, 0);
         FigureType figureType = FigureType.values()[figureTypeOrdinal];
         Figure figure = figureType.build(width, height, depth);
 
-        short widthR = persistentDataContainer.getOrDefault(key("widthR"), PersistentDataType.SHORT, (short) 0);
-        short heightR = persistentDataContainer.getOrDefault(key("heightR"), PersistentDataType.SHORT, (short) 0);
-        short depthR = persistentDataContainer.getOrDefault(key("depthR"), PersistentDataType.SHORT, (short) 0);
-        int widthO = persistentDataContainer.getOrDefault(key("widthO"), PersistentDataType.INTEGER, 0);
-        int heightO = persistentDataContainer.getOrDefault(key("heightO"), PersistentDataType.INTEGER, 0);
-        int depthO = persistentDataContainer.getOrDefault(key("depthO"), PersistentDataType.INTEGER, 0);
+        short widthR = persistentDataContainer.getOrDefault(KEY_WIDTH_ROTATION, PersistentDataType.SHORT, (short) 0);
+        short heightR = persistentDataContainer.getOrDefault(KEY_HEIGHT_ROTATION, PersistentDataType.SHORT, (short) 0);
+        short depthR = persistentDataContainer.getOrDefault(KEY_DEPTH_ROTATION, PersistentDataType.SHORT, (short) 0);
+        int widthO = persistentDataContainer.getOrDefault(KEY_WIDTH_OFFSET, PersistentDataType.INTEGER, 0);
+        int heightO = persistentDataContainer.getOrDefault(KEY_HEIGHT_OFFSET, PersistentDataType.INTEGER, 0);
+        int depthO = persistentDataContainer.getOrDefault(KEY_DEPTH_OFFSET, PersistentDataType.INTEGER, 0);
         figure.setRotations(widthR, heightR, depthR);
         figure.setOffsets(widthO, heightO, depthO);
         return figure;
-    }
-
-
-
-    private NamespacedKey key(String key) {
-        return new NamespacedKey(Main.getInstance(), key);
     }
 
     private int getOrDefault(Integer integer, int defaultValue) {
