@@ -12,6 +12,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageAbortEvent;
 import org.bukkit.event.block.BlockDamageEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.*;
 
 public class BreakEvents implements Listener {
@@ -65,6 +66,12 @@ public class BreakEvents implements Listener {
         if (event.isCancelled()) return;
         if (event.getMultiBreak() == null) return;
         breakManager.endMultiBreak(p, event.getMultiBreak(), true);
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent e) {
+        Player p = e.getPlayer();
+        breakManager.onPlayerQuit(p);
     }
 
 
