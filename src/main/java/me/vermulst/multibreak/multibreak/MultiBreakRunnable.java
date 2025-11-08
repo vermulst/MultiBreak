@@ -1,11 +1,13 @@
 package me.vermulst.multibreak.multibreak;
 
+import me.vermulst.multibreak.config.Config;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.utils.BreakUtils;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
 public class MultiBreakRunnable extends BukkitRunnable {
@@ -26,28 +28,35 @@ public class MultiBreakRunnable extends BukkitRunnable {
     // Starts at tick 1, not at tick 0.
     @Override
     public void run() {
+        RayTraceResult rayTraceResult = BreakUtils.getRayTraceResult(p);
+
         // check once, if block changed since from tick 0 -> 1.
         MultiBreak multiBreak = breakManager.getMultiBreak(p);
+
+        if (rayTraceResult == null) {
+            cancelMultiBreak(multiBreak);
+            return;
+        }
+
+        Block blockMining = rayTraceResult.getHitBlock();
+        BlockFace blockFace = rayTraceResult.getHitBlockFace();
+
         if (!init) {
-            if (block.getType().isAir() && !BreakUtils.getTargetBlock(p).equals(block)) {
+            if (block.getType().isAir() && !blockMining.equals(block)) {
                 cancelMultiBreak(multiBreak);
                 return;
             }
             init = true;
         }
+
         if (multiBreak == null) {
-            Block blockMining = BreakUtils.getTargetBlock(p);
             multiBreak = breakManager.initMultiBreak(p, blockMining, this.figure);
             if (multiBreak == null) {
                 cancelMultiBreak(null);
                 return;
             }
         }
-        BlockFace blockFace = BreakUtils.getBlockFace(p);
-        if (blockFace == null) {
-            cancelMultiBreak(multiBreak);
-            return;
-        }
+
         // check if direction changed
         Vector direction = blockFace.getDirection();
         if (!multiBreak.getPlayerDirection().equals(direction)) {
@@ -58,6 +67,7 @@ public class MultiBreakRunnable extends BukkitRunnable {
             }
             breakManager.scheduleMultiBreak(p, this.figure, this.block);
         }
+
         multiBreak.tick();
     }
 
