@@ -36,11 +36,11 @@ public class BreakManager {
     public void refreshTool(Player p) {
         boolean fairMode = Config.getInstance().isFairModeEnabled();
         if (!fairMode) return;
+        UUID uuid = p.getUniqueId();
+        Figure previousFigure = figureCache.remove(uuid);
         new BukkitRunnable() {
             @Override
             public void run() {
-                UUID uuid = p.getUniqueId();
-                Figure previousFigure = figureCache.remove(uuid);
                 Figure newFigure = getFigure(p);
                 if (newFigure != null && newFigure.equals(previousFigure)) return;
                 lastTargetBlock.remove(uuid);
@@ -108,8 +108,8 @@ public class BreakManager {
     public void endMultiBreak(Player p, MultiBreak multiBreak, boolean finished) {
         UUID uuid = p.getUniqueId();
         if (multiBreak != null) {
-            multiBreak.end(finished);
-            multiBlockMap.remove(uuid);
+            multiBreak.end(p, finished);
+            //multiBlockMap.remove(uuid);
         }
         if (!multiBreakTask.containsKey(uuid)) return;
         Bukkit.getScheduler().cancelTask(multiBreakTask.get(uuid));
@@ -123,7 +123,16 @@ public class BreakManager {
         Config config = Config.getInstance();
         EnumSet<Material> includedMaterials = config.getIncludedMaterials();
         EnumSet<Material> ignoredMaterials = config.getIgnoredMaterials();
-        MultiBreak multiBreak = new MultiBreak(p, block, blockFace.getDirection(), figure);
+
+
+        MultiBreak multiBreak = multiBlockMap.get(p.getUniqueId());
+        if (multiBreak != null) {
+            multiBreak.reset(p, block, blockFace.getDirection(), figure);
+        } else {
+            multiBreak = new MultiBreak(p, block, blockFace.getDirection(), figure);
+            multiBlockMap.put(p.getUniqueId(), multiBreak);
+        }
+
         MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, block);
         if (!event.callEvent()) return null;
         FilterBlocksEvent filterBlocksEvent = new FilterBlocksEvent(figure, p, p.getInventory().getItemInMainHand(), includedMaterials, ignoredMaterials);
@@ -133,8 +142,10 @@ public class BreakManager {
         multiBreak = event.getMultiBreak();
         if (!multiBreak.isValid(includedMaterials, ignoredMaterials)) return null;
         float progressPerTick = multiBreak.getBlock().getBreakSpeed(p);
-        multiBreak.checkValid(progressPerTick, includedMaterials, ignoredMaterials);
-        multiBlockMap.put(p.getUniqueId(), multiBreak);
+        multiBreak.checkValid(p, progressPerTick, includedMaterials, ignoredMaterials);
+
+        //multiBlockMap.put(p.getUniqueId(), multiBreak);
+
         return multiBreak;
     }
 
@@ -222,6 +233,16 @@ public class BreakManager {
             }
         }
         return null;
+    }
+
+    public void onPlayerQuit(Player p) {
+        // End any active break
+        endMultiBreak(p, getMultiBreak(p), false);
+        // Clean up caches
+        figureCache.remove(p.getUniqueId());
+        lastTargetBlock.remove(p.getUniqueId());
+        // Remove their persistent MultiBreak object
+        multiBlockMap.remove(p.getUniqueId());
     }
 
     public Map<UUID, Integer> getMultiBreakTask() {
