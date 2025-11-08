@@ -31,6 +31,9 @@ public abstract class Figure {
     private short rotationHeight = 0;
     private short rotationDepth = 0;
 
+
+    private static final Map<String, Set<Vector>> vectorsCache = new HashMap<>();
+
     public Figure(int width, int height, int depth) {
         this.width = width;
         this.height = height;
@@ -45,31 +48,37 @@ public abstract class Figure {
         return p.getTargetBlockFace(Config.getInstance().getMaxRange());
     }
 
+    public Set<Vector> getTransformedVectors() {
+        String key = getCacheKey();
+        if (vectorsCache.containsKey(key)) {
+            return new HashSet<>(vectorsCache.get(key));
+        }
+        boolean rotated = this.getRotationWidth() != 0.0 || this.getRotationHeight() != 0.0 || this.getRotationDepth() != 0.0;
+        Set<Vector> vectors = getVectors(rotated);
+        if (rotated) {
+            vectors = this.applyRotation(vectors);
+        }
+
+        vectorsCache.put(key, vectors);
+        return vectors;
+    }
+
+
     public Set<Block> getBlocks(Player p, Block targetBlock) {
         Set<Block> blocks = new HashSet<>();
         BlockFace blockFace = this.getBlockFace(p);
         if (blockFace == null) return blocks;
+        Set<Vector> transformedVectors = getTransformedVectors();
+
         CompassDirection compassDirection = CompassDirection.getCompassDir(p.getLocation());
-
-        boolean rotated = this.getRotationWidth() != 0.0 || this.getRotationHeight() != 0.0 || this.getRotationDepth() != 0.0;
-        Set<Vector> blockVectors = this.getVectors(rotated);
-
-        // apply figure rotation
-        if (rotated) {
-            blockVectors = this.applyRotation(blockVectors);
-        }
-
-        // apply player rotation
         VectorTransformer vectorTransformer = new VectorTransformer(blockFace.getDirection(), compassDirection);
-        for (Vector vector : blockVectors) {
+        for (Vector vector : transformedVectors) {
             vectorTransformer.rotateVector(vector);
         }
+        transformedVectors.remove(new Vector(0, 0, 0));
 
-        // exclude center block - (Important after rotation)
-        blockVectors.remove(new Vector(0, 0, 0));
         Location loc = targetBlock.getLocation();
-
-        for (Vector vector : blockVectors) {
+        for (Vector vector : transformedVectors) {
             Block block = loc.clone().add(vector).getBlock();
             Material type = block.getType();
             if ((block.isLiquid() && type != Material.POWDER_SNOW) || !type.isItem()) continue;
@@ -201,4 +210,9 @@ public abstract class Figure {
         return rotationDepth;
     }
 
+    private String getCacheKey() {
+        return width + "," + height + "," + depth + "," +
+                offSetWidth + "," + offSetHeight + "," + offSetDepth + "," +
+                rotationWidth + "," + rotationHeight + "," + rotationDepth;
+    }
 }

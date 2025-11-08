@@ -13,7 +13,6 @@ import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.util.Vector;
 
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class MultiBreak {
@@ -26,6 +25,8 @@ public class MultiBreak {
     private float progressBroken;
     private List<MultiBlock> multiBlocks = new ArrayList<>();
     private boolean ended = false;
+
+    private final ParticleBuilder particleBuilder = new ParticleBuilder(Particle.BLOCK_CRUMBLE).extra(0.2);
 
     public MultiBreak(Player p, Block block, Vector playerDirection, Figure figure) {
         this.playerUUID = p.getUniqueId();
@@ -111,12 +112,16 @@ public class MultiBreak {
     }
 
     public void writeStage(Collection<UUID> uuids, float stage) {
+        this.writeStage(uuids, stage, this.multiBlocks);
+    }
+
+    public void writeStage(Collection<UUID> uuids, float stage, List<MultiBlock> multiBlocks) {
         Collection<Player> onlinePlayers = uuids.stream()
                 .map(Bukkit::getPlayer)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        for (MultiBlock multiBlock : this.multiBlocks) {
+        for (MultiBlock multiBlock : multiBlocks) {
             if (multiBlock.getBlock().equals(this.getBlock())) continue;
             if (!multiBlock.isVisible()) continue;
             multiBlock.writeStage(onlinePlayers, stage);
@@ -142,9 +147,10 @@ public class MultiBreak {
                 .filter(MultiBlock::mismatchesType)
                 .toList();
 
-        this.writeStage(0);
-
-        this.getMultiBlocks().removeAll(blocksToRemove);
+        if (!blocksToRemove.isEmpty()) {
+            this.writeStage(this.nearbyPlayers, 0, blocksToRemove);
+            this.getMultiBlocks().removeAll(blocksToRemove);
+        }
     }
 
     public boolean isValid(EnumSet<Material> includedMaterials, EnumSet<Material> excludedMaterials) {
@@ -182,34 +188,34 @@ public class MultiBreak {
 
 
     public void playParticles() {
-        Vector finalOffset = new Vector(0.45, 0.45, 0.45);
-        if (this.getPlayerDirection().getX() != 0) {
-            finalOffset.setX(0.0);
-        }
-        if (this.getPlayerDirection().getY() != 0) {
-            finalOffset.setY(0.0);
-        }
-        if (this.getPlayerDirection().getZ() != 0) {
-            finalOffset.setZ(0.0);
-        }
-        ParticleBuilder particleBuilder = new ParticleBuilder(Particle.BLOCK_CRUMBLE)
-                .offset(finalOffset.getX(), finalOffset.getY(), finalOffset.getZ());
+        double offsetX = 0.45, offsetY = 0.45, offsetZ = 0.45;
+        if (this.getPlayerDirection().getX() != 0) offsetX = 0.0;
+        if (this.getPlayerDirection().getY() != 0) offsetY = 0.0;
+        if (this.getPlayerDirection().getZ() != 0) offsetZ = 0.0;
+        particleBuilder.offset(offsetX, offsetY, offsetZ);
         Vector playerDirectionTimesHalf = this.playerDirection.clone().multiply(0.5001);
+
+        Location loc = new Location(this.getBlock().getWorld(), 0, 0, 0);
         for (MultiBlock multiBlock : this.getMultiBlocks()) {
             if (multiBlock.getBlock().equals(this.getBlock())) continue;
             if (!multiBlock.isVisible()) continue;
-            Block block1 = multiBlock.getBlock();
-            BlockData blockData = block1.getBlockData();
-            particleBuilder.location(block1.getLocation()
-                    .add(0.5, 0.5, 0.5).add(playerDirectionTimesHalf))
-                    .data(blockData)
-                    .extra(0.2)
+
+            Block block = multiBlock.getBlock();
+            loc.set(block.getX() + 0.5, block.getY() + 0.5, block.getZ() + 0.5);
+            loc.add(playerDirectionTimesHalf);
+
+            particleBuilder.location(loc)
+                    .data(block.getBlockData())
                     .spawn();
         }
     }
 
     public Set<UUID> getNearbyPlayers(Location blockLoc) {
-        return blockLoc.getWorld().getNearbyPlayers(blockLoc, 64).stream().map(Player::getUniqueId).collect(Collectors.toSet());
+        Set<UUID> uuids = new HashSet<>();
+        for (Player p : blockLoc.getWorld().getPlayers()) {
+            if (p.getLocation().distanceSquared(blockLoc) <= 64*64) uuids.add(p.getUniqueId());
+        }
+        return uuids;
     }
 
     public Player getPlayer() {
