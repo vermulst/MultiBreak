@@ -59,7 +59,7 @@ public abstract class Figure {
             vectors = this.applyRotation(vectors);
         }
 
-        vectorsCache.put(key, vectors);
+        vectorsCache.put(key, new HashSet<>(vectors));
         return vectors;
     }
 
@@ -68,14 +68,19 @@ public abstract class Figure {
         Set<Block> blocks = new HashSet<>();
         BlockFace blockFace = this.getBlockFace(p);
         if (blockFace == null) return blocks;
-        Set<Vector> transformedVectors = getTransformedVectors();
+
+        Set<Vector> transformedVectors = new HashSet<>();
+        for (Vector v : getTransformedVectors()) {
+            transformedVectors.add(v.clone());
+        }
 
         CompassDirection compassDirection = CompassDirection.getCompassDir(p.getLocation());
         VectorTransformer vectorTransformer = new VectorTransformer(blockFace.getDirection(), compassDirection);
         for (Vector vector : transformedVectors) {
             vectorTransformer.rotateVector(vector);
         }
-        transformedVectors.remove(new Vector(0, 0, 0));
+
+        transformedVectors.removeIf(v -> v.getX() == 0 && v.getY() == 0 && v.getZ() == 0);
 
         Location loc = targetBlock.getLocation();
         for (Vector vector : transformedVectors) {

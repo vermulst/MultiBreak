@@ -1,8 +1,6 @@
 package me.vermulst.multibreak.figure.types;
 
 import me.vermulst.multibreak.figure.Figure;
-import me.vermulst.multibreak.figure.FigureIterable;
-import org.bukkit.block.Block;
 import org.bukkit.util.Vector;
 
 import java.util.HashSet;
@@ -55,5 +53,4 @@ public class FigureLinear extends Figure {
     public FigureType getFigureType() {
         return FigureType.LINEAR;
     }
-
 }

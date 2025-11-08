@@ -25,4 +25,21 @@ public enum FigureType {
     };
 
     public abstract Figure build(int width, int height, int depth);
+
+    public int getSize(int width, int height, int depth) {
+        switch (this) {
+            case LINEAR -> {
+                return width * height * depth;
+            }
+            case CIRCULAR -> {
+                return (int) ((Math.PI * width * height * depth) / 6);
+            }
+            case TRIANGULAR -> {
+                return (width * height * depth) / 2;
+            }
+            case null, default -> {
+                return 0;
+            }
+        }
+    }
 }
