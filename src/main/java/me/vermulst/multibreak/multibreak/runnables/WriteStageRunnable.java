@@ -26,13 +26,12 @@ public class WriteStageRunnable extends BukkitRunnable {
 
     private static final Map<UUID, ReentrantLock> stageLock = new HashMap<>();
 
-    public WriteStageRunnable(MultiBreak multiBreak, int stage, List<Player> players) {
-        this.multiBlocks = multiBreak.getMultiBlocks();
-        this.mainBlock = multiBreak.getBlock();
+    public WriteStageRunnable(UUID uuid, List<MultiBlock> multiBlocks, Block mainBlock, int stage, List<Player> players) {
+        this.uuid = uuid;
+        this.multiBlocks = multiBlocks;
+        this.mainBlock = mainBlock;
         this.stage = stage;
         this.players = players;
-
-        this.uuid = multiBreak.getPlayer().getUniqueId();
     }
 
     @Override

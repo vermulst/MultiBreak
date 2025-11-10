@@ -157,21 +157,9 @@ public class MultiBreak {
                 onlinePlayers.add(player);
             }
         }
-        WriteStageRunnable writeStageRunnable = new WriteStageRunnable(this, stage, onlinePlayers);
+        WriteStageRunnable writeStageRunnable = new WriteStageRunnable(this.playerUUID, multiBlocks, this.getBlock(), stage, onlinePlayers);
         writeStageRunnable.runTaskAsynchronously(Main.getInstance());
-        //if (stage > 0.3f) stage = 0;
-        //this.writeMainBlockStage(p, stage);
     }
-
-    /**
-     * Sometimes client does not show progress first few ticks
-     * so fallback to mitigate this undocumented minecraft bug
-     * so main block must also be animated, but still not tracked through multi blocks
-     *
-     */
-    /*public void writeMainBlockStage(Player p, float stage) {
-        p.sendBlockDamage(this.getBlock().getLocation(), stage, this.mainBlockSourceID);
-    }*/
 
     public void checkPlayers() {
         Set<UUID> oldNearbyPlayers = this.nearbyPlayers;
