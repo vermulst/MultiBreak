@@ -12,18 +12,29 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerItemHeldEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.inventory.*;
 
-public class ChangeToolEvents implements Listener {
+import java.util.UUID;
+
+public class RefreshEvents implements Listener {
 
     private final BreakManager breakManager;
-    public ChangeToolEvents(BreakManager breakManager) {
+    public RefreshEvents(BreakManager breakManager) {
         this.breakManager = breakManager;
     }
+
+    /** Mark player as moved, to perform new raytrace in MultiBreakRunnable */
+
+    @EventHandler
+    public void moveEvent(PlayerMoveEvent e) {
+        Player p = e.getPlayer();
+        UUID uuid = p.getUniqueId();
+        if (!breakManager.isBreaking(uuid)) return;
+        if (!e.hasChangedPosition() && !e.hasChangedOrientation()) return;
+        breakManager.getMovedPlayers().add(uuid);
+    }
+
 
     /**  Refresh break speed ever tick, checking for new target block */
 
