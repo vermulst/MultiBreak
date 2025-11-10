@@ -20,7 +20,6 @@ public class Config {
     private Map<Material, String> materialOptions;
     private final EnumSet<Material> includedMaterials = EnumSet.noneOf(Material.class);
     private final EnumSet<Material> ignoredMaterials = EnumSet.noneOf(Material.class);
-    private int maxRange = 10;
 
     private final boolean[] options = new boolean[] {
             true // fair mode
@@ -120,10 +119,10 @@ public class Config {
         fileConfiguration.setComments("ignored_materials", List.of("", "List of block types ignored by multibreaks."));
 
         /** Max range **/
-        fileConfiguration.set("max_break_range", this.maxRange);
-        fileConfiguration.setComments("max_break_range",
-                List.of("", "The maximum range in blocks from which a player can break blocks with multibreak.",
-                        "Needed when for example increasing the block range attribute of a player."));
+        fileConfiguration.set("max_break_range", null);
+        //fileConfiguration.setComments("max_break_range",
+        //        List.of("", "The maximum range in blocks from which a player can break blocks with multibreak.",
+        //                "Needed when for example increasing the block range attribute of a player."));
     }
 
     /** Load the config from file
@@ -139,7 +138,7 @@ public class Config {
         save = save || this.loadMaterialPresets(fileConfiguration);
         save = save || this.loadIncludedMaterials(fileConfiguration);
         save = save || this.loadIgnoredMaterials(fileConfiguration);
-        save = save || this.loadMaxRange(fileConfiguration);
+        //save = save || this.loadMaxRange(fileConfiguration);
         if (save) {
             this.save(fileConfiguration);
         }
@@ -245,13 +244,6 @@ public class Config {
         return save;
     }
 
-
-    private boolean loadMaxRange(FileConfiguration fileConfiguration) {
-        boolean save = setIfMissing(fileConfiguration, "max_break_range", this.maxRange);
-        if (!save) this.maxRange = fileConfiguration.getInt("max_break_range");
-        return save;
-    }
-
     private boolean setIfMissing(ConfigurationSection config, String key, Object defaultValue) {
         if (!config.getKeys(false).contains(key)) {
             config.set(key, defaultValue);
@@ -294,10 +286,6 @@ public class Config {
 
     public EnumSet<Material> getIgnoredMaterials() {
         return ignoredMaterials;
-    }
-
-    public int getMaxRange() {
-        return maxRange;
     }
 
     public boolean isFairModeEnabled() {

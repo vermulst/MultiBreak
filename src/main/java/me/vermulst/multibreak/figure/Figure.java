@@ -2,6 +2,7 @@ package me.vermulst.multibreak.figure;
 
 import me.vermulst.multibreak.config.Config;
 import me.vermulst.multibreak.figure.types.FigureType;
+import me.vermulst.multibreak.utils.BreakUtils;
 import me.vermulst.multibreak.utils.CompassDirection;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -44,10 +45,6 @@ public abstract class Figure {
     public abstract FigureType getFigureType();
 
 
-    public BlockFace getBlockFace(Player p) {
-        return p.getTargetBlockFace(Config.getInstance().getMaxRange());
-    }
-
     public Set<Vector> getTransformedVectors() {
         String key = getCacheKey();
         if (vectorsCache.containsKey(key)) {
@@ -66,7 +63,7 @@ public abstract class Figure {
 
     public Set<Block> getBlocks(Player p, Block targetBlock) {
         Set<Block> blocks = new HashSet<>();
-        BlockFace blockFace = this.getBlockFace(p);
+        BlockFace blockFace = BreakUtils.getBlockFace(p);
         if (blockFace == null) return blocks;
 
         Set<Vector> transformedVectors = new HashSet<>();

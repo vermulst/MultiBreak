@@ -7,6 +7,7 @@ import me.vermulst.multibreak.config.Config;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.item.FigureItemDataType;
 import me.vermulst.multibreak.api.event.MultiBreakStartEvent;
+import me.vermulst.multibreak.multibreak.runnables.MultiBreakRunnable;
 import me.vermulst.multibreak.utils.BreakUtils;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -26,6 +27,7 @@ public class BreakManager {
     private final Map<UUID, MultiBreak> multiBlockMap = new HashMap<>();
     private final Map<UUID, Figure> figureCache = new HashMap<>();
     private final Map<UUID, Block> lastTargetBlock = new HashMap<>();
+    private final Set<UUID> movedPlayers = new HashSet<>();
 
     private static final BreakManager breakManager = new BreakManager();
 
@@ -141,7 +143,7 @@ public class BreakManager {
         ignoredMaterials = filterBlocksEvent.getExcludedMaterials();
         multiBreak = event.getMultiBreak();
         if (!multiBreak.isValid(includedMaterials, ignoredMaterials)) return null;
-        float progressPerTick = multiBreak.getBlock().getBreakSpeed(p);
+        float progressPerTick = multiBreak.getProgressBroken(); // initial value of multibreak
         multiBreak.checkValid(p, progressPerTick, includedMaterials, ignoredMaterials);
 
         //multiBlockMap.put(p.getUniqueId(), multiBreak);
@@ -245,7 +247,11 @@ public class BreakManager {
         multiBlockMap.remove(p.getUniqueId());
     }
 
-    public Map<UUID, Integer> getMultiBreakTask() {
-        return multiBreakTask;
+    public boolean isBreaking(UUID uuid) {
+        return multiBreakTask.containsKey(uuid);
+    }
+
+    public Set<UUID> getMovedPlayers() {
+        return movedPlayers;
     }
 }
