@@ -17,12 +17,19 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class MultiBreak {
 
+    public static record IntVector(int x, int y, int z) {
+        public static IntVector of(Vector v) {
+            return new IntVector((int) v.getX(), (int) v.getY(), (int) v.getZ());
+        }
+    }
+
     private final UUID playerUUID;
     private Set<UUID> nearbyPlayers;
     private Block block;
-    private Vector playerDirection;
+    private IntVector playerDirection;
     private int progressTicks; // ticks
     private float progressBroken; // 0 - 1.0
+    private int lastStage = -1;
     private List<MultiBlock> multiBlocks;
     private boolean ended = false;
     private int mainBlockSourceID;
@@ -32,8 +39,9 @@ public class MultiBreak {
     public MultiBreak(Player p, Block block, Vector playerDirection, Figure figure) {
         this.playerUUID = p.getUniqueId();
         this.nearbyPlayers = getNearbyPlayerUUIDs(block.getLocation());
+        this.updateParticleBuilderReceivers(this.nearbyPlayers);
         this.block = block;
-        this.playerDirection = playerDirection;
+        this.playerDirection = IntVector.of(playerDirection);
         this.initBlocks(p, figure);
         //float progressPerTick = this.getBlock().getBreakSpeed(p);
         //float destroySpeedTicks = 0.000001f + (1 / progressPerTick);
@@ -43,11 +51,12 @@ public class MultiBreak {
 
     public void reset(Player p, Block block, Vector playerDirection, Figure figure) {
         this.nearbyPlayers = getNearbyPlayerUUIDs(block.getLocation());
+        this.updateParticleBuilderReceivers(this.nearbyPlayers);
         this.progressTicks = 0;
         this.ended = false;
 
         this.block = block;
-        this.playerDirection = playerDirection;
+        this.playerDirection = IntVector.of(playerDirection);
 
         this.multiBlocks.clear();
         this.initBlocks(p, figure);
@@ -130,8 +139,11 @@ public class MultiBreak {
         // adjust by 1 tick in the future
         float adjustedProgress = this.progressBroken + (tickDelay * progress);
         adjustedProgress = Math.min(adjustedProgress, 1.0f);*/
-
-        this.writeStage(p, this.progressBroken);
+        int stage = (int) (9 * progressBroken);
+        if (stage != this.lastStage) {
+            this.writeStage(p, this.progressBroken);
+            this.lastStage = stage;
+        }
     }
 
     public void writeStage(Player p, float stage) {
@@ -183,6 +195,23 @@ public class MultiBreak {
         this.writeStage(p, departedPlayers, 0);
 
         this.nearbyPlayers = newNearbyPlayers;
+
+        if (newNearbyPlayers.size() != oldNearbyPlayers.size() ||
+                !newNearbyPlayers.containsAll(oldNearbyPlayers)) {
+            this.nearbyPlayers = newNearbyPlayers;
+            this.updateParticleBuilderReceivers(this.nearbyPlayers);
+        }
+    }
+
+    private void updateParticleBuilderReceivers(Set<UUID> playerUUIDs) {
+        List<Player> onlinePlayers = new ArrayList<>();
+        for (UUID uuid : playerUUIDs) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null && player.isOnline()) {
+                onlinePlayers.add(player);
+            }
+        }
+        this.particleBuilder.receivers(onlinePlayers);
     }
 
     public void checkRemove(Player p) {
@@ -240,13 +269,18 @@ public class MultiBreak {
 
 
     public void playParticles() {
+        boolean playerDirectionX = (playerDirection.x == 1);
+        boolean playerDirectionY = (playerDirection.y == 1);
+        boolean playerDirectionZ = (playerDirection.z == 1);
         double offsetX = 0.45, offsetY = 0.45, offsetZ = 0.45;
-        if (this.getPlayerDirection().getX() != 0) offsetX = 0.0;
-        if (this.getPlayerDirection().getY() != 0) offsetY = 0.0;
-        if (this.getPlayerDirection().getZ() != 0) offsetZ = 0.0;
+        if (playerDirectionX) offsetX = 0.0;
+        if (playerDirectionY) offsetY = 0.0;
+        if (playerDirectionZ) offsetZ = 0.0;
         particleBuilder.offset(offsetX, offsetY, offsetZ);
-        Vector playerDirectionTimesHalf = this.playerDirection.clone().multiply(0.5001);
 
+        double sideOffsetX = (playerDirectionX) ? 0.5 : 0;
+        double sideOffsetY = (playerDirectionY) ? 0.5 : 0;
+        double sideOffsetZ = (playerDirectionZ) ? 0.5 : 0;
         Location loc = new Location(this.getBlock().getWorld(), 0, 0, 0);
         for (MultiBlock multiBlock : this.getMultiBlocks()) {
             if (multiBlock.getBlock().equals(this.getBlock())) continue;
@@ -254,7 +288,7 @@ public class MultiBreak {
 
             Block block = multiBlock.getBlock();
             loc.set(block.getX() + 0.5, block.getY() + 0.5, block.getZ() + 0.5);
-            loc.add(playerDirectionTimesHalf);
+            loc.add(sideOffsetX, sideOffsetY, sideOffsetZ);
 
             particleBuilder.location(loc)
                     .data(block.getBlockData())
@@ -298,7 +332,11 @@ public class MultiBreak {
         return progressBroken;
     }
 
-    public Vector getPlayerDirection() {
+    public Set<UUID> getNearbyPlayers() {
+        return nearbyPlayers;
+    }
+
+    public IntVector getPlayerDirection() {
         return playerDirection;
     }
 

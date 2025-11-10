@@ -59,7 +59,7 @@ public class MultiBreakRunnable extends BukkitRunnable {
 
         // check if direction changed
         Vector direction = blockFace.getDirection();
-        if (!multiBreak.getPlayerDirection().equals(direction)) {
+        if (!multiBreak.getPlayerDirection().equals(MultiBreak.IntVector.of(direction))) {
             multiBreak = replaceMultiBreak(p, multiBreak);
             if (multiBreak == null) {
                 cancelMultiBreak(null);

@@ -7,6 +7,17 @@ plugins {
 group = 'com.github.vermulst'
 version = '1.1.1'
 
+
+def deploymentProperties = new Properties()
+def propertiesFile = rootProject.file("local.properties")
+
+if (propertiesFile.exists()) {
+    propertiesFile.withInputStream { deploymentProperties.load(it) }
+} else {
+    logger.warn("local.properties not found. The 'deploy' task will not work.")
+}
+
+
 repositories {
     mavenCentral()
     maven {
@@ -64,6 +75,28 @@ publishing {
     repositories {
         maven {
             url "https://jitpack.io"
+        }
+    }
+}
+
+
+tasks.register('deploy') {
+    // Set the task to depend on shadowJar
+    dependsOn shadowJar
+
+    doLast {
+        // Only proceed if deploymentDir is set in local.properties
+        def deploymentDirValue = deploymentProperties.getProperty('deploymentDir')
+
+        if (deploymentDirValue) {
+            copy {
+                from shadowJar.archiveFile
+                into deploymentDirValue
+                // Optional: Print the path for confirmation
+                println "MultiBreak JAR copied to: ${deploymentDirValue}"
+            }
+        } else {
+            println "deploymentDir is not set in local.properties. Skipping deploy."
         }
     }
 }
