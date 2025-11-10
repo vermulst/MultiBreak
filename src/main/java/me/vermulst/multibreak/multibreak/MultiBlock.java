@@ -3,12 +3,9 @@ package me.vermulst.multibreak.multibreak;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -21,6 +18,8 @@ public class MultiBlock {
     private final Material type;
     private List<ItemStack> drops;
     private final int sourceID = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
+
+    private int lastStage = 0;
 
     public MultiBlock(Block block) {
         this.block = block;
@@ -41,12 +40,6 @@ public class MultiBlock {
             }
         }
         return false;
-    }
-
-    public void writeStage(Collection<Player> players, float stage) {
-        for (Player p : players) {
-            p.sendBlockDamage(this.getBlock().getLocation(), stage, sourceID);
-        }
     }
 
     public boolean mismatchesType() {
@@ -96,5 +89,17 @@ public class MultiBlock {
 
     public Material getType() {
         return type;
+    }
+
+    public int getSourceID() {
+        return sourceID;
+    }
+
+    public int getLastStage() {
+        return lastStage;
+    }
+
+    public void setLastStage(int lastStage) {
+        this.lastStage = lastStage;
     }
 }
