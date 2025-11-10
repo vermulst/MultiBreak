@@ -19,6 +19,7 @@ public class MultiBlock {
     private List<ItemStack> drops;
     private final int sourceID = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
 
+    private boolean mismatchedType = false;
     private int lastStage = 0;
 
     public MultiBlock(Block block) {
@@ -42,8 +43,12 @@ public class MultiBlock {
         return false;
     }
 
+    public void setMismatchedType(boolean mismatchedType) {
+        this.mismatchedType = mismatchedType;
+    }
+
     public boolean mismatchesType() {
-        return this.block.getType() != this.type;
+        return mismatchedType;
     }
 
     public Block getBlock() {

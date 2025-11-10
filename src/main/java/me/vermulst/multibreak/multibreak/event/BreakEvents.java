@@ -3,7 +3,9 @@ package me.vermulst.multibreak.multibreak.event;
 import me.vermulst.multibreak.api.event.MultiBreakEndEvent;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.multibreak.BreakManager;
+import me.vermulst.multibreak.multibreak.MultiBlock;
 import me.vermulst.multibreak.multibreak.MultiBreak;
+import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -14,6 +16,8 @@ import org.bukkit.event.block.BlockDamageAbortEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.*;
+
+import java.util.Map;
 
 public class BreakEvents implements Listener {
 
@@ -66,6 +70,17 @@ public class BreakEvents implements Listener {
         if (event.isCancelled()) return;
         if (event.getMultiBreak() == null) return;
         breakManager.endMultiBreak(p, event.getMultiBreak(), true);
+    }
+
+    @EventHandler
+    public void onBreak(BlockBreakEvent e) {
+        Location location = e.getBlock().getLocation();
+        Map<Location, MultiBlock> blockToMultiBlockMap = breakManager.getBlockToMultiBlockMap();
+        if (blockToMultiBlockMap.containsKey(location)) {
+            MultiBlock multiBlock = blockToMultiBlockMap.get(location);
+            multiBlock.setMismatchedType(true);
+            blockToMultiBlockMap.remove(location);
+        }
     }
 
     @EventHandler

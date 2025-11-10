@@ -325,9 +325,6 @@ public class MultiBreak {
         this.progressBroken = progressBroken;
     }
 
-
-
-
     @Override
     public String toString() {
         return "MultiBreak{" +

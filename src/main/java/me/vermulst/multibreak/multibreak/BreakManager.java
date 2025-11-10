@@ -24,10 +24,13 @@ import java.util.*;
 
 public class BreakManager {
     private final Map<UUID, Integer> multiBreakTask = new HashMap<>();
-    private final Map<UUID, MultiBreak> multiBlockMap = new HashMap<>();
     private final Map<UUID, Figure> figureCache = new HashMap<>();
     private final Map<UUID, Block> lastTargetBlock = new HashMap<>();
     private final Set<UUID> movedPlayers = new HashSet<>();
+
+    private final Map<UUID, MultiBreak> multiBreakMap = new HashMap<>();
+    private final Map<Location, MultiBlock> blockToMultiBlockMap = new HashMap<>();
+
 
     private static final BreakManager breakManager = new BreakManager();
 
@@ -111,7 +114,13 @@ public class BreakManager {
         UUID uuid = p.getUniqueId();
         if (multiBreak != null) {
             multiBreak.end(p, finished);
-            //multiBlockMap.remove(uuid);
+
+            // if it did finish, multiblock is already removed by break event
+            if (!finished) {
+                for (MultiBlock multiBlock : multiBreak.getMultiBlocks()) {
+                    blockToMultiBlockMap.remove(multiBlock.getBlock().getLocation());
+                }
+            }
         }
         if (!multiBreakTask.containsKey(uuid)) return;
         Bukkit.getScheduler().cancelTask(multiBreakTask.get(uuid));
@@ -127,12 +136,12 @@ public class BreakManager {
         EnumSet<Material> ignoredMaterials = config.getIgnoredMaterials();
 
 
-        MultiBreak multiBreak = multiBlockMap.get(p.getUniqueId());
+        MultiBreak multiBreak = multiBreakMap.get(p.getUniqueId());
         if (multiBreak != null) {
             multiBreak.reset(p, block, blockFace.getDirection(), figure);
         } else {
             multiBreak = new MultiBreak(p, block, blockFace.getDirection(), figure);
-            multiBlockMap.put(p.getUniqueId(), multiBreak);
+            multiBreakMap.put(p.getUniqueId(), multiBreak);
         }
 
         MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, block);
@@ -146,7 +155,9 @@ public class BreakManager {
         float progressPerTick = multiBreak.getProgressBroken(); // initial value of multibreak
         multiBreak.checkValid(p, progressPerTick, includedMaterials, ignoredMaterials);
 
-        //multiBlockMap.put(p.getUniqueId(), multiBreak);
+        for (MultiBlock mb : multiBreak.getMultiBlocks()) {
+            blockToMultiBlockMap.put(mb.getBlock().getLocation(), mb);
+        }
 
         return multiBreak;
     }
@@ -228,8 +239,8 @@ public class BreakManager {
     }
 
     public MultiBreak getMultiBreak(Player p) {
-        if (multiBlockMap.containsKey(p.getUniqueId())) {
-            MultiBreak multiBreak = multiBlockMap.get(p.getUniqueId());
+        if (multiBreakMap.containsKey(p.getUniqueId())) {
+            MultiBreak multiBreak = multiBreakMap.get(p.getUniqueId());
             if (!multiBreak.hasEnded()) {
                 return multiBreak;
             }
@@ -244,11 +255,15 @@ public class BreakManager {
         figureCache.remove(p.getUniqueId());
         lastTargetBlock.remove(p.getUniqueId());
         // Remove their persistent MultiBreak object
-        multiBlockMap.remove(p.getUniqueId());
+        multiBreakMap.remove(p.getUniqueId());
     }
 
     public boolean isBreaking(UUID uuid) {
         return multiBreakTask.containsKey(uuid);
+    }
+
+    public Map<Location, MultiBlock> getBlockToMultiBlockMap() {
+        return blockToMultiBlockMap;
     }
 
     public Set<UUID> getMovedPlayers() {
