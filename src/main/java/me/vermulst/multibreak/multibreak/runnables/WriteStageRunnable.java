@@ -32,6 +32,11 @@ public class WriteStageRunnable extends BukkitRunnable {
         this.mainBlock = mainBlock;
         this.stage = stage;
         this.players = players;
+        if (!stageLock.containsKey(uuid)) {
+            stageLock.put(uuid, new ReentrantLock());
+        }
+        ReentrantLock lock = stageLock.get(uuid);
+        lock.lock();
     }
 
     @Override
@@ -43,6 +48,7 @@ public class WriteStageRunnable extends BukkitRunnable {
         List<ClientboundBlockDestructionPacket> packetsToSend = new ArrayList<>();
         try {
             lock.lock();
+
             for (MultiBlock multiBlock : this.multiBlocks) {
                 if (!multiBlock.isVisible()) continue;
                 if (multiBlock.getBlock().equals(mainBlock)) continue;
@@ -60,10 +66,12 @@ public class WriteStageRunnable extends BukkitRunnable {
                         );
                 packetsToSend.add(packet);
             }
-            for (Player p : players) {
-                ServerGamePacketListenerImpl connection = ((CraftPlayer) p).getHandle().connection;
-                for (ClientboundBlockDestructionPacket packet : packetsToSend) {
-                    connection.send(packet);
+            if (!packetsToSend.isEmpty()) {
+                for (Player p : players) {
+                    ServerGamePacketListenerImpl connection = ((CraftPlayer) p).getHandle().connection;
+                    for (ClientboundBlockDestructionPacket packet : packetsToSend) {
+                        connection.send(packet);
+                    }
                 }
             }
         } finally {
