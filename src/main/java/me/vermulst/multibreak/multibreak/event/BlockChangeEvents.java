@@ -10,40 +10,40 @@ import org.bukkit.event.entity.EntityChangeBlockEvent;
 import java.util.Map;
 
 public class BlockChangeEvents implements Listener {
-    private final Map<Location, Integer> multiblockMap;
+    private final BreakManager breakManager;
     public BlockChangeEvents(BreakManager breakManager) {
-        this.multiblockMap = breakManager.getMultiblockMap();
+        this.breakManager = breakManager;
     }
 
 
     @EventHandler
     public void onBreak(BlockBreakEvent e) {
-        multiblockMap.remove(e.getBlock().getLocation());
+        breakManager.handleBlockRemoval(e.getBlock().getLocation());
     }
 
     @EventHandler
     public void liquidFLowEvent(BlockFromToEvent e) {
-        multiblockMap.remove(e.getBlock().getLocation());
+        breakManager.handleBlockRemoval(e.getBlock().getLocation());
     }
 
     @EventHandler
     public void blockForm(BlockFormEvent e) {
-        multiblockMap.remove(e.getBlock().getLocation());
+        breakManager.handleBlockRemoval(e.getBlock().getLocation());
     }
 
     @EventHandler
     public void entityChangeBlock(EntityChangeBlockEvent e) {
-        multiblockMap.remove(e.getBlock().getLocation());
+        breakManager.handleBlockRemoval(e.getBlock().getLocation());
     }
 
     @EventHandler
     public void pistonExtend(BlockPistonExtendEvent e) {
-        multiblockMap.remove(e.getBlock().getLocation());
+        breakManager.handleBlockRemoval(e.getBlock().getLocation());
     }
 
     @EventHandler
     public void pistonRetract(BlockPistonRetractEvent e) {
-        multiblockMap.remove(e.getBlock().getLocation());
+        breakManager.handleBlockRemoval(e.getBlock().getLocation());
     }
 
 
