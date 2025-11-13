@@ -183,6 +183,7 @@ public class MultiBreak {
         this.particleBuilder.receivers(onlinePlayers);
     }
 
+    // todo: do this just when the block got rid of, linked to player
     public void checkRemove() {
         Iterator<MultiBlock> iterator = this.multiBlocks.iterator();
         List<MultiBlock> blocksToStageZero = null;

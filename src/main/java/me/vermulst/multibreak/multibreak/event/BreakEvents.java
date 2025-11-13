@@ -73,13 +73,6 @@ public class BreakEvents implements Listener {
     }
 
     @EventHandler
-    public void onBreak(BlockBreakEvent e) {
-        Location location = e.getBlock().getLocation();
-        Map<Location, Integer> multiblockMap = breakManager.getMultiblockMap();
-        multiblockMap.remove(location);
-    }
-
-    @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e) {
         Player p = e.getPlayer();
         breakManager.onPlayerQuit(p);
