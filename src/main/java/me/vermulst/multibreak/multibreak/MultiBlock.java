@@ -19,8 +19,18 @@ public class MultiBlock {
     private List<ItemStack> drops;
     private final int sourceID = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
 
+
     private boolean mismatchedType = false;
-    private int lastStage = 0;
+    private volatile int lastStage = 0;
+
+    private static final BlockFace[] cartesianBlockFaces = new BlockFace[] {
+            BlockFace.NORTH,
+            BlockFace.EAST,
+            BlockFace.SOUTH,
+            BlockFace.WEST,
+            BlockFace.UP,
+            BlockFace.DOWN
+    };
 
     public MultiBlock(Block block) {
         this.block = block;
@@ -29,15 +39,13 @@ public class MultiBlock {
     }
 
     public boolean initVisibility(Block b) {
-        for (BlockFace face : BlockFace.values()) {
-            if (face.isCartesian()) { // Filter for the 6 cardinal directions
-                Block adjacent = b.getRelative(face);
-                if (adjacent.isEmpty() || (adjacent.isLiquid() && adjacent.getType() != Material.POWDER_SNOW)) {
-                    return true;
-                }
-                if (!adjacent.getType().isOccluding()) {
-                    return true;
-                }
+        for (BlockFace face : cartesianBlockFaces) {
+            Block adjacent = b.getRelative(face);
+            if (adjacent.isEmpty() || (adjacent.isLiquid() && adjacent.getType() != Material.POWDER_SNOW)) {
+                return true;
+            }
+            if (!adjacent.getType().isOccluding()) {
+                return true;
             }
         }
         return false;

@@ -83,14 +83,15 @@ public class MultiBreak {
         this.progressTicks++;
         if (this.progressTicks % 20 == 0) this.checkPlayers();
         this.checkRemove();
-        if (this.progressTicks % 2 == 0) this.playParticles();
 
-        updateBlockAnimationPacket(p);
+        List<MultiBlock> multiBlockSnapshot = new ArrayList<>(this.multiBlocks);
+        if (this.progressTicks % 2 == 0) this.playParticles(multiBlockSnapshot);
+        updateBlockAnimationPacket(p, multiBlockSnapshot);
     }
 
     public void end(Player p, boolean finished) {
         this.ended = true;
-        this.writeStage(-1);
+        this.writeStage(-1, this.multiBlocks);
         if (!finished) return;
         ParticleBuilder particleBuilder = new ParticleBuilder(Particle.BLOCK)
                 .count(16)
@@ -123,7 +124,7 @@ public class MultiBreak {
         }
     }
 
-    public void updateBlockAnimationPacket(Player p) {
+    public void updateBlockAnimationPacket(Player p, List<MultiBlock> multiBlockSnapshot) {
         float breakSpeed = this.getBlock().getBreakSpeed(p);
         this.progressBroken += breakSpeed;
         this.progressBroken = Math.min(this.progressBroken, 1.0f);
@@ -137,19 +138,15 @@ public class MultiBreak {
         int stage = (int) (9 * progressBroken);
         if (lastStage == -1 || stage != this.lastStage) {
             this.lastStage = stage;
-            this.writeStage(stage);
+            this.writeStage(stage, multiBlockSnapshot);
         }
     }
 
-    public void writeStage(int stage) {
-        this.writeStage(this.nearbyPlayers, stage);
+    public void writeStage(int stage, List<MultiBlock> multiBlockSnapshot) {
+        this.writeStage(this.nearbyPlayers, stage, multiBlockSnapshot);
     }
 
-    public void writeStage(Collection<UUID> uuids, int stage) {
-        this.writeStage(uuids, stage, this.multiBlocks);
-    }
-
-    public void writeStage(Collection<UUID> uuids, int stage, List<MultiBlock> multiBlocks) {
+    public void writeStage(Collection<UUID> uuids, int stage, List<MultiBlock> multiBlockSnapshot) {
         List<Player> onlinePlayers = new ArrayList<>();
         for (UUID uuid : uuids) {
             Player player = Bukkit.getPlayer(uuid);
@@ -157,7 +154,8 @@ public class MultiBreak {
                 onlinePlayers.add(player);
             }
         }
-        WriteStageRunnable writeStageRunnable = new WriteStageRunnable(this.playerUUID, multiBlocks, this.getBlock(), stage, onlinePlayers);
+        List<MultiBlock> multiBlocksSnapshot = new ArrayList<>(multiBlocks);
+        WriteStageRunnable writeStageRunnable = new WriteStageRunnable(this.playerUUID, multiBlocksSnapshot, this.getBlock(), stage, onlinePlayers);
         writeStageRunnable.runTaskAsynchronously(Main.getInstance());
     }
 
@@ -239,7 +237,7 @@ public class MultiBreak {
     }
 
 
-    public void playParticles() {
+    public void playParticles(List<MultiBlock> multiBlockSnapshot) {
         boolean playerDirectionX = (playerDirection.x == 1);
         boolean playerDirectionY = (playerDirection.y == 1);
         boolean playerDirectionZ = (playerDirection.z == 1);
@@ -253,7 +251,7 @@ public class MultiBreak {
         double sideOffsetY = (playerDirectionY) ? 0.5 : 0;
         double sideOffsetZ = (playerDirectionZ) ? 0.5 : 0;
         Location loc = new Location(this.getBlock().getWorld(), 0, 0, 0);
-        WriteParticleRunnable writeParticleRunnable = new WriteParticleRunnable(multiBlocks, this.getBlock(), particleBuilder, sideOffsetX, sideOffsetY, sideOffsetZ, loc);
+        WriteParticleRunnable writeParticleRunnable = new WriteParticleRunnable(multiBlockSnapshot, this.getBlock(), particleBuilder, sideOffsetX, sideOffsetY, sideOffsetZ, loc);
         writeParticleRunnable.runTaskAsynchronously(Main.getInstance());
     }
 
