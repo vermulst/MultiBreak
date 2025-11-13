@@ -82,7 +82,7 @@ public class MultiBreak {
 
         this.progressTicks++;
         if (this.progressTicks % 20 == 0) this.checkPlayers();
-        this.checkRemove();
+        //this.checkRemove();
 
         List<MultiBlock> multiBlockSnapshot = new ArrayList<>(this.multiBlocks);
         if (this.progressTicks % 2 == 0) this.playParticles(multiBlockSnapshot);
@@ -154,8 +154,7 @@ public class MultiBreak {
                 onlinePlayers.add(player);
             }
         }
-        List<MultiBlock> multiBlocksSnapshot = new ArrayList<>(multiBlocks);
-        WriteStageRunnable writeStageRunnable = new WriteStageRunnable(this.playerUUID, multiBlocksSnapshot, this.getBlock(), stage, onlinePlayers);
+        WriteStageRunnable writeStageRunnable = new WriteStageRunnable(this.playerUUID, multiBlockSnapshot, this.getBlock(), stage, onlinePlayers);
         writeStageRunnable.runTaskAsynchronously(Main.getInstance());
     }
 
@@ -184,7 +183,7 @@ public class MultiBreak {
     }
 
     // todo: do this just when the block got rid of, linked to player
-    public void checkRemove() {
+    /*public void checkRemove() {
         Iterator<MultiBlock> iterator = this.multiBlocks.iterator();
         List<MultiBlock> blocksToStageZero = null;
 
@@ -203,7 +202,7 @@ public class MultiBreak {
         if (blocksToStageZero != null && !blocksToStageZero.isEmpty()) {
             this.writeStage(this.nearbyPlayers, -1, blocksToStageZero);
         }
-    }
+    }*/
 
     public boolean isValid(EnumSet<Material> includedMaterials, EnumSet<Material> excludedMaterials) {
         Material mainBlockType = this.getBlock().getType();

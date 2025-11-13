@@ -29,8 +29,7 @@ public class BreakManager {
     private final Set<UUID> movedPlayers = new HashSet<>();
 
     private final Map<UUID, MultiBreak> multiBreakMap = new HashMap<>();
-
-    private final Map<Location, Integer> multiblockMap = new HashMap<>();
+    private final Map<Location, List<MultiBreak>> multiBreakLocationMap = new HashMap<>();
 
 
     private static final BreakManager breakManager = new BreakManager();
@@ -120,13 +119,11 @@ public class BreakManager {
             if (!finished) {
                 for (MultiBlock multiBlock : multiBreak.getMultiBlocks()) {
                     Location location = multiBlock.getLocation();
-                    if (!multiblockMap.containsKey(location)) continue;
-                    int count = multiblockMap.get(location);
-                    count--;
-                    if (count <= 0) {
-                        multiblockMap.remove(location);
-                    } else {
-                        multiblockMap.put(location, count);
+                    if (!multiBreakLocationMap.containsKey(location)) continue;
+                    List<MultiBreak> multiBreaks = multiBreakLocationMap.get(location);
+                    multiBreaks.remove(multiBreak);
+                    if (multiBreaks.isEmpty()) {
+                        multiBreakLocationMap.remove(location);
                     }
                 }
             }
@@ -165,8 +162,12 @@ public class BreakManager {
         multiBreak.checkValid(p, progressPerTick, includedMaterials, ignoredMaterials);
 
         for (MultiBlock mb : multiBreak.getMultiBlocks()) {
-            int count = multiblockMap.getOrDefault(mb.getLocation(), 0);
-            multiblockMap.put(mb.getLocation(), count + 1);
+            Location location = mb.getLocation();
+            if (!multiBreakLocationMap.containsKey(location)) {
+                multiBreakLocationMap.put(location, new ArrayList<>());
+            }
+            List<MultiBreak> multiBreaks = multiBreakLocationMap.get(location);
+            multiBreaks.add(multiBreak);
         }
 
         return multiBreak;
@@ -268,13 +269,30 @@ public class BreakManager {
         multiBreakMap.remove(p.getUniqueId());
     }
 
+    public void handleBlockRemoval(Location location) {
+        if (!multiBreakLocationMap.containsKey(location)) return;
+        List<MultiBreak> multiBreaks = multiBreakLocationMap.get(location);
+        for (MultiBreak multiBreak : multiBreaks) {
+            Iterator<MultiBlock> iterator = multiBreak.getMultiBlocks().iterator();
+            while (iterator.hasNext()) {
+                MultiBlock multiBlock = iterator.next();
+
+                if (multiBlock.getLocation().equals(location)) {
+                    multiBreak.writeStage(multiBreak.getNearbyPlayers(), -1, Collections.singletonList(multiBlock));
+                    iterator.remove();
+                    break;
+                }
+            }
+            multiBreak.getMultiBlocks().removeIf(multiBlock -> multiBlock.getLocation().equals(location));
+        }
+    }
+
     public boolean isBreaking(UUID uuid) {
         return multiBreakTask.containsKey(uuid);
     }
 
-
-    public Map<Location, Integer> getMultiblockMap() {
-        return multiblockMap;
+    public Map<Location, List<MultiBreak>> getMultiBreakLocationMap() {
+        return multiBreakLocationMap;
     }
 
     public Set<UUID> getMovedPlayers() {
