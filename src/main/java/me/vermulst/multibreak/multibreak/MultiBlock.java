@@ -1,5 +1,6 @@
 package me.vermulst.multibreak.multibreak;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -19,8 +20,6 @@ public class MultiBlock {
     private List<ItemStack> drops;
     private final int sourceID = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
 
-
-    private boolean mismatchedType = false;
     private volatile int lastStage = 0;
 
     private static final BlockFace[] cartesianBlockFaces = new BlockFace[] {
@@ -57,6 +56,10 @@ public class MultiBlock {
 
     public boolean mismatchesType() {
         return mismatchedType;
+    }
+
+    public Location getLocation() {
+        return block.getLocation();
     }
 
     public Block getBlock() {

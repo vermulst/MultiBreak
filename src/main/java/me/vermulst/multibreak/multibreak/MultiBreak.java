@@ -187,9 +187,10 @@ public class MultiBreak {
         Iterator<MultiBlock> iterator = this.multiBlocks.iterator();
         List<MultiBlock> blocksToStageZero = null;
 
+        Map<Location, Integer> multiblockMap = BreakManager.getInstance().getMultiblockMap();
         while (iterator.hasNext()) {
             MultiBlock multiBlock = iterator.next();
-            if (multiBlock.mismatchesType()) {
+            if (!multiblockMap.containsKey(multiBlock.getLocation())) {
                 if (blocksToStageZero == null) {
                     blocksToStageZero = new ArrayList<>();
                 }

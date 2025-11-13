@@ -75,12 +75,8 @@ public class BreakEvents implements Listener {
     @EventHandler
     public void onBreak(BlockBreakEvent e) {
         Location location = e.getBlock().getLocation();
-        Map<Location, MultiBlock> blockToMultiBlockMap = breakManager.getBlockToMultiBlockMap();
-        if (blockToMultiBlockMap.containsKey(location)) {
-            MultiBlock multiBlock = blockToMultiBlockMap.get(location);
-            multiBlock.setMismatchedType(true);
-            blockToMultiBlockMap.remove(location);
-        }
+        Map<Location, Integer> multiblockMap = breakManager.getMultiblockMap();
+        multiblockMap.remove(location);
     }
 
     @EventHandler
