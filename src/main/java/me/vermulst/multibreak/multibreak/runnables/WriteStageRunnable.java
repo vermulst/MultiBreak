@@ -32,11 +32,6 @@ public class WriteStageRunnable extends BukkitRunnable {
         this.mainBlock = mainBlock;
         this.stage = stage;
         this.players = players;
-        if (!stageLock.containsKey(uuid)) {
-            stageLock.put(uuid, new ReentrantLock());
-        }
-        ReentrantLock lock = stageLock.get(uuid);
-        lock.lock();
     }
 
     @Override
