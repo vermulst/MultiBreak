@@ -6,21 +6,40 @@ import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.multibreak.runnables.WriteParticleRunnable;
 import me.vermulst.multibreak.multibreak.runnables.WriteStageRunnable;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.FluidTags;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.craftbukkit.block.CraftBlockState;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
+import org.bukkit.craftbukkit.util.CraftLocation;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.util.Vector;
 
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
 
 public class MultiBreak {
 
     public static record IntVector(int x, int y, int z) {
         public static IntVector of(Vector v) {
             return new IntVector((int) v.getX(), (int) v.getY(), (int) v.getZ());
+        }
+
+        public boolean equalsVector(Vector v) {
+            // Perform the comparison logic directly
+            return this.x == (int) v.getX() &&
+                    this.y == (int) v.getY() &&
+                    this.z == (int) v.getZ();
         }
     }
 
@@ -33,7 +52,11 @@ public class MultiBreak {
     private int lastStage = -1;
     private List<MultiBlock> multiBlocks;
     private boolean ended = false;
+    private final ReentrantLock packetLock = new ReentrantLock();
 
+    private final Map<Material, Float> destroySpeedCache = new EnumMap<>(Material.class);
+    private boolean isGrounded;
+    private boolean isSubmerged;
     private final ParticleBuilder particleBuilder = new ParticleBuilder(Particle.BLOCK_CRUMBLE).extra(0.2);
 
     public MultiBreak(Player p, Block block, Vector playerDirection, Figure figure) {
@@ -43,7 +66,9 @@ public class MultiBreak {
         this.block = block;
         this.playerDirection = IntVector.of(playerDirection);
         this.initBlocks(p, figure);
-        this.progressBroken = this.getBlock().getBreakSpeed(p);
+        this.progressBroken = this.getDestroySpeed(p, block);
+        this.isGrounded = p.isOnGround();
+        this.isSubmerged = ((CraftPlayer)p).getHandle().isEyeInFluid(FluidTags.WATER);
     }
 
     public void reset(Player p, Block block, Vector playerDirection, Figure figure) {
@@ -58,8 +83,41 @@ public class MultiBreak {
         this.multiBlocks.clear();
         this.initBlocks(p, figure);
 
-        this.progressBroken = block.getBreakSpeed(p);
+        this.progressBroken = this.getDestroySpeed(p, block);
         this.lastStage = -1;
+
+        this.isGrounded = p.isOnGround();
+        this.isSubmerged = ((CraftPlayer)p).getHandle().isEyeInFluid(FluidTags.WATER);
+    }
+
+    public float getDestroySpeed(Player p, Block block) {
+        ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
+        BlockState blockState = ((CraftBlockState)block.getState()).getHandle();
+        Location location = block.getLocation();
+        ServerLevel world = ((CraftWorld)location.getWorld()).getHandle();
+        return getDestroySpeed(serverPlayer, location, world, blockState);
+    }
+
+    public float getDestroySpeed(ServerPlayer serverPlayer, Location location, ServerLevel world, BlockState blockState) {
+        Material material = blockState.getBukkitMaterial();
+
+        if (destroySpeedCache.containsKey(material)) {
+            return destroySpeedCache.get(material);
+        }
+
+        BlockPos blockPos = CraftLocation.toBlockPosition(location);
+        float destroySpeed = blockState.getDestroySpeed(world, blockPos);
+        if (destroySpeed == -1.0F) {
+            return 0.0F;
+        } else {
+            float baseSpeed = serverPlayer.getDestroySpeed(blockState);
+
+            boolean hasCorrectTool = serverPlayer.hasCorrectToolForDrops(blockState);
+            int factor = hasCorrectTool ? 30 : 100;
+            float finalSpeed = baseSpeed / destroySpeed / (float)factor;
+            destroySpeedCache.put(material, finalSpeed);
+            return finalSpeed;
+        }
     }
 
     public void initBlocks(Player p, Figure figure) {
@@ -82,6 +140,7 @@ public class MultiBreak {
 
         this.progressTicks++;
         if (this.progressTicks % 20 == 0) this.checkPlayers();
+        this.checkDestroySpeedChange(p);
         //this.checkRemove();
 
         List<MultiBlock> multiBlockSnapshot = new ArrayList<>(this.multiBlocks);
@@ -89,17 +148,29 @@ public class MultiBreak {
         updateBlockAnimationPacket(p, multiBlockSnapshot);
     }
 
+    public void checkDestroySpeedChange(Player p) {
+        boolean isGrounded = p.isOnGround();
+        boolean isSubmerged = ((CraftPlayer)p).getHandle().isEyeInFluid(FluidTags.WATER);
+
+        if (isGrounded != this.isGrounded || isSubmerged != this.isSubmerged) {
+            this.isGrounded = isGrounded;
+            this.isSubmerged = isSubmerged;
+            this.destroySpeedCache.clear();
+        }
+    }
+
     public void end(Player p, boolean finished) {
         this.ended = true;
-        this.writeStage(-1, this.multiBlocks);
+        List<MultiBlock> multiBlockSnapshot = new ArrayList<>(this.multiBlocks);
+        this.writeStage(-1, multiBlockSnapshot);
         if (!finished) return;
         ParticleBuilder particleBuilder = new ParticleBuilder(Particle.BLOCK)
                 .count(16)
                 .offset(0.5, 0.5, 0.5);
         World world = this.getBlock().getWorld();
-        int size = this.getMultiBlocks().size() - 1;
+        int size = multiBlockSnapshot.size() - 1;
         float volume = (float) (1 / Math.log(((size) + 1) * Math.E));
-        for (MultiBlock multiBlock : this.getMultiBlocks()) {
+        for (MultiBlock multiBlock : multiBlockSnapshot) {
             if (!multiBlock.breakThisBlock()) continue;
             Block block = multiBlock.getBlock();
             Material blockType = block.getType();
@@ -154,7 +225,7 @@ public class MultiBreak {
                 onlinePlayers.add(player);
             }
         }
-        WriteStageRunnable writeStageRunnable = new WriteStageRunnable(this.playerUUID, multiBlockSnapshot, this.getBlock(), stage, onlinePlayers);
+        WriteStageRunnable writeStageRunnable = new WriteStageRunnable(this.playerUUID, multiBlockSnapshot, this.getBlock(), stage, onlinePlayers, this.packetLock);
         writeStageRunnable.runTaskAsynchronously(Main.getInstance());
     }
 
@@ -256,22 +327,28 @@ public class MultiBreak {
         writeParticleRunnable.runTaskAsynchronously(Main.getInstance());
     }
 
+    private static final Predicate<net.minecraft.world.entity.Entity> isPlayer =
+            (nmsEntity) -> nmsEntity.getType() == net.minecraft.world.entity.EntityType.PLAYER;
+
+    // 2-6x faster than API version
     public Set<UUID> getNearbyPlayerUUIDs(Location blockLoc) {
         Set<UUID> uuids = new HashSet<>();
-        int centerChunkX = blockLoc.getChunk().getX();
-        int centerChunkZ = blockLoc.getChunk().getZ();
+        CraftWorld craftWorld = (CraftWorld) blockLoc.getWorld();
 
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= 1; dz++) {
-                Chunk chunk = blockLoc.getWorld().getChunkAt(centerChunkX + dx, centerChunkZ + dz);
-                if (chunk.isLoaded()) {
-                    for (org.bukkit.entity.Entity entity : chunk.getEntities()) {
-                        if (entity instanceof Player) {
-                            uuids.add(entity.getUniqueId());
-                        }
-                    }
-                }
-            }
+        double x = blockLoc.getX();
+        double y = blockLoc.getY();
+        double z = blockLoc.getZ();
+        double radius = 32.0;
+        AABB aabb = new AABB(
+                x - radius, y - radius, z - radius,
+                x + radius, y + radius, z + radius
+        );
+
+        List<net.minecraft.world.entity.Entity> entityList = craftWorld.getHandle().getEntities((net.minecraft.world.entity.Entity) null, aabb, isPlayer);
+
+        for (net.minecraft.world.entity.Entity entity : entityList) {
+            Player p = (Player) entity.getBukkitEntity();
+            uuids.add(p.getUniqueId());
         }
         return uuids;
     }
@@ -333,5 +410,9 @@ public class MultiBreak {
                 ", multiBlocks=" + multiBlocks +
                 ", ended=" + ended +
                 '}';
+    }
+
+    public void invalidateDestroySpeedCache() {
+        this.destroySpeedCache.clear();
     }
 }

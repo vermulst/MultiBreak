@@ -1,5 +1,8 @@
 package me.vermulst.multibreak.item;
 
+import io.papermc.paper.datacomponent.DataComponentType;
+import io.papermc.paper.datacomponent.DataComponentTypes;
+import io.papermc.paper.persistence.PersistentDataContainerView;
 import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.types.FigureType;
@@ -68,10 +71,7 @@ public class FigureItemDataType implements PersistentDataType<PersistentDataCont
     }
 
     public Figure get(ItemStack itemStack) {
-        ItemMeta meta = itemStack.getItemMeta();
-        if (meta == null) return null;
-        PersistentDataContainer customItemTagContainer = meta.getPersistentDataContainer();
-
+        PersistentDataContainerView customItemTagContainer = itemStack.getPersistentDataContainer();
         Figure figure = customItemTagContainer.get(KEY_FIGURE_INFO, this);
         if (figure != null) return figure;
 
@@ -79,8 +79,14 @@ public class FigureItemDataType implements PersistentDataType<PersistentDataCont
         LegacyFigureItemDataType legacyType = new LegacyFigureItemDataType();
         FigureItemInfo oldInfo = customItemTagContainer.get(KEY_FIGURE_INFO, legacyType);
         if (oldInfo != null) {
+            ItemMeta meta = itemStack.getItemMeta();
+            if (meta == null) return null;
             figure = oldInfo.figure();
-            customItemTagContainer.remove(KEY_FIGURE_INFO);
+
+            PersistentDataContainer customItemTagContainerMeta = meta.getPersistentDataContainer();
+            customItemTagContainerMeta.remove(KEY_FIGURE_INFO);
+            itemStack.setItemMeta(meta);
+
             this.set(itemStack, figure);
             return figure;
         }

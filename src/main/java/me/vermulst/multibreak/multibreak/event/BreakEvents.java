@@ -50,15 +50,24 @@ public class BreakEvents implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void breakBlockType(BlockBreakEvent e) {
-        if (!breakManager.isMultiBreak(e)) return;
+        Block block = e.getBlock();
+        Location location = block.getLocation();
+        if (!breakManager.isMultiBreak(e)) {
+            if (!breakManager.wasMultiBroken(block)) {
+                breakManager.handleBlockRemoval(location);
+            }
+            return;
+        }
         Player p = e.getPlayer();
         MultiBreak multiBreak = breakManager.getMultiBreak(p);
         if (multiBreak == null) {
             Figure figure = breakManager.getFigure(p);
             multiBreak = breakManager.initMultiBreak(p, e.getBlock(), figure);
-            if (multiBreak == null) return;
+            if (multiBreak == null) {
+                breakManager.handleBlockRemoval(location);
+                return;
+            }
         }
-        Block block = e.getBlock();
 
         // Mismatch (player switched to an instamine-block while breaking)
         if (!block.equals(multiBreak.getBlock())) {
@@ -67,9 +76,16 @@ public class BreakEvents implements Listener {
         }
         MultiBreakEndEvent event = new MultiBreakEndEvent(p, multiBreak, true);
         event.callEvent();
-        if (event.isCancelled()) return;
-        if (event.getMultiBreak() == null) return;
+        if (event.isCancelled()) {
+            breakManager.handleBlockRemoval(location);
+            return;
+        }
+        if (event.getMultiBreak() == null) {
+            breakManager.handleBlockRemoval(location);
+            return;
+        }
         breakManager.endMultiBreak(p, event.getMultiBreak(), true);
+        breakManager.handleBlockRemoval(location);
     }
 
     @EventHandler

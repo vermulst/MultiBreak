@@ -50,14 +50,6 @@ public class MultiBlock {
         return false;
     }
 
-    public void setMismatchedType(boolean mismatchedType) {
-        this.mismatchedType = mismatchedType;
-    }
-
-    public boolean mismatchesType() {
-        return mismatchedType;
-    }
-
     public Location getLocation() {
         return block.getLocation();
     }

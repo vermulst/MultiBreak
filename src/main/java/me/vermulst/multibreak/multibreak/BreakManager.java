@@ -23,12 +23,12 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.*;
 
 public class BreakManager {
+    private final Set<UUID> movedPlayers = new HashSet<>();
     private final Map<UUID, Integer> multiBreakTask = new HashMap<>();
     private final Map<UUID, Figure> figureCache = new HashMap<>();
     private final Map<UUID, Block> lastTargetBlock = new HashMap<>();
-    private final Set<UUID> movedPlayers = new HashSet<>();
-
     private final Map<UUID, MultiBreak> multiBreakMap = new HashMap<>();
+
     private final Map<Location, List<MultiBreak>> multiBreakLocationMap = new HashMap<>();
 
 
@@ -49,28 +49,38 @@ public class BreakManager {
                 Figure newFigure = getFigure(p);
                 if (newFigure != null && newFigure.equals(previousFigure)) return;
                 lastTargetBlock.remove(uuid);
-                refreshBreakSpeed(p);
+                refreshBreakSpeed(p, newFigure);
             }
         }.runTaskLater(Main.getInstance(), 1L);
     }
 
     public void refreshBreakSpeed(Player p) {
+        Figure figure = this.getFigure(p);
+        this.refreshBreakSpeed(p, figure);
+    }
+
+    public void refreshBreakSpeed(Player p, Figure figure) {
         UUID uuid = p.getUniqueId();
+        AttributeInstance attribute = p.getAttribute(Attribute.BLOCK_BREAK_SPEED);
+        AttributeModifier modifierToRemove = attribute.getModifier(new NamespacedKey(Main.getInstance(), "MultiBreakSlowdown"));
+
+        if (figure == null) {
+            this.removeModifier(attribute, modifierToRemove);
+            this.invalidateDestroySpeedCache(uuid);
+            return;
+        }
+
         Block targetBlock = BreakUtils.getTargetBlock(p);
         if (targetBlock == null) {
-            lastTargetBlock.remove(uuid);
+            this.removeModifier(attribute, modifierToRemove);
+            this.invalidateDestroySpeedCache(uuid);
             return;
         }
         if (lastTargetBlock.containsKey(uuid) && targetBlock.equals(lastTargetBlock.get(uuid))) return;
         lastTargetBlock.put(uuid, targetBlock);
 
-        AttributeInstance attribute = p.getAttribute(Attribute.BLOCK_BREAK_SPEED);
-        AttributeModifier modifierToRemove = attribute.getModifier(new NamespacedKey(Main.getInstance(), "MultiBreakSlowdown"));
-        if (modifierToRemove != null) {
-            attribute.removeModifier(modifierToRemove);
-        }
-        Figure figure = this.getFigure(p);
-        if (figure == null) return;
+        this.removeModifier(attribute, modifierToRemove);
+        this.invalidateDestroySpeedCache(uuid);
 
         Config config = Config.getInstance();
         EnumSet<Material> includedMaterials = config.getIncludedMaterials();
@@ -89,12 +99,30 @@ public class BreakManager {
         }
         double currentAttributeTotal = p.getAttribute(Attribute.BLOCK_BREAK_SPEED).getValue();
         double newAttributeTotal = currentAttributeTotal * slowDownFactor;
-        AttributeModifier slowDownModifier = new AttributeModifier(
+        double modifier = -(currentAttributeTotal - newAttributeTotal);
+        this.setModifier(attribute, modifier);
+    }
+
+    private void removeModifier(AttributeInstance attribute, AttributeModifier modifier) {
+        if (modifier != null) {
+            attribute.removeModifier(modifier);
+        }
+    }
+
+    private void invalidateDestroySpeedCache(UUID uuid) {
+        if (multiBreakMap.containsKey(uuid)) {
+            MultiBreak multiBreak = multiBreakMap.get(uuid);
+            multiBreak.invalidateDestroySpeedCache();
+        }
+    }
+
+    private void setModifier(AttributeInstance attribute, double newValue) {
+        AttributeModifier newModifier = new AttributeModifier(
                 new NamespacedKey(Main.getInstance(), "MultiBreakSlowdown"),
-                -(currentAttributeTotal - newAttributeTotal),
+                newValue,
                 AttributeModifier.Operation.ADD_NUMBER
         );
-        attribute.addModifier(slowDownModifier);
+        attribute.addModifier(newModifier);
     }
 
     /** Schedules multibreak ticking task
@@ -171,6 +199,10 @@ public class BreakManager {
         }
 
         return multiBreak;
+    }
+
+    public boolean wasMultiBroken(Block block) {
+        return block.hasMetadata("multi-broken");
     }
 
     public boolean isMultiBreak(BlockBreakEvent e) {
@@ -260,12 +292,9 @@ public class BreakManager {
     }
 
     public void onPlayerQuit(Player p) {
-        // End any active break
         endMultiBreak(p, getMultiBreak(p), false);
-        // Clean up caches
         figureCache.remove(p.getUniqueId());
         lastTargetBlock.remove(p.getUniqueId());
-        // Remove their persistent MultiBreak object
         multiBreakMap.remove(p.getUniqueId());
     }
 
@@ -283,16 +312,39 @@ public class BreakManager {
                     break;
                 }
             }
-            multiBreak.getMultiBlocks().removeIf(multiBlock -> multiBlock.getLocation().equals(location));
+        }
+    }
+
+    public void handleBlockRemovals(Set<Location> locations) {
+        Set<MultiBreak> breaksToUpdate = new HashSet<>();
+        for (Location location : locations) {
+            List<MultiBreak> linkedBreaks = multiBreakLocationMap.get(location);
+            if (linkedBreaks != null) {
+                breaksToUpdate.addAll(linkedBreaks);
+            }
+        }
+
+        for (MultiBreak multiBreak : breaksToUpdate) {
+            List<MultiBlock> multiBlocksToRemove = new ArrayList<>();
+            Iterator<MultiBlock> iterator = multiBreak.getMultiBlocks().iterator();
+
+            while (iterator.hasNext()) {
+                MultiBlock multiBlock = iterator.next();
+
+                if (locations.contains(multiBlock.getLocation())) {
+                    multiBlocksToRemove.add(multiBlock);
+                    iterator.remove();
+                }
+            }
+
+            if (!multiBlocksToRemove.isEmpty()) {
+                multiBreak.writeStage(multiBreak.getNearbyPlayers(), -1, multiBlocksToRemove);
+            }
         }
     }
 
     public boolean isBreaking(UUID uuid) {
         return multiBreakTask.containsKey(uuid);
-    }
-
-    public Map<Location, List<MultiBreak>> getMultiBreakLocationMap() {
-        return multiBreakLocationMap;
     }
 
     public Set<UUID> getMovedPlayers() {

@@ -17,29 +17,25 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class WriteStageRunnable extends BukkitRunnable {
 
+    private final UUID uuid;
     private final int stage;
     private final List<Player> players;
     private final List<MultiBlock> multiBlocks;
     private final Block mainBlock;
+    private final ReentrantLock lock;
 
-    private final UUID uuid;
 
-    private static final Map<UUID, ReentrantLock> stageLock = new HashMap<>();
-
-    public WriteStageRunnable(UUID uuid, List<MultiBlock> multiBlocks, Block mainBlock, int stage, List<Player> players) {
+    public WriteStageRunnable(UUID uuid, List<MultiBlock> multiBlocks, Block mainBlock, int stage, List<Player> players, ReentrantLock lock) {
         this.uuid = uuid;
-        this.multiBlocks = multiBlocks;
-        this.mainBlock = mainBlock;
         this.stage = stage;
         this.players = players;
+        this.multiBlocks = multiBlocks;
+        this.mainBlock = mainBlock;
+        this.lock = lock;
     }
 
     @Override
     public void run() {
-        if (!stageLock.containsKey(uuid)) {
-            stageLock.put(uuid, new ReentrantLock());
-        }
-        ReentrantLock lock = stageLock.get(uuid);
         List<ClientboundBlockDestructionPacket> packetsToSend = new ArrayList<>();
         try {
             lock.lock();
