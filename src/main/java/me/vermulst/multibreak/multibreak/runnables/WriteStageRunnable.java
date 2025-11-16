@@ -22,22 +22,25 @@ public class WriteStageRunnable extends BukkitRunnable {
     private final List<MultiBlock> multiBlocks;
     private final Block mainBlock;
     private final ReentrantLock lock;
+    private final MultiBreak multiBreak;
 
-
-    public WriteStageRunnable(List<MultiBlock> multiBlocks, Block mainBlock, int stage, List<Player> players, ReentrantLock lock) {
+    public WriteStageRunnable(List<MultiBlock> multiBlocks, Block mainBlock, int stage, List<Player> players, ReentrantLock lock, MultiBreak multiBreak) {
         this.stage = stage;
         this.players = players;
         this.multiBlocks = multiBlocks;
         this.mainBlock = mainBlock;
         this.lock = lock;
+        this.multiBreak = multiBreak;
     }
 
     @Override
     public void run() {
+        if (this.stage != -1 && multiBreak.hasEnded()) return;
         int capacity = Math.max(this.multiBlocks.size() - 1, 0);
         List<ClientboundBlockDestructionPacket> packetsToSend = new ArrayList<>(capacity);
         try {
             lock.lock();
+            if (this.stage != -1 && multiBreak.hasEnded()) return;
 
             for (MultiBlock multiBlock : this.multiBlocks) {
                 if (!multiBlock.isVisible()) continue;

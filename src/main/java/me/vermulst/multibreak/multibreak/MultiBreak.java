@@ -51,7 +51,7 @@ public class MultiBreak {
     private float progressBroken; // 0 - 1.0
     private int lastStage = -1;
     private List<MultiBlock> multiBlocks;
-    private boolean ended = false;
+    private volatile boolean ended = false;
     private final ReentrantLock packetLock = new ReentrantLock();
 
     private final Map<Material, Float> destroySpeedCache = new EnumMap<>(Material.class);
@@ -242,6 +242,7 @@ public class MultiBreak {
                         .spawn();
             }
         }
+
     }
 
     public void updateBlockAnimationPacket(Player p, List<MultiBlock> multiBlockSnapshot) {
@@ -250,15 +251,23 @@ public class MultiBreak {
         this.progressBroken = Math.min(this.progressBroken, 1.0f);
         this.progressBroken = Math.max(this.progressBroken, 0.0f);
 
-        /*int tickDelay = (p.getPing() / 50);
+        float tickDelay = ((float) p.getPing() / 50);
 
         // adjust by 1 tick in the future
-        float adjustedProgress = this.progressBroken + (tickDelay * progress);
-        adjustedProgress = Math.min(adjustedProgress, 1.0f);*/
-        int stage = (int) (9 * progressBroken);
-        if (lastStage == -1 || stage != this.lastStage) {
+        float adjustedProgress = this.progressBroken + (tickDelay * breakSpeed);
+        adjustedProgress = Math.min(adjustedProgress, 1.0f);
+
+        int stage = (int) (9 * adjustedProgress);
+        if (lastStage == -1 || stage > this.lastStage) {
+            int difference = stage - this.lastStage;
+            if (Config.getInstance().isAsyncEnabled()) {
+                for (int i = 0; i < difference; i++) {
+                    this.writeStage(stage, multiBlockSnapshot);
+                }
+            } else {
+                this.writeStage(stage, multiBlockSnapshot);
+            }
             this.lastStage = stage;
-            this.writeStage(stage, multiBlockSnapshot);
         }
     }
 
@@ -274,8 +283,13 @@ public class MultiBreak {
                 onlinePlayers.add(player);
             }
         }
-        WriteStageRunnable writeStageRunnable = new WriteStageRunnable(multiBlockSnapshot, this.getBlock(), stage, onlinePlayers, this.packetLock);
-        writeStageRunnable.runTaskAsynchronously(Main.getInstance());
+        WriteStageRunnable writeStageRunnable = new WriteStageRunnable(multiBlockSnapshot, this.getBlock(), stage, onlinePlayers, this.packetLock, this);
+
+        if (Config.getInstance().isAsyncEnabled()) {
+            writeStageRunnable.runTaskAsynchronously(Main.getInstance());
+        } else {
+            writeStageRunnable.run();
+        }
     }
 
     public void checkPlayers() {

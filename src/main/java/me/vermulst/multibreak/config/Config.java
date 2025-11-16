@@ -22,9 +22,10 @@ public class Config {
     private final EnumSet<Material> ignoredMaterials = EnumSet.noneOf(Material.class);
 
     private final boolean[] options = new boolean[] {
-            true // fair mode
+            true, // fair mode
+            false, // async
     };
-    private static final String[] optionNames = new String[]{"fair_mode"};
+    private static final String[] optionNames = new String[]{"fair_mode", "async_break_animations"};
 
     private static final String OLD_MATERIAL_PRESETS_PATH = "material_configs";
     private static final String NEW_MATERIAL_PRESETS_PATH = "material_presets";
@@ -59,16 +60,18 @@ public class Config {
     }
 
     public void save(FileConfiguration fileConfiguration) {
-        List<String>[] optionComments = new List[]{
-                List.of("If enabled, blocks that take longer to break than the source, will not be multibroken.")
-        };
+        List<List<String>> optionComments = List.of(
+                List.of("If enabled, player will slow down to the slowest block."),
+                List.of("If enabled, block animations will be sent asynchronously, boosting performance",
+                        "However, it causes lower refresh rate for these animations.")
+        );
 
         /** Boolean options **/
         for (int i = 0; i < options.length; i++) {
             String optionName = optionNames[i];
             boolean option = options[i];
             fileConfiguration.set(optionName, option);
-            fileConfiguration.setComments(optionName, optionComments[i]);
+            fileConfiguration.setComments(optionName, optionComments.get(i));
         }
 
         /** Max range **/
@@ -289,6 +292,10 @@ public class Config {
     }
 
     public boolean isFairModeEnabled() {
-        return this.options[0]; // Assuming 'options' holds the config values
+        return this.options[0];
+    }
+
+    public boolean isAsyncEnabled() {
+        return this.options[1];
     }
 }
