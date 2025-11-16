@@ -49,20 +49,20 @@ public class MultiBreakRunnable extends BukkitRunnable {
             Block blockMining = rayTraceResult.getHitBlock();
             BlockFace blockFace = rayTraceResult.getHitBlockFace();
 
+            if (!init) {
+                if (block.getType().isAir() || !blockMining.equals(block)) {
+                    cancelMultiBreak(multiBreak);
+                    return;
+                }
+                init = true;
+            }
+
             if (multiBreak == null) {
                 multiBreak = breakManager.initMultiBreak(p, blockMining, this.figure);
                 if (multiBreak == null) {
                     cancelMultiBreak(null);
                     return;
                 }
-            }
-
-            if (!init) {
-                if (block.getType().isAir() && !blockMining.equals(block)) {
-                    cancelMultiBreak(multiBreak);
-                    return;
-                }
-                init = true;
             }
 
             // check if direction changed

@@ -1,5 +1,8 @@
 package me.vermulst.multibreak.utils;
 
+import me.vermulst.multibreak.multibreak.MultiBreak;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -25,4 +28,17 @@ public class BreakUtils {
     public static RayTraceResult getRayTraceResult(Player p) {
         return p.rayTraceBlocks(getRange(p));
     }
+
+    public static float getDestroySpeed(Player p, MultiBreak multiBreak) {
+        return multiBreak.getDestroySpeedMain(p);
+    }
+
+    public static float getDestroySpeed(ServerPlayer serverPlayer, MultiBreak multiBreak) {
+        return multiBreak.getDestroySpeedMain(serverPlayer);
+    }
+
+    public static float getDestroySpeed(ServerPlayer serverPlayer, BlockPos blockPos, MultiBreak multiBreak) {
+        return multiBreak.getDestroySpeed(serverPlayer, blockPos);
+    }
+
 }

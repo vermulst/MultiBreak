@@ -9,16 +9,21 @@ import me.vermulst.multibreak.item.FigureItemDataType;
 import me.vermulst.multibreak.api.event.MultiBreakStartEvent;
 import me.vermulst.multibreak.multibreak.runnables.MultiBreakRunnable;
 import me.vermulst.multibreak.utils.BreakUtils;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
+import org.bukkit.craftbukkit.util.CraftLocation;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.RayTraceResult;
 
 import java.util.*;
 
@@ -70,7 +75,13 @@ public class BreakManager {
             return;
         }
 
-        Block targetBlock = BreakUtils.getTargetBlock(p);
+        RayTraceResult rayTraceResult = BreakUtils.getRayTraceResult(p);
+        if (rayTraceResult == null) {
+            this.removeModifier(attribute, modifierToRemove);
+            this.invalidateDestroySpeedCache(uuid);
+            return;
+        }
+        Block targetBlock = rayTraceResult.getHitBlock();
         if (targetBlock == null) {
             this.removeModifier(attribute, modifierToRemove);
             this.invalidateDestroySpeedCache(uuid);
@@ -88,15 +99,21 @@ public class BreakManager {
         FilterBlocksEvent filterBlocksEvent = new FilterBlocksEvent(figure, p, p.getInventory().getItemInMainHand(), includedMaterials, ignoredMaterials);
         filterBlocksEvent.callEvent();
 
-        Set<Block> blocks = figure.getBlocks(p, targetBlock);
+        Set<Block> blocks = figure.getBlocks(p, targetBlock, rayTraceResult.getHitBlockFace().getDirection());
         this.filter(blocks, filterBlocksEvent.getIncludedMaterials(), filterBlocksEvent.getExcludedMaterials());
 
-        float baseProgressPerTick = targetBlock.getBreakSpeed(p);
-        if (baseProgressPerTick == Float.POSITIVE_INFINITY) return;
-        float slowDownFactor = this.getSlowDownFactor(p, blocks, baseProgressPerTick);
-        if (slowDownFactor == 1.0f) {
-            return;
+        MultiBreak multiBreak = this.getMultiBreakOffstate(p);
+        float baseProgressPerTick;
+        if (multiBreak != null) {
+            multiBreak.checkDestroySpeedChange(p);
+            baseProgressPerTick = BreakUtils.getDestroySpeed(p, multiBreak);
+        } else {
+            baseProgressPerTick = targetBlock.getBreakSpeed(p);
         }
+        if (baseProgressPerTick == Float.POSITIVE_INFINITY) return;
+        float slowDownFactor = this.getSlowDownFactor(p, blocks, baseProgressPerTick, multiBreak);
+        this.invalidateDestroySpeedCache(uuid);
+        if (slowDownFactor == 1.0f) return;
         double currentAttributeTotal = p.getAttribute(Attribute.BLOCK_BREAK_SPEED).getValue();
         double newAttributeTotal = currentAttributeTotal * slowDownFactor;
         double modifier = -(currentAttributeTotal - newAttributeTotal);
@@ -186,13 +203,13 @@ public class BreakManager {
         ignoredMaterials = filterBlocksEvent.getExcludedMaterials();
         multiBreak = event.getMultiBreak();
         if (!multiBreak.isValid(includedMaterials, ignoredMaterials)) return null;
-        float progressPerTick = multiBreak.getProgressBroken(); // initial value of multibreak
-        multiBreak.checkValid(p, progressPerTick, includedMaterials, ignoredMaterials);
+        multiBreak.checkValid(p, includedMaterials, ignoredMaterials);
 
+        List<MultiBlock> multiBlocks =  multiBreak.getMultiBlocks();
         for (MultiBlock mb : multiBreak.getMultiBlocks()) {
             Location location = mb.getLocation();
             if (!multiBreakLocationMap.containsKey(location)) {
-                multiBreakLocationMap.put(location, new ArrayList<>());
+                multiBreakLocationMap.put(location, new ArrayList<>(multiBlocks.size()));
             }
             List<MultiBreak> multiBreaks = multiBreakLocationMap.get(location);
             multiBreaks.add(multiBreak);
@@ -229,12 +246,23 @@ public class BreakManager {
         });
     }
 
-    public float getSlowDownFactor(Player p, Set<Block> blocks, float baseProgressPerTick) {
+    public float getSlowDownFactor(Player p, Set<Block> blocks, float baseProgressPerTick, MultiBreak multiBreak) {
         float lowestProgressPerTick = baseProgressPerTick;
-        for (Block block : blocks) {
-            float progressPerTick = block.getBreakSpeed(p);
-            if (progressPerTick < lowestProgressPerTick) {
-                lowestProgressPerTick = progressPerTick;
+        if (multiBreak != null) {
+            ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
+            for (Block block : blocks) {
+                BlockPos blockPos = CraftLocation.toBlockPosition(block.getLocation());
+                float progressPerTick = BreakUtils.getDestroySpeed(serverPlayer, blockPos, multiBreak);
+                if (progressPerTick < lowestProgressPerTick) {
+                    lowestProgressPerTick = progressPerTick;
+                }
+            }
+        } else {
+            for (Block block : blocks) {
+                float progressPerTick = block.getBreakSpeed(p);
+                if (progressPerTick < lowestProgressPerTick) {
+                    lowestProgressPerTick = progressPerTick;
+                }
             }
         }
         return lowestProgressPerTick / baseProgressPerTick;
@@ -289,6 +317,10 @@ public class BreakManager {
             }
         }
         return null;
+    }
+
+    public MultiBreak getMultiBreakOffstate(Player p) {
+        return multiBreakMap.get(p.getUniqueId());
     }
 
     public void onPlayerQuit(Player p) {

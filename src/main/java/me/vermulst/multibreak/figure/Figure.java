@@ -1,8 +1,6 @@
 package me.vermulst.multibreak.figure;
 
-import me.vermulst.multibreak.config.Config;
 import me.vermulst.multibreak.figure.types.FigureType;
-import me.vermulst.multibreak.utils.BreakUtils;
 import me.vermulst.multibreak.utils.CompassDirection;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -12,7 +10,6 @@ import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
@@ -32,13 +29,14 @@ public abstract class Figure {
     private short rotationHeight = 0;
     private short rotationDepth = 0;
 
-
+    private String cachedKey;
     private static final Map<String, Set<Vector>> vectorsCache = new HashMap<>();
 
     public Figure(int width, int height, int depth) {
         this.width = width;
         this.height = height;
         this.depth = depth;
+        this.updateCachedKey();
     }
 
     public abstract Set<Vector> getVectors(boolean rotated);
@@ -56,15 +54,13 @@ public abstract class Figure {
             vectors = this.applyRotation(vectors);
         }
 
-        vectorsCache.put(key, new HashSet<>(vectors));
+        vectorsCache.put(key, vectors);
         return vectors;
     }
 
 
-    public Set<Block> getBlocks(Player p, Block targetBlock) {
+    public Set<Block> getBlocks(Player p, Block targetBlock, Vector blockFaceDirection) {
         Set<Block> blocks = new HashSet<>();
-        BlockFace blockFace = BreakUtils.getBlockFace(p);
-        if (blockFace == null) return blocks;
 
         Set<Vector> transformedVectors = new HashSet<>();
         for (Vector v : getTransformedVectors()) {
@@ -72,7 +68,7 @@ public abstract class Figure {
         }
 
         CompassDirection compassDirection = CompassDirection.getCompassDir(p.getLocation());
-        VectorTransformer vectorTransformer = new VectorTransformer(blockFace.getDirection(), compassDirection);
+        VectorTransformer vectorTransformer = new VectorTransformer(blockFaceDirection, compassDirection);
         for (Vector vector : transformedVectors) {
             vectorTransformer.rotateVector(vector);
         }
@@ -88,6 +84,7 @@ public abstract class Figure {
         }
         return blocks;
     }
+
 
     private Set<Vector> applyRotation(Set<Vector> vectors) {
         HashSet<Vector> rotatedVectors = new HashSet<>();
@@ -213,8 +210,21 @@ public abstract class Figure {
     }
 
     private String getCacheKey() {
-        return width + "," + height + "," + depth + "," +
-                offSetWidth + "," + offSetHeight + "," + offSetDepth + "," +
-                rotationWidth + "," + rotationHeight + "," + rotationDepth;
+        return cachedKey;
+    }
+
+    public void updateCachedKey() {
+        this.cachedKey = new StringBuilder(32)
+                .append(this.getFigureType().toString())
+                .append(width)
+                .append(height)
+                .append(depth)
+                .append(offSetWidth)
+                .append(offSetHeight)
+                .append(offSetDepth)
+                .append(rotationWidth)
+                .append(rotationHeight)
+                .append(rotationDepth)
+                .toString();
     }
 }

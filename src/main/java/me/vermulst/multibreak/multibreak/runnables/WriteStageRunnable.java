@@ -17,7 +17,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class WriteStageRunnable extends BukkitRunnable {
 
-    private final UUID uuid;
     private final int stage;
     private final List<Player> players;
     private final List<MultiBlock> multiBlocks;
@@ -25,8 +24,7 @@ public class WriteStageRunnable extends BukkitRunnable {
     private final ReentrantLock lock;
 
 
-    public WriteStageRunnable(UUID uuid, List<MultiBlock> multiBlocks, Block mainBlock, int stage, List<Player> players, ReentrantLock lock) {
-        this.uuid = uuid;
+    public WriteStageRunnable(List<MultiBlock> multiBlocks, Block mainBlock, int stage, List<Player> players, ReentrantLock lock) {
         this.stage = stage;
         this.players = players;
         this.multiBlocks = multiBlocks;
@@ -36,7 +34,8 @@ public class WriteStageRunnable extends BukkitRunnable {
 
     @Override
     public void run() {
-        List<ClientboundBlockDestructionPacket> packetsToSend = new ArrayList<>();
+        int capacity = Math.max(this.multiBlocks.size() - 1, 0);
+        List<ClientboundBlockDestructionPacket> packetsToSend = new ArrayList<>(capacity);
         try {
             lock.lock();
 

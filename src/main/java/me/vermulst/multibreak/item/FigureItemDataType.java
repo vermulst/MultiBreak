@@ -171,6 +171,7 @@ public class FigureItemDataType implements PersistentDataType<PersistentDataCont
         int depthO = persistentDataContainer.getOrDefault(KEY_DEPTH_OFFSET, PersistentDataType.INTEGER, 0);
         figure.setRotations(widthR, heightR, depthR);
         figure.setOffsets(widthO, heightO, depthO);
+        figure.updateCachedKey();
         return figure;
     }
 

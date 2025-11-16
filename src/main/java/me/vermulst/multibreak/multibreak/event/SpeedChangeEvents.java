@@ -24,7 +24,7 @@ public class SpeedChangeEvents implements Listener {
         if (!type.equals(PotionEffectType.HASTE) &&
                 !type.equals(PotionEffectType.MINING_FATIGUE) &&
                 !type.equals(PotionEffectType.CONDUIT_POWER)) return;
-        MultiBreak multiBreak = breakManager.getMultiBreak(p);
+        MultiBreak multiBreak = breakManager.getMultiBreakOffstate(p);
         if (multiBreak != null) {
             multiBreak.invalidateDestroySpeedCache();
         }
