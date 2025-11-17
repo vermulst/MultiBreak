@@ -23,7 +23,7 @@ public class Config {
 
     private final boolean[] options = new boolean[] {
             true, // fair mode
-            false, // async
+            true, // async
     };
     private static final String[] optionNames = new String[]{"fair_mode", "async_break_animations"};
 
@@ -63,7 +63,7 @@ public class Config {
         List<List<String>> optionComments = List.of(
                 List.of("If enabled, player will slow down to the slowest block."),
                 List.of("If enabled, block animations will be sent asynchronously, boosting performance",
-                        "However, it causes lower refresh rate for these animations.")
+                        "if performance is of no concern, you can disable this.")
         );
 
         /** Boolean options **/

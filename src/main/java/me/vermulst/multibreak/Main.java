@@ -11,9 +11,13 @@ import org.bstats.bukkit.Metrics;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public final class Main extends JavaPlugin {
 
     private static Main INSTANCE;
+    private static ExecutorService highPriorityExecutor;
 
     public static Main getInstance() {
         return INSTANCE;
@@ -37,7 +41,7 @@ public final class Main extends JavaPlugin {
         BreakManager breakManager = BreakManager.getInstance();
 
         // events
-        Listener[] events = new Listener[] {
+        Listener[] events = new Listener[]{
                 new BreakEvents(breakManager),
                 new RefreshEvents(breakManager),
                 new BlockDestroyEvents(breakManager),
@@ -51,11 +55,23 @@ public final class Main extends JavaPlugin {
         Commands commands = new Commands();
         commands.init();
         commands.register(this);
+
+        highPriorityExecutor = Executors.newFixedThreadPool(2, (Runnable r) -> {
+            Thread t = new Thread(r, "MultiBreak-High-Priority-Pool");
+            t.setPriority(Thread.MAX_PRIORITY);
+            return t;
+        });
     }
 
     @Override
     public void onDisable() {
+        highPriorityExecutor.shutdownNow();
         Config.getInstance().save(this.getConfig());
         this.saveConfig();
+    }
+
+
+    public static ExecutorService getHighPriorityExecutor() {
+        return highPriorityExecutor;
     }
 }

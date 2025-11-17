@@ -75,6 +75,7 @@ public class BreakManager {
             return;
         }
 
+
         RayTraceResult rayTraceResult = BreakUtils.getRayTraceResult(p);
         if (rayTraceResult == null) {
             this.removeModifier(attribute, modifierToRemove);
@@ -105,6 +106,7 @@ public class BreakManager {
         MultiBreak multiBreak = this.getMultiBreakOffstate(p);
         float baseProgressPerTick;
         if (multiBreak != null) {
+            multiBreak.invalidateHasCorrectToolCache();
             multiBreak.checkDestroySpeedChange(p);
             baseProgressPerTick = BreakUtils.getDestroySpeed(p, multiBreak);
         } else {
@@ -112,7 +114,7 @@ public class BreakManager {
         }
         if (baseProgressPerTick == Float.POSITIVE_INFINITY) return;
         float slowDownFactor = this.getSlowDownFactor(p, blocks, baseProgressPerTick, multiBreak);
-        this.invalidateDestroySpeedCache(uuid);
+        if (multiBreak != null) multiBreak.invalidateDestroySpeedCache();
         if (slowDownFactor == 1.0f) return;
         double currentAttributeTotal = p.getAttribute(Attribute.BLOCK_BREAK_SPEED).getValue();
         double newAttributeTotal = currentAttributeTotal * slowDownFactor;
@@ -123,6 +125,13 @@ public class BreakManager {
     private void removeModifier(AttributeInstance attribute, AttributeModifier modifier) {
         if (modifier != null) {
             attribute.removeModifier(modifier);
+        }
+    }
+
+    private void invalidateHasCorrectToolCache(UUID uuid) {
+        if (multiBreakMap.containsKey(uuid)) {
+            MultiBreak multiBreak = multiBreakMap.get(uuid);
+            multiBreak.invalidateHasCorrectToolCache();
         }
     }
 
@@ -338,7 +347,7 @@ public class BreakManager {
                 MultiBlock multiBlock = iterator.next();
 
                 if (multiBlock.getLocation().equals(location)) {
-                    multiBreak.writeStage(multiBreak.getNearbyPlayers(), -1, Collections.singletonList(multiBlock));
+                    multiBreak.writeStage(-1, Collections.singletonList(multiBlock));
                     iterator.remove();
                     break;
                 }
@@ -369,7 +378,7 @@ public class BreakManager {
             }
 
             if (!multiBlocksToRemove.isEmpty()) {
-                multiBreak.writeStage(multiBreak.getNearbyPlayers(), -1, multiBlocksToRemove);
+                multiBreak.writeStage(-1, multiBlocksToRemove);
             }
         }
     }

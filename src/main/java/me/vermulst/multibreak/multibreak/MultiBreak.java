@@ -7,9 +7,12 @@ import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.types.FigureType;
 import me.vermulst.multibreak.multibreak.runnables.WriteParticleRunnable;
 import me.vermulst.multibreak.multibreak.runnables.WriteStageRunnable;
+import me.vermulst.multibreak.utils.BreakUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerCommonPacketListenerImpl;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -44,6 +47,7 @@ public class MultiBreak {
 
     private final UUID playerUUID;
     private Set<UUID> nearbyPlayers;
+    private List<ServerGamePacketListenerImpl> nearbyPlayerConnections;
     private Block block;
     private IntVector playerDirection;
     private int progressTicks; // ticks
@@ -54,7 +58,13 @@ public class MultiBreak {
     private final ReentrantLock packetLock = new ReentrantLock();
 
     private final Map<Material, Float> destroySpeedCache = new EnumMap<>(Material.class);
-    private final ParticleBuilder particleBuilder = new ParticleBuilder(Particle.BLOCK_CRUMBLE).extra(0.2);
+    private final Set<Material> hasCorrectToolCache = EnumSet.noneOf(Material.class);
+
+    private final ParticleBuilder particleBuilder = new ParticleBuilder(Particle.BLOCK_CRUMBLE)
+            .extra(0.2);
+    private final ParticleBuilder breakParticleBuilder = new ParticleBuilder(Particle.BLOCK)
+            .count(16)
+            .offset(0.5, 0.5, 0.5);
 
     // State caching
     private boolean isGrounded;
@@ -67,6 +77,7 @@ public class MultiBreak {
     public MultiBreak(Player p, Block block, Vector playerDirection, Figure figure) {
         this.playerUUID = p.getUniqueId();
         this.nearbyPlayers = getNearbyPlayerUUIDs(block.getLocation());
+        this.updateNearbyPlayerConnections();
         this.updateParticleBuilderReceivers(this.nearbyPlayers);
         this.block = block;
         this.playerDirection = IntVector.of(playerDirection);
@@ -84,6 +95,7 @@ public class MultiBreak {
 
     public void reset(Player p, Block block, Vector playerDirection, Figure figure) {
         this.nearbyPlayers = getNearbyPlayerUUIDs(block.getLocation());
+        this.updateNearbyPlayerConnections();
         this.updateParticleBuilderReceivers(this.nearbyPlayers);
         this.progressTicks = 0;
         this.ended = false;
@@ -121,7 +133,11 @@ public class MultiBreak {
             return 0.0F;
         } else {
             float baseSpeed = serverPlayer.getDestroySpeed(blockState);
-            boolean hasCorrectTool = serverPlayer.hasCorrectToolForDrops(blockState);
+            boolean hasCorrectTool = hasCorrectToolCache.contains(material);
+            if (!hasCorrectTool) {
+                hasCorrectTool = serverPlayer.hasCorrectToolForDrops(blockState);
+                if (hasCorrectTool) hasCorrectToolCache.add(material);
+            }
             int factor = hasCorrectTool ? 30 : 100;
             float finalSpeed = baseSpeed / destroySpeed / (float)factor;
             destroySpeedCache.put(material, finalSpeed);
@@ -142,7 +158,11 @@ public class MultiBreak {
             return 0.0F;
         } else {
             float baseSpeed = serverPlayer.getDestroySpeed(blockState);
-            boolean hasCorrectTool = serverPlayer.hasCorrectToolForDrops(blockState);
+            boolean hasCorrectTool = hasCorrectToolCache.contains(material);
+            if (!hasCorrectTool) {
+                hasCorrectTool = serverPlayer.hasCorrectToolForDrops(blockState);
+                if (hasCorrectTool) hasCorrectToolCache.add(material);
+            }
             int factor = hasCorrectTool ? 30 : 100;
             float finalSpeed = baseSpeed / destroySpeed / (float)factor;
             destroySpeedCache.put(material, finalSpeed);
@@ -207,32 +227,42 @@ public class MultiBreak {
         }
     }
 
+
     public void end(Player p, boolean finished) {
         this.ended = true;
         List<MultiBlock> multiBlockSnapshot = new ArrayList<>(this.multiBlocks);
         this.writeStage(-1, multiBlockSnapshot);
         if (!finished) return;
-        ParticleBuilder particleBuilder = new ParticleBuilder(Particle.BLOCK)
-                .count(16)
-                .offset(0.5, 0.5, 0.5);
         World world = this.getBlock().getWorld();
         int size = multiBlockSnapshot.size() - 1;
         float volume = (float) (1 / Math.log(((size) + 1) * Math.E));
+
+        List<Block> blocksToBreak = new ArrayList<>();
+        List<BlockPos> blockPosToBreak = new ArrayList<>();
         for (MultiBlock multiBlock : multiBlockSnapshot) {
             Block block = multiBlock.getBlock();
             Material blockType = block.getType();
-            BlockData blockData = block.getBlockData().clone();
-            Location location = block.getLocation();
 
             if (Config.getInstance().getIgnoredMaterials().contains(blockType)) continue;
             block.setMetadata("multi-broken", new FixedMetadataValue(Main.getInstance(), true));
-            ((CraftPlayer)p).getHandle().gameMode.destroyBlock(new BlockPos(location.getBlockX(), location.getBlockY(), location.getBlockZ()));
+            if (multiBlock.isVisible()) {
+                block.setMetadata("isVisible", new FixedMetadataValue(Main.getInstance(), true));
+            }
+            blocksToBreak.add(block);
+            blockPosToBreak.add(CraftLocation.toBlockPosition(block.getLocation()));
+        }
 
+        Map<Material, BlockData> blockDataCache = new EnumMap<>(Material.class);
+        for (Block block : blocksToBreak) {
+            BlockData blockData = blockDataCache.computeIfAbsent(block.getType(), Material::createBlockData);
+            Location location = block.getLocation();
             boolean broken = p.breakBlock(block);
             if (!broken) continue;
             world.playSound(location, blockData.getSoundGroup().getBreakSound(), volume, 1F);
-            if (multiBlock.isVisible()) {
-                particleBuilder.location(location.add(0.5, 0.5, 0.5))
+            if (block.hasMetadata("isVisible")) {
+                block.removeMetadata("isVisible", Main.getInstance());
+                breakParticleBuilder
+                        .location(location.add(0.5, 0.5, 0.5))
                         .data(blockData)
                         .spawn();
             }
@@ -266,21 +296,9 @@ public class MultiBreak {
     }
 
     public void writeStage(int stage, List<MultiBlock> multiBlockSnapshot) {
-        this.writeStage(this.nearbyPlayers, stage, multiBlockSnapshot);
-    }
-
-    public void writeStage(Collection<UUID> uuids, int stage, List<MultiBlock> multiBlockSnapshot) {
-        List<Player> onlinePlayers = new ArrayList<>(uuids.size());
-        for (UUID uuid : uuids) {
-            Player player = Bukkit.getPlayer(uuid);
-            if (player != null) {
-                onlinePlayers.add(player);
-            }
-        }
-        WriteStageRunnable writeStageRunnable = new WriteStageRunnable(multiBlockSnapshot, this.getBlock(), stage, onlinePlayers, this.packetLock, this);
-
+        WriteStageRunnable writeStageRunnable = new WriteStageRunnable(multiBlockSnapshot, this.getBlock(), stage, this.nearbyPlayerConnections, this.packetLock, this);
         if (Config.getInstance().isAsyncEnabled()) {
-            writeStageRunnable.runTaskAsynchronously(Main.getInstance());
+            Main.getHighPriorityExecutor().submit(writeStageRunnable);
         } else {
             writeStageRunnable.run();
         }
@@ -295,6 +313,7 @@ public class MultiBreak {
 
         if (newNearbyPlayers.size() != oldNearbyPlayers.size()) {
             this.nearbyPlayers = newNearbyPlayers;
+            this.updateNearbyPlayerConnections();
             this.updateParticleBuilderReceivers(this.nearbyPlayers);
         }
     }
@@ -409,6 +428,18 @@ public class MultiBreak {
         return uuids;
     }
 
+    public void updateNearbyPlayerConnections() {
+        List<ServerGamePacketListenerImpl> connections = new ArrayList<>(this.nearbyPlayers.size());
+        for (UUID uuid : this.nearbyPlayers) {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p != null && p.isOnline()) {
+                ServerGamePacketListenerImpl connection = ((CraftPlayer)p).getHandle().connection;
+                connections.add(connection);
+            }
+        }
+        this.nearbyPlayerConnections = connections;
+    }
+
     public Player getPlayer() {
         return Bukkit.getPlayer(this.playerUUID);
     }
@@ -471,5 +502,9 @@ public class MultiBreak {
 
     public void invalidateDestroySpeedCache() {
         this.destroySpeedCache.clear();
+    }
+
+    public void invalidateHasCorrectToolCache() {
+        this.hasCorrectToolCache.clear();
     }
 }
