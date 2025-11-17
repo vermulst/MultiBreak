@@ -12,18 +12,18 @@ import java.util.EnumSet;
 
 public class FilterBlocksEvent extends Event {
     private static final HandlerList HANDLERS_LIST = new HandlerList();
+    public static HandlerList getHandlerList() {
+        return HANDLERS_LIST;
+    }
 
-    private final Player player;
-    private final ItemStack item;
+    @NotNull private final Player player;
+    @NotNull private final ItemStack item;
+    @NotNull private EnumSet<Material> includedMaterials;
+    @NotNull private EnumSet<Material> excludedMaterials;
 
-    // set to null to prevent any multibreaking
-    private Figure figure;
-    private EnumSet<Material> includedMaterials;
-    private EnumSet<Material> excludedMaterials;
+    private Figure figure; // set to null to prevent any multibreaking
 
-
-
-    public FilterBlocksEvent(Figure figure, Player p, ItemStack item, EnumSet<Material> includedMaterials, EnumSet<Material> excludedMaterials) {
+    public FilterBlocksEvent(@NotNull Figure figure, @NotNull Player p, @NotNull ItemStack item, @NotNull EnumSet<Material> includedMaterials, @NotNull EnumSet<Material> excludedMaterials) {
         this.figure = figure;
         this.player = p;
         this.item = item;
@@ -31,52 +31,48 @@ public class FilterBlocksEvent extends Event {
         this.excludedMaterials = excludedMaterials;
     }
 
+    public Figure getFigure() {
+        return figure;
+    }
+
     @Override
     public @NotNull HandlerList getHandlers() {
         return HANDLERS_LIST;
     }
 
-    public static HandlerList getHandlerList() {
-        return HANDLERS_LIST;
-    }
-
-    public Player getPlayer() {
+    public @NotNull Player getPlayer() {
         return player;
     }
 
-    public Figure getFigure() {
-        return figure;
+    public @NotNull ItemStack getItem() {
+        return item;
+    }
+
+    public @NotNull EnumSet<Material> getIncludedMaterials() {
+        return includedMaterials;
+    }
+
+    public @NotNull EnumSet<Material> getExcludedMaterials() {
+        return excludedMaterials;
     }
 
     public void setFigure(Figure figure) {
         this.figure = figure;
     }
 
-    public ItemStack getItem() {
-        return item;
-    }
-
-    public EnumSet<Material> getIncludedMaterials() {
-        return includedMaterials;
-    }
-
-    public EnumSet<Material> getExcludedMaterials() {
-        return excludedMaterials;
-    }
-
-    public void excludeOnly(EnumSet<Material> excludedMaterials) {
+    public void excludeOnly(@NotNull EnumSet<Material> excludedMaterials) {
         this.excludedMaterials = excludedMaterials;
     }
 
-    public void includeOnly(EnumSet<Material> includedMaterials) {
+    public void includeOnly(@NotNull EnumSet<Material> includedMaterials) {
         this.includedMaterials = includedMaterials;
     }
 
-    public void exclude(Material material) {
+    public void exclude(@NotNull Material material) {
         this.excludedMaterials.add(material);
     }
 
-    public void include(Material material) {
+    public void include(@NotNull Material material) {
         this.includedMaterials.add(material);
     }
 }

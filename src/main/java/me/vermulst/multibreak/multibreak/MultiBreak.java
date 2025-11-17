@@ -20,7 +20,6 @@ import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.craftbukkit.util.CraftLocation;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.util.Vector;
 
@@ -220,7 +219,6 @@ public class MultiBreak {
         int size = multiBlockSnapshot.size() - 1;
         float volume = (float) (1 / Math.log(((size) + 1) * Math.E));
         for (MultiBlock multiBlock : multiBlockSnapshot) {
-            if (!multiBlock.breakThisBlock()) continue;
             Block block = multiBlock.getBlock();
             Material blockType = block.getType();
             BlockData blockData = block.getBlockData().clone();
@@ -228,13 +226,10 @@ public class MultiBreak {
 
             if (Config.getInstance().getIgnoredMaterials().contains(blockType)) continue;
             block.setMetadata("multi-broken", new FixedMetadataValue(Main.getInstance(), true));
+            ((CraftPlayer)p).getHandle().gameMode.destroyBlock(new BlockPos(location.getBlockX(), location.getBlockY(), location.getBlockZ()));
+
             boolean broken = p.breakBlock(block);
             if (!broken) continue;
-            if (multiBlock.getDrops() != null) {
-                for (ItemStack drop : multiBlock.getDrops()) {
-                    world.dropItemNaturally(location, drop);
-                }
-            }
             world.playSound(location, blockData.getSoundGroup().getBreakSound(), volume, 1F);
             if (multiBlock.isVisible()) {
                 particleBuilder.location(location.add(0.5, 0.5, 0.5))
@@ -242,7 +237,6 @@ public class MultiBreak {
                         .spawn();
             }
         }
-
     }
 
     public void updateBlockAnimationPacket(Player p, List<MultiBlock> multiBlockSnapshot) {

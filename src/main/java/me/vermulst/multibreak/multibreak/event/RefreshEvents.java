@@ -1,7 +1,6 @@
 package me.vermulst.multibreak.multibreak.event;
 
 import com.destroystokyo.paper.event.server.ServerTickEndEvent;
-import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.config.Config;
 import me.vermulst.multibreak.multibreak.BreakManager;
 import org.bukkit.Bukkit;
@@ -15,7 +14,6 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.*;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.UUID;
 

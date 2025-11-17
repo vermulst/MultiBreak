@@ -1,9 +1,10 @@
 package me.vermulst.multibreak.api;
 
+import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.item.FigureItemDataType;
+import org.bukkit.block.Block;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -79,5 +80,17 @@ public final class MultiBreakAPI {
             throw new IllegalStateException("MultiBreakAPI not initialized. Load MultiBreak before.");
         }
         return DATA_TYPE_INSTANCE.has(itemStack);
+    }
+
+
+    /**
+     * Checks if a Block is broken as part of a multi-break operation.
+     * This value is only valid during, but no time after the BlockBreakEvent.
+     *
+     * @param block The Block to check.
+     * @return True if the Block was multi-broken, false otherwise.
+     */
+    public static boolean isMultiBroken(@NotNull Block block) {
+        return block.hasMetadata("multi-broken");
     }
 }

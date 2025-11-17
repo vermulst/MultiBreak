@@ -10,14 +10,16 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public class MultiBreakEndEvent extends Event {
-
     private static final HandlerList HANDLERS_LIST = new HandlerList();
-    private boolean cancelled;
-    private final Player player;
-    private final MultiBreak multiBreak;
+    public static HandlerList getHandlerList() {
+        return HANDLERS_LIST;
+    }
+
+    private @NotNull final Player player;
+    private @NotNull final MultiBreak multiBreak;
     private final boolean successful;
 
-    public MultiBreakEndEvent(Player p, MultiBreak multiBreak, boolean successful) {
+    public MultiBreakEndEvent(@NotNull Player p, @NotNull MultiBreak multiBreak, boolean successful) {
         this.player = p;
         this.multiBreak = multiBreak;
         this.successful = successful;
@@ -28,11 +30,7 @@ public class MultiBreakEndEvent extends Event {
         return HANDLERS_LIST;
     }
 
-    public static HandlerList getHandlerList() {
-        return HANDLERS_LIST;
-    }
-
-    public Player getPlayer() {
+    public @NotNull Player getPlayer() {
         return player;
     }
 
@@ -40,7 +38,7 @@ public class MultiBreakEndEvent extends Event {
         return multiBreak.getBlock();
     }
 
-    public MultiBreak getMultiBreak() {
+    public @NotNull MultiBreak getMultiBreak() {
         return multiBreak;
     }
 
@@ -51,14 +49,4 @@ public class MultiBreakEndEvent extends Event {
     public boolean isSuccessful() {
         return successful;
     }
-
-    public boolean isCancelled() {
-        return cancelled;
-    }
-
-    public void setCancelled(boolean cancelled) {
-        this.cancelled = cancelled;
-    }
-
-
 }

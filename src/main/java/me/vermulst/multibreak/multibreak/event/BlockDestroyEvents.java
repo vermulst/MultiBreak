@@ -1,6 +1,5 @@
 package me.vermulst.multibreak.multibreak.event;
 
-import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.multibreak.BreakManager;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
@@ -9,9 +8,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 
-import java.util.List;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 public class BlockDestroyEvents implements Listener {

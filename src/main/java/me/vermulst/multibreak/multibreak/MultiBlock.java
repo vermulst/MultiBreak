@@ -4,10 +4,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.inventory.ItemStack;
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -15,9 +11,7 @@ public class MultiBlock {
 
     private final Block block;
     private boolean isVisible;
-    private boolean breakThisBlock = true;
     private final Material type;
-    private List<ItemStack> drops;
     private final int sourceID = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
 
     private volatile int lastStage = 0;
@@ -77,22 +71,6 @@ public class MultiBlock {
     @Override
     public int hashCode() {
         return Objects.hash(block, isVisible);
-    }
-
-    public boolean breakThisBlock() {
-        return breakThisBlock;
-    }
-
-    public void setBreakThisBlock(boolean breakThisBlock) {
-        this.breakThisBlock = breakThisBlock;
-    }
-
-    public void setDrops(ArrayList<ItemStack> drops) {
-        this.drops = drops;
-    }
-
-    public List<ItemStack> getDrops() {
-        return drops;
     }
 
     public Material getType() {

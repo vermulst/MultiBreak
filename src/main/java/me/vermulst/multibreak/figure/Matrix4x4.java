@@ -1,6 +1,5 @@
 package me.vermulst.multibreak.figure;
 
-
 import org.bukkit.util.Vector;
 
 public class Matrix4x4 {

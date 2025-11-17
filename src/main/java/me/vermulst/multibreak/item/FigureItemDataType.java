@@ -1,7 +1,5 @@
 package me.vermulst.multibreak.item;
 
-import io.papermc.paper.datacomponent.DataComponentType;
-import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.persistence.PersistentDataContainerView;
 import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.figure.Figure;

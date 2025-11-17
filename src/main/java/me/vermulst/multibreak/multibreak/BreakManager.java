@@ -34,7 +34,7 @@ public class BreakManager {
     private final Map<UUID, Block> lastTargetBlock = new HashMap<>();
     private final Map<UUID, MultiBreak> multiBreakMap = new HashMap<>();
 
-    private final Map<Location, List<MultiBreak>> multiBreakLocationMap = new HashMap<>();
+    private final Map<Location, Set<MultiBreak>> multiBreakLocationMap = new HashMap<>();
 
 
     private static final BreakManager breakManager = new BreakManager();
@@ -165,7 +165,7 @@ public class BreakManager {
                 for (MultiBlock multiBlock : multiBreak.getMultiBlocks()) {
                     Location location = multiBlock.getLocation();
                     if (!multiBreakLocationMap.containsKey(location)) continue;
-                    List<MultiBreak> multiBreaks = multiBreakLocationMap.get(location);
+                    Set<MultiBreak> multiBreaks = multiBreakLocationMap.get(location);
                     multiBreaks.remove(multiBreak);
                     if (multiBreaks.isEmpty()) {
                         multiBreakLocationMap.remove(location);
@@ -208,11 +208,9 @@ public class BreakManager {
         List<MultiBlock> multiBlocks =  multiBreak.getMultiBlocks();
         for (MultiBlock mb : multiBreak.getMultiBlocks()) {
             Location location = mb.getLocation();
-            if (!multiBreakLocationMap.containsKey(location)) {
-                multiBreakLocationMap.put(location, new ArrayList<>(multiBlocks.size()));
-            }
-            List<MultiBreak> multiBreaks = multiBreakLocationMap.get(location);
-            multiBreaks.add(multiBreak);
+            multiBreakLocationMap
+                    .computeIfAbsent(location, k -> new HashSet<>(multiBlocks.size()))
+                    .add(multiBreak);
         }
 
         return multiBreak;
@@ -222,14 +220,15 @@ public class BreakManager {
         return block.hasMetadata("multi-broken");
     }
 
+    public void removeMultiBrokenMetadata(Block block) {
+        block.removeMetadata("multi-broken", Main.getInstance());
+    }
+
     public boolean isMultiBreak(BlockBreakEvent e) {
         Block block = e.getBlock();
         boolean wasMultiBroken = block.hasMetadata("multi-broken");
         boolean isIgnoredMaterial = Config.getInstance().getIgnoredMaterials().contains(block.getType());
         boolean isCancelled = e.isCancelled();
-        if (wasMultiBroken) {
-            block.removeMetadata("multi-broken", Main.getInstance());
-        }
         return !wasMultiBroken && !isIgnoredMaterial && !isCancelled;
     }
 
@@ -332,7 +331,7 @@ public class BreakManager {
 
     public void handleBlockRemoval(Location location) {
         if (!multiBreakLocationMap.containsKey(location)) return;
-        List<MultiBreak> multiBreaks = multiBreakLocationMap.get(location);
+        Set<MultiBreak> multiBreaks = multiBreakLocationMap.get(location);
         for (MultiBreak multiBreak : multiBreaks) {
             Iterator<MultiBlock> iterator = multiBreak.getMultiBlocks().iterator();
             while (iterator.hasNext()) {
@@ -350,7 +349,7 @@ public class BreakManager {
     public void handleBlockRemovals(Set<Location> locations) {
         Set<MultiBreak> breaksToUpdate = new HashSet<>();
         for (Location location : locations) {
-            List<MultiBreak> linkedBreaks = multiBreakLocationMap.get(location);
+            Set<MultiBreak> linkedBreaks = multiBreakLocationMap.get(location);
             if (linkedBreaks != null) {
                 breaksToUpdate.addAll(linkedBreaks);
             }

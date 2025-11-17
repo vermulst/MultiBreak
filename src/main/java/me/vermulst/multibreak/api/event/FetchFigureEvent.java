@@ -9,16 +9,18 @@ import org.jetbrains.annotations.NotNull;
 
 public class FetchFigureEvent extends Event {
     private static final HandlerList HANDLERS_LIST = new HandlerList();
+    public static HandlerList getHandlerList() {
+        return HANDLERS_LIST;
+    }
 
-    private final Player player;
-    private final ItemStack item;
+    private @NotNull final Player player;
+    private @NotNull final ItemStack item;
     private boolean cancelled = false;
 
-    // set to null to prevent any multibreaking
-    private Figure figure;
+    private Figure figure; // set to null to prevent any multibreaking
 
 
-    public FetchFigureEvent(Figure figure, Player p, ItemStack item) {
+    public FetchFigureEvent(Figure figure, @NotNull Player p, @NotNull ItemStack item) {
         this.figure = figure;
         this.player = p;
         this.item = item;
@@ -29,11 +31,7 @@ public class FetchFigureEvent extends Event {
         return HANDLERS_LIST;
     }
 
-    public static HandlerList getHandlerList() {
-        return HANDLERS_LIST;
-    }
-
-    public Player getPlayer() {
+    public @NotNull Player getPlayer() {
         return player;
     }
 
@@ -45,7 +43,7 @@ public class FetchFigureEvent extends Event {
         this.figure = figure;
     }
 
-    public ItemStack getItem() {
+    public @NotNull ItemStack getItem() {
         return item;
     }
 
