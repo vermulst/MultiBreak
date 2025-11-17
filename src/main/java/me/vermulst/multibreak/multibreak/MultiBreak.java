@@ -283,25 +283,22 @@ public class MultiBreak {
 
         int stage = (int) (9 * adjustedProgress);
         if (lastStage == -1 || stage > this.lastStage) {
-            int difference = stage - this.lastStage;
-            if (Config.getInstance().isAsyncEnabled()) {
-                for (int i = 0; i < difference; i++) {
-                    this.writeStage(stage, multiBlockSnapshot);
-                }
-            } else {
-                this.writeStage(stage, multiBlockSnapshot);
-            }
+            this.writeStage(stage, multiBlockSnapshot);
             this.lastStage = stage;
         }
     }
 
+
     public void writeStage(int stage, List<MultiBlock> multiBlockSnapshot) {
-        WriteStageRunnable writeStageRunnable = new WriteStageRunnable(multiBlockSnapshot, this.getBlock(), stage, this.nearbyPlayerConnections, this.packetLock, this);
-        if (Config.getInstance().isAsyncEnabled()) {
-            Main.getHighPriorityExecutor().submit(writeStageRunnable);
-        } else {
-            writeStageRunnable.run();
-        }
+        WriteStageRunnable writeStageRunnable = new WriteStageRunnable(
+                multiBlockSnapshot,
+                this.getBlock(),
+                stage,
+                this.nearbyPlayerConnections,
+                this.packetLock,
+                this
+        );
+        Main.getHighPriorityExecutor().submit(writeStageRunnable);
     }
 
     public void checkPlayers() {
@@ -399,7 +396,7 @@ public class MultiBreak {
         double sideOffsetZ = (playerDirectionZ) ? 0.5 : 0;
         Location loc = new Location(this.getBlock().getWorld(), 0, 0, 0);
         WriteParticleRunnable writeParticleRunnable = new WriteParticleRunnable(multiBlockSnapshot, this.getBlock(), particleBuilder, sideOffsetX, sideOffsetY, sideOffsetZ, loc);
-        writeParticleRunnable.runTaskAsynchronously(Main.getInstance());
+        Main.getHighPriorityExecutor().submit(writeParticleRunnable);
     }
 
     private static final Predicate<net.minecraft.world.entity.Entity> isPlayer =

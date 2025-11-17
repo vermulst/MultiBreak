@@ -1,5 +1,6 @@
 package me.vermulst.multibreak.multibreak.runnables;
 
+import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.multibreak.MultiBlock;
 import me.vermulst.multibreak.multibreak.MultiBreak;
 import net.minecraft.core.BlockPos;
@@ -13,6 +14,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Level;
 
 public class WriteStageRunnable extends BukkitRunnable {
 
@@ -23,7 +25,9 @@ public class WriteStageRunnable extends BukkitRunnable {
     private final ReentrantLock lock;
     private final MultiBreak multiBreak;
 
-    public WriteStageRunnable(List<MultiBlock> multiBlocks, Block mainBlock, int stage, List<ServerGamePacketListenerImpl> connections, ReentrantLock lock, MultiBreak multiBreak) {
+    public WriteStageRunnable(List<MultiBlock> multiBlocks, Block mainBlock, int stage,
+                              List<ServerGamePacketListenerImpl> connections, ReentrantLock lock,
+                              MultiBreak multiBreak) {
         this.stage = stage;
         this.connections = connections;
         this.multiBlocks = multiBlocks;
@@ -32,9 +36,11 @@ public class WriteStageRunnable extends BukkitRunnable {
         this.multiBreak = multiBreak;
     }
 
+
     @Override
     public void run() {
         if (this.stage != -1 && multiBreak.hasEnded()) return;
+
         int capacity = Math.max(this.multiBlocks.size() - 1, 0);
         List<ClientboundBlockDestructionPacket> packetsToSend = new ArrayList<>(capacity);
         try {
@@ -46,7 +52,9 @@ public class WriteStageRunnable extends BukkitRunnable {
                 if (multiBlock.getBlock().equals(mainBlock)) continue;
 
                 int lastStage = multiBlock.getLastStage();
-                if ((this.stage != -1 && lastStage > this.stage) || lastStage == -1) continue;
+
+                // Use predicted stage for comparison and setting
+                if ((stage != -1 && lastStage > stage) || lastStage == -1) continue;
                 multiBlock.setLastStage(stage);
 
                 BlockPos blockPos = CraftLocation.toBlockPosition(multiBlock.getLocation());
@@ -54,19 +62,21 @@ public class WriteStageRunnable extends BukkitRunnable {
                         new ClientboundBlockDestructionPacket(
                                 multiBlock.getSourceID(),
                                 blockPos,
-                                stage
+                                stage  // Send predicted stage
                         );
                 packetsToSend.add(packet);
             }
-            if (!packetsToSend.isEmpty()) {
-                for (ServerGamePacketListenerImpl connection : connections) {
-                    for (ClientboundBlockDestructionPacket packet : packetsToSend) {
-                        connection.send(packet);
-                    }
-                }
-            }
         } finally {
             lock.unlock();
+        }
+
+        // Send packets outside lock
+        if (!packetsToSend.isEmpty()) {
+            for (ServerGamePacketListenerImpl connection : connections) {
+                for (ClientboundBlockDestructionPacket packet : packetsToSend) {
+                    connection.send(packet);
+                }
+            }
         }
     }
 }

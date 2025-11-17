@@ -128,13 +128,6 @@ public class BreakManager {
         }
     }
 
-    private void invalidateHasCorrectToolCache(UUID uuid) {
-        if (multiBreakMap.containsKey(uuid)) {
-            MultiBreak multiBreak = multiBreakMap.get(uuid);
-            multiBreak.invalidateHasCorrectToolCache();
-        }
-    }
-
     private void invalidateDestroySpeedCache(UUID uuid) {
         if (multiBreakMap.containsKey(uuid)) {
             MultiBreak multiBreak = multiBreakMap.get(uuid);

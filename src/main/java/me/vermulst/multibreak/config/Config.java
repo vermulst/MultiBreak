@@ -23,9 +23,8 @@ public class Config {
 
     private final boolean[] options = new boolean[] {
             true, // fair mode
-            true, // async
     };
-    private static final String[] optionNames = new String[]{"fair_mode", "async_break_animations"};
+    private static final String[] optionNames = new String[]{"fair_mode"};
 
     private static final String OLD_MATERIAL_PRESETS_PATH = "material_configs";
     private static final String NEW_MATERIAL_PRESETS_PATH = "material_presets";
@@ -61,9 +60,7 @@ public class Config {
 
     public void save(FileConfiguration fileConfiguration) {
         List<List<String>> optionComments = List.of(
-                List.of("If enabled, player will slow down to the slowest block."),
-                List.of("If enabled, block animations will be sent asynchronously, boosting performance",
-                        "if performance is of no concern, you can disable this.")
+                List.of("If enabled, player will slow down to the slowest block.")
         );
 
         /** Boolean options **/
@@ -73,13 +70,6 @@ public class Config {
             fileConfiguration.set(optionName, option);
             fileConfiguration.setComments(optionName, optionComments.get(i));
         }
-
-        /** Max range **/
- /*       fileConfiguration.set("fair_mode_leeway", this.fairModeTicksLeeway);
-        fileConfiguration.setComments("fair_mode_leeway",
-                List.of("", "The amount of ticks which will count as being in range within fair mode.",
-                        "For example, when set to 1, blocks that would take 5 ticks to break while the source block takes 6 ticks, will still be broken.",
-                        "1 is the recommended value."));*/
 
         /** Presets **/
         fileConfiguration.set(OLD_PRESETS_PATH, null);
@@ -141,7 +131,6 @@ public class Config {
         save = save || this.loadMaterialPresets(fileConfiguration);
         save = save || this.loadIncludedMaterials(fileConfiguration);
         save = save || this.loadIgnoredMaterials(fileConfiguration);
-        //save = save || this.loadMaxRange(fileConfiguration);
         if (save) {
             this.save(fileConfiguration);
         }
@@ -295,7 +284,7 @@ public class Config {
         return this.options[0];
     }
 
-    public boolean isAsyncEnabled() {
+    public boolean isAsyncEnabled_() {
         return this.options[1];
     }
 }
