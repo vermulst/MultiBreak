@@ -36,14 +36,23 @@ public class MultiBreakRunnable extends BukkitRunnable {
     @Override
     public void run() {
         UUID uuid = p.getUniqueId();
-        boolean hasMoved = !init || breakManager.getMovedPlayers().contains(uuid);
+        boolean hasMoved = !init;
+        if (!hasMoved && breakManager.getMovedPlayers().containsKey(uuid)) {
+            int movedTick = breakManager.getMovedPlayers().get(uuid);
+            int difference = Bukkit.getCurrentTick() - movedTick;
+            int potentialRaytraceDelayTicks = (int) Math.ceil((double) (p.getPing() + 100) / 50);
+            if (difference <= potentialRaytraceDelayTicks) {
+                hasMoved = true;
+            } else {
+                breakManager.getMovedPlayers().remove(uuid);
+            }
+        }
         RayTraceResult rayTraceResult = hasMoved ? BreakUtils.getRayTraceResult(p) : null;
 
         // check once, if block changed since from tick 0 -> 1.
         MultiBreak multiBreak = breakManager.getMultiBreak(p);
 
         if (hasMoved) {
-            breakManager.getMovedPlayers().remove(uuid);
             if (rayTraceResult == null) {
                 cancelMultiBreak(multiBreak);
                 return;

@@ -21,6 +21,14 @@ public class BreakUtils {
         return range + INTERACTION_RANGE_LEEWAY;
     }
 
+    public static RayTraceResult getRayTraceResultExact(Player p) {
+        return p.rayTraceBlocks(getRange(p) - INTERACTION_RANGE_LEEWAY, FluidCollisionMode.NEVER);
+    }
+
+    public static RayTraceResult getRayTraceResult(Player p) {
+        return p.rayTraceBlocks(getRange(p), FluidCollisionMode.NEVER);
+    }
+
     public static BlockFace getBlockFace(Player p) {
         RayTraceResult rayTraceResult = getRayTraceResult(p);
         if (rayTraceResult == null) return null;
@@ -82,15 +90,10 @@ public class BreakUtils {
         return rayTraceResult.getHitBlock();
     }
 
-    public static RayTraceResult getRayTraceResultExact(Player p) {
-        return p.rayTraceBlocks(getRange(p) - INTERACTION_RANGE_LEEWAY, FluidCollisionMode.NEVER);
-    }
-
-    public static RayTraceResult getRayTraceResult(Player p) {
-        return p.rayTraceBlocks(getRange(p), FluidCollisionMode.NEVER);
-    }
-
     public static float getDestroySpeed(Player p, MultiBreak multiBreak) {
+        if (multiBreak == null) return -1f;
+        multiBreak.invalidateHasCorrectToolCache();
+        multiBreak.checkDestroySpeedChange(p);
         return multiBreak.getDestroySpeedMain(p);
     }
 

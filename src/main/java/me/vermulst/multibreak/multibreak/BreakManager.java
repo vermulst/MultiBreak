@@ -28,7 +28,7 @@ import org.bukkit.util.RayTraceResult;
 import java.util.*;
 
 public class BreakManager {
-    private final Set<UUID> movedPlayers = new HashSet<>();
+    private final Map<UUID, Integer> movedPlayers = new HashMap<>();
     private final Map<UUID, Integer> multiBreakTask = new HashMap<>();
     private final Map<UUID, Figure> figureCache = new HashMap<>();
     private final Map<UUID, Block> lastTargetBlock = new HashMap<>();
@@ -75,7 +75,6 @@ public class BreakManager {
             return;
         }
 
-
         RayTraceResult rayTraceResult = BreakUtils.getRayTraceResult(p);
         if (rayTraceResult == null) {
             this.removeModifier(attribute, modifierToRemove);
@@ -103,18 +102,13 @@ public class BreakManager {
         Set<Block> blocks = figure.getBlocks(p, targetBlock, rayTraceResult.getHitBlockFace().getDirection());
         this.filter(blocks, filterBlocksEvent.getIncludedMaterials(), filterBlocksEvent.getExcludedMaterials());
 
-        MultiBreak multiBreak = this.getMultiBreakOffstate(p);
-        float baseProgressPerTick;
-        if (multiBreak != null) {
-            multiBreak.invalidateHasCorrectToolCache();
-            multiBreak.checkDestroySpeedChange(p);
-            baseProgressPerTick = BreakUtils.getDestroySpeed(p, multiBreak);
-        } else {
-            baseProgressPerTick = targetBlock.getBreakSpeed(p);
-        }
+        MultiBreak multiBreak = this.getMultiBreak(p);
+        float baseProgressPerTick = BreakUtils.getDestroySpeed(p, multiBreak);
+        if (baseProgressPerTick == -1f) baseProgressPerTick = targetBlock.getBreakSpeed(p);
         if (baseProgressPerTick == Float.POSITIVE_INFINITY) return;
-        float slowDownFactor = this.getSlowDownFactor(p, blocks, baseProgressPerTick, multiBreak);
-        if (multiBreak != null) multiBreak.invalidateDestroySpeedCache();
+        MultiBreak multiBreakOffState = this.getMultiBreakOffstate(p);
+        float slowDownFactor = this.getSlowDownFactor(p, blocks, baseProgressPerTick, multiBreakOffState);
+        this.invalidateDestroySpeedCache(uuid);
         if (slowDownFactor == 1.0f) return;
         double currentAttributeTotal = p.getAttribute(Attribute.BLOCK_BREAK_SPEED).getValue();
         double newAttributeTotal = currentAttributeTotal * slowDownFactor;
@@ -178,6 +172,7 @@ public class BreakManager {
         if (!multiBreakTask.containsKey(uuid)) return;
         Bukkit.getScheduler().cancelTask(multiBreakTask.get(uuid));
         multiBreakTask.remove(uuid);
+        breakManager.getMovedPlayers().remove(uuid);
     }
 
     public MultiBreak initMultiBreak(Player p, Block block, Figure figure) {
@@ -383,7 +378,7 @@ public class BreakManager {
         return multiBreakTask.containsKey(uuid);
     }
 
-    public Set<UUID> getMovedPlayers() {
+    public Map<UUID, Integer> getMovedPlayers() {
         return movedPlayers;
     }
 }

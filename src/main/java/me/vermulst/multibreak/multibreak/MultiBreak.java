@@ -7,6 +7,7 @@ import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.types.FigureType;
 import me.vermulst.multibreak.multibreak.runnables.WriteParticleRunnable;
 import me.vermulst.multibreak.multibreak.runnables.WriteStageRunnable;
+import me.vermulst.multibreak.utils.IntVector;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -29,19 +30,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 
 public class MultiBreak {
-
-    public static record IntVector(int x, int y, int z) {
-        public static IntVector of(Vector v) {
-            return new IntVector((int) v.getX(), (int) v.getY(), (int) v.getZ());
-        }
-
-        public boolean equalsVector(Vector v) {
-            // Perform the comparison logic directly
-            return this.x == (int) v.getX() &&
-                    this.y == (int) v.getY() &&
-                    this.z == (int) v.getZ();
-        }
-    }
 
     private final UUID playerUUID;
     private Set<UUID> nearbyPlayers;
@@ -150,7 +138,6 @@ public class MultiBreak {
             int factor = hasCorrectTool ? 30 : 100;
             float finalSpeed = baseSpeed / destroySpeed / (float)factor;
             destroySpeedCache.put(material, finalSpeed);
-            serverPlayer.getBukkitEntity().sendMessage("destroy speed for " + material + " " + finalSpeed);
             return finalSpeed;
         }
     }

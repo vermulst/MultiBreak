@@ -4,7 +4,9 @@ import com.destroystokyo.paper.event.server.ServerTickEndEvent;
 import com.destroystokyo.paper.event.server.ServerTickStartEvent;
 import me.vermulst.multibreak.config.Config;
 import me.vermulst.multibreak.multibreak.BreakManager;
+import me.vermulst.multibreak.utils.SimpleLocation;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -16,6 +18,8 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.*;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class RefreshEvents implements Listener {
@@ -25,22 +29,31 @@ public class RefreshEvents implements Listener {
         this.breakManager = breakManager;
     }
 
+
+    private Map<UUID, SimpleLocation> previousLocations = new HashMap<>();
+
     /** Mark player as moved, to perform new raytrace in MultiBreakRunnable */
-
     @EventHandler
-    public void moveEvent(PlayerMoveEvent e) {
-        Player p = e.getPlayer();
-        UUID uuid = p.getUniqueId();
-        if (!breakManager.isBreaking(uuid)) return;
-        if (!e.hasChangedPosition() && !e.hasChangedOrientation()) return;
-        breakManager.getMovedPlayers().add(uuid);
+    public void tickStartEvent(ServerTickStartEvent e) {
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            UUID uuid = p.getUniqueId();
+            if (!breakManager.isBreaking(uuid)) return;
+            Location loc = p.getLocation();
+            SimpleLocation previousLocation = previousLocations.get(uuid);
+            if (previousLocation == null || previousLocation.isDifferent(loc)) {
+                SimpleLocation newLocation = new SimpleLocation(
+                        p.getLocation().getX(),
+                        p.getLocation().getY(),
+                        p.getLocation().getZ(),
+                        p.getLocation().getYaw(),
+                        p.getLocation().getPitch()
+                );
+                previousLocations.put(uuid, newLocation);
+                breakManager.getMovedPlayers().put(uuid, Bukkit.getCurrentTick());
+                p.sendMessage("moved");
+            }
+        }
     }
-
-    @EventHandler
-    public void serverTickStart(ServerTickStartEvent e) {
-
-    }
-
 
     /**  Refresh break speed ever tick, checking for new target block */
 
