@@ -62,6 +62,7 @@ public class BreakEvents implements Listener {
     public void mining(PlayerAnimationEvent e) {
         if (!e.getAnimationType().equals(PlayerAnimationType.ARM_SWING)) return;
         Player p = e.getPlayer();
+        p.sendMessage("animation event: " + Bukkit.getCurrentTick());
         ItemStack item = p.getInventory().getItemInMainHand();
         Figure figure = breakManager.getFigure(p, item);
         if (figure == null) return;

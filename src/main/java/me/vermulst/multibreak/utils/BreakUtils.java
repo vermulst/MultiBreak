@@ -20,11 +20,15 @@ public class BreakUtils {
     }
 
     public static BlockFace getBlockFace(Player p) {
-        return p.rayTraceBlocks(getRange(p), FluidCollisionMode.NEVER).getHitBlockFace();
+        RayTraceResult rayTraceResult = getRayTraceResult(p);
+        if (rayTraceResult == null) return null;
+        return rayTraceResult.getHitBlockFace();
     }
 
     public static Block getTargetBlock(Player p) {
-        return p.rayTraceBlocks(getRange(p), FluidCollisionMode.NEVER).getHitBlock();
+        RayTraceResult rayTraceResult = getRayTraceResult(p);
+        if (rayTraceResult == null) return null;
+        return rayTraceResult.getHitBlock();
     }
 
     public static RayTraceResult getRayTraceResultExact(Player p) {
