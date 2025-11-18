@@ -183,11 +183,14 @@ public class BreakManager {
     public MultiBreak initMultiBreak(Player p, Block block, Figure figure) {
         if (block == null) return null;
         BlockFace blockFace = BreakUtils.getBlockFace(p);
+        return this.initMultiBreak(p, block, figure, blockFace);
+    }
+
+    public MultiBreak initMultiBreak(Player p, Block block, Figure figure, BlockFace blockFace) {
         if (blockFace == null) return null;
         Config config = Config.getInstance();
         EnumSet<Material> includedMaterials = config.getIncludedMaterials();
         EnumSet<Material> ignoredMaterials = config.getIgnoredMaterials();
-
 
         MultiBreak multiBreak = multiBreakMap.get(p.getUniqueId());
         if (multiBreak != null) {

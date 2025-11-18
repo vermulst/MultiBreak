@@ -31,6 +31,8 @@ public class BreakEvents implements Listener {
         this.breakManager = breakManager;
     }
 
+    // events sorted on chronological order
+
     @EventHandler(priority = EventPriority.LOWEST)
     public void multiBreakStart(BlockDamageEvent e) {
         Player p = e.getPlayer();
@@ -57,12 +59,52 @@ public class BreakEvents implements Listener {
         breakManager.endMultiBreak(p, multiBreak, false);
     }
 
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void breakBlockType(BlockBreakEvent e) {
+        Block block = e.getBlock();
+        Location location = block.getLocation();
+        if (!breakManager.isMultiBreak(e)) {
+            if (!breakManager.wasMultiBroken(block)) {
+                breakManager.handleBlockRemoval(location);
+            } else {
+                breakManager.removeMultiBrokenMetadata(block);
+            }
+            return;
+        }
+        Player p = e.getPlayer();
+        MultiBreak multiBreak = breakManager.getMultiBreak(p);
+
+        // insta mine
+        if (multiBreak == null) {
+            Figure figure = breakManager.getFigure(p);
+            BlockFace blockFace = BreakUtils.getBlockFace(p);
+            if (blockFace == null) {
+                blockFace = BreakUtils.getThickRaytraceBlockFace(p, e.getBlock());
+            }
+            multiBreak = breakManager.initMultiBreak(p, e.getBlock(), figure, blockFace);
+            if (multiBreak == null) {
+                breakManager.handleBlockRemoval(location);
+                return;
+            }
+        }
+
+        // Mismatch (player switched to an instamine-block while breaking)
+        if (!block.equals(multiBreak.getBlock())) {
+            Figure figure = breakManager.getFigure(p);
+            multiBreak = breakManager.initMultiBreak(p, block, figure);
+        }
+        MultiBreakEndEvent event = new MultiBreakEndEvent(p, multiBreak, true);
+        event.callEvent();
+        breakManager.endMultiBreak(p, event.getMultiBreak(), true);
+        breakManager.handleBlockRemoval(location);
+    }
+
     /** Weird edge case where animation persists after breaking stops */
     @EventHandler
     public void mining(PlayerAnimationEvent e) {
         if (!e.getAnimationType().equals(PlayerAnimationType.ARM_SWING)) return;
         Player p = e.getPlayer();
-        p.sendMessage("animation event: " + Bukkit.getCurrentTick());
         ItemStack item = p.getInventory().getItemInMainHand();
         Figure figure = breakManager.getFigure(p, item);
         if (figure == null) return;
@@ -86,42 +128,6 @@ public class BreakEvents implements Listener {
         p.setMetadata("static-multibreak", new FixedMetadataValue(Main.getInstance(), true));
         BlockDamageEvent blockDamageEvent = new BlockDamageEvent(p, targetBlock, face, item, false);
         blockDamageEvent.callEvent();
-    }
-
-
-
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void breakBlockType(BlockBreakEvent e) {
-        Block block = e.getBlock();
-        Location location = block.getLocation();
-        if (!breakManager.isMultiBreak(e)) {
-            if (!breakManager.wasMultiBroken(block)) {
-                breakManager.handleBlockRemoval(location);
-            } else {
-                breakManager.removeMultiBrokenMetadata(block);
-            }
-            return;
-        }
-        Player p = e.getPlayer();
-        MultiBreak multiBreak = breakManager.getMultiBreak(p);
-        if (multiBreak == null) {
-            Figure figure = breakManager.getFigure(p);
-            multiBreak = breakManager.initMultiBreak(p, e.getBlock(), figure);
-            if (multiBreak == null) {
-                breakManager.handleBlockRemoval(location);
-                return;
-            }
-        }
-
-        // Mismatch (player switched to an instamine-block while breaking)
-        if (!block.equals(multiBreak.getBlock())) {
-            Figure figure = breakManager.getFigure(p);
-            multiBreak = breakManager.initMultiBreak(p, block, figure);
-        }
-        MultiBreakEndEvent event = new MultiBreakEndEvent(p, multiBreak, true);
-        event.callEvent();
-        breakManager.endMultiBreak(p, event.getMultiBreak(), true);
-        breakManager.handleBlockRemoval(location);
     }
 
     @EventHandler
