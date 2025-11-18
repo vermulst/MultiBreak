@@ -52,10 +52,12 @@ public class MultiBreak {
     private float progressBroken; // 0 - 1.0
     private int lastStage = -1;
     private List<MultiBlock> multiBlocks;
+    private final ReentrantLock packetLock = new ReentrantLock();
+    private volatile int ended = -1; // tick at which it was broken, 0 = canceled
+
+    // static break
     private boolean paused = false;
     private int lastTick = -1;
-    private volatile boolean ended = false;
-    private final ReentrantLock packetLock = new ReentrantLock();
 
     private final Map<Material, Float> destroySpeedCache = new EnumMap<>(Material.class);
     private final Set<Material> hasCorrectToolCache = EnumSet.noneOf(Material.class);
@@ -99,7 +101,7 @@ public class MultiBreak {
         this.updateNearbyPlayerConnections();
         this.updateParticleBuilderReceivers(this.nearbyPlayers);
         this.progressTicks = 0;
-        this.ended = false;
+        this.ended = -1;
 
         this.block = block;
         this.playerDirection = IntVector.of(playerDirection);
@@ -239,7 +241,7 @@ public class MultiBreak {
 
 
     public void end(Player p, boolean finished) {
-        this.ended = true;
+        this.ended = finished ? Bukkit.getCurrentTick() : 0;
         List<MultiBlock> multiBlockSnapshot = new ArrayList<>(this.multiBlocks);
         this.writeStage(-1, multiBlockSnapshot);
         if (!finished) return;
@@ -484,6 +486,10 @@ public class MultiBreak {
     }
 
     public boolean hasEnded() {
+        return ended != -1;
+    }
+
+    public int getEnded() {
         return ended;
     }
 

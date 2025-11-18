@@ -6,8 +6,6 @@ import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.multibreak.BreakManager;
 import me.vermulst.multibreak.multibreak.MultiBreak;
 import me.vermulst.multibreak.utils.BreakUtils;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
@@ -39,7 +37,6 @@ public class BreakEvents implements Listener {
         ItemStack item = e.getItemInHand();
         Figure figure = breakManager.getFigure(p, item);
         if (figure == null) return;
-        p.sendMessage(Component.text("starting", NamedTextColor.GREEN));
         if (p.hasMetadata("static-multibreak")) {
             breakManager.scheduleMultiBreak(p, figure, e.getBlock(), true);
             p.removeMetadata("static-multibreak", Main.getInstance());
@@ -60,7 +57,7 @@ public class BreakEvents implements Listener {
         breakManager.endMultiBreak(p, multiBreak, false);
     }
 
-    /** Weird edge case */
+    /** Weird edge case where animation persists after breaking stops */
     @EventHandler
     public void mining(PlayerAnimationEvent e) {
         if (!e.getAnimationType().equals(PlayerAnimationType.ARM_SWING)) return;
@@ -71,11 +68,17 @@ public class BreakEvents implements Listener {
         MultiBreak multiBreak = breakManager.getMultiBreak(p);
         if (multiBreak != null) {
             if (multiBreak.getLastTick() == -1) return; // not a static break
+            RayTraceResult rayTraceResult = BreakUtils.getRayTraceResultExact(p);
+            if (rayTraceResult == null) return;
             multiBreak.setLastTick(Bukkit.getCurrentTick());
             return;
         }
         if (breakManager.isBreaking(p.getUniqueId())) return;
-        RayTraceResult rayTraceResult = BreakUtils.getRayTraceResult(p);
+        MultiBreak multiBreakOffState = breakManager.getMultiBreakOffstate(p);
+        if (multiBreakOffState == null) return;
+        int ended = multiBreakOffState.getEnded();
+        if (Bukkit.getCurrentTick() - ended <= 5) return;
+        RayTraceResult rayTraceResult = BreakUtils.getRayTraceResultExact(p);
         if (rayTraceResult == null) return;
         Block targetBlock = rayTraceResult.getHitBlock();
         BlockFace face = rayTraceResult.getHitBlockFace();
@@ -84,7 +87,7 @@ public class BreakEvents implements Listener {
         blockDamageEvent.callEvent();
     }
 
-    /** Block broken */
+
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void breakBlockType(BlockBreakEvent e) {
