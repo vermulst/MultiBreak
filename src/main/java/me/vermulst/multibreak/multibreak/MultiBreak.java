@@ -60,7 +60,7 @@ public class MultiBreak {
     private int lastTick = -1;
 
     private final Map<Material, Float> destroySpeedCache = new EnumMap<>(Material.class);
-    private final Set<Material> hasCorrectToolCache = EnumSet.noneOf(Material.class);
+    private final Map<Material, Boolean> hasCorrectToolCache = new EnumMap<>(Material.class);
 
     private final ParticleBuilder particleBuilder = new ParticleBuilder(Particle.BLOCK_CRUMBLE)
             .extra(0.2);
@@ -125,31 +125,16 @@ public class MultiBreak {
     }
 
     public float getDestroySpeedMain(ServerPlayer serverPlayer) {
-        Material material = blockState.getBukkitMaterial();
-        if (destroySpeedCache.containsKey(material)) {
-            return destroySpeedCache.get(material);
-        }
-
-        float destroySpeed = blockState.getDestroySpeed(serverLevel, blockPos);
-        if (destroySpeed == -1.0F) {
-            return 0.0F;
-        } else {
-            float baseSpeed = serverPlayer.getDestroySpeed(blockState);
-            boolean hasCorrectTool = hasCorrectToolCache.contains(material);
-            if (!hasCorrectTool) {
-                hasCorrectTool = serverPlayer.hasCorrectToolForDrops(blockState);
-                if (hasCorrectTool) hasCorrectToolCache.add(material);
-            }
-            int factor = hasCorrectTool ? 30 : 100;
-            float finalSpeed = baseSpeed / destroySpeed / (float)factor;
-            destroySpeedCache.put(material, finalSpeed);
-            return finalSpeed;
-        }
+        return this.getDestroySpeed(serverPlayer, this.blockPos, this.blockState);
     }
 
     // override main block pos with other block pos
     public float getDestroySpeed(ServerPlayer serverPlayer, BlockPos blockPos) {
         BlockState blockState = serverLevel.getBlockState(blockPos);
+        return this.getDestroySpeed(serverPlayer, blockPos, blockState);
+    }
+
+    public float getDestroySpeed(ServerPlayer serverPlayer, BlockPos blockPos, BlockState blockState) {
         Material material = blockState.getBukkitMaterial();
         if (destroySpeedCache.containsKey(material)) {
             return destroySpeedCache.get(material);
@@ -160,14 +145,12 @@ public class MultiBreak {
             return 0.0F;
         } else {
             float baseSpeed = serverPlayer.getDestroySpeed(blockState);
-            boolean hasCorrectTool = hasCorrectToolCache.contains(material);
-            if (!hasCorrectTool) {
-                hasCorrectTool = serverPlayer.hasCorrectToolForDrops(blockState);
-                if (hasCorrectTool) hasCorrectToolCache.add(material);
-            }
+            boolean hasCorrectTool = hasCorrectToolCache.computeIfAbsent(material,
+                    mat -> serverPlayer.hasCorrectToolForDrops(blockState));
             int factor = hasCorrectTool ? 30 : 100;
             float finalSpeed = baseSpeed / destroySpeed / (float)factor;
             destroySpeedCache.put(material, finalSpeed);
+            serverPlayer.getBukkitEntity().sendMessage("destroy speed for " + material + " " + finalSpeed);
             return finalSpeed;
         }
     }
