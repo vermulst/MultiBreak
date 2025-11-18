@@ -7,11 +7,9 @@ import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.types.FigureType;
 import me.vermulst.multibreak.multibreak.runnables.WriteParticleRunnable;
 import me.vermulst.multibreak.multibreak.runnables.WriteStageRunnable;
-import me.vermulst.multibreak.utils.BreakUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.network.ServerCommonPacketListenerImpl;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.block.state.BlockState;
@@ -54,6 +52,8 @@ public class MultiBreak {
     private float progressBroken; // 0 - 1.0
     private int lastStage = -1;
     private List<MultiBlock> multiBlocks;
+    private boolean paused = false;
+    private int lastTick = -1;
     private volatile boolean ended = false;
     private final ReentrantLock packetLock = new ReentrantLock();
 
@@ -75,6 +75,7 @@ public class MultiBreak {
 
 
     public MultiBreak(Player p, Block block, Vector playerDirection, Figure figure) {
+        this.serverLevel = ((CraftWorld)block.getWorld()).getHandle();
         this.playerUUID = p.getUniqueId();
         this.nearbyPlayers = getNearbyPlayerUUIDs(block.getLocation());
         this.updateNearbyPlayerConnections();
@@ -84,7 +85,6 @@ public class MultiBreak {
         this.initBlocks(p, figure, playerDirection);
 
         ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
-        this.serverLevel = ((CraftWorld)block.getWorld()).getHandle();
         this.blockPos = CraftLocation.toBlockPosition(block.getLocation());
         this.blockState = serverLevel.getBlockState(this.blockPos);
         this.isGrounded = p.isOnGround();
@@ -94,6 +94,7 @@ public class MultiBreak {
     }
 
     public void reset(Player p, Block block, Vector playerDirection, Figure figure) {
+        this.serverLevel = ((CraftWorld)block.getWorld()).getHandle();
         this.nearbyPlayers = getNearbyPlayerUUIDs(block.getLocation());
         this.updateNearbyPlayerConnections();
         this.updateParticleBuilderReceivers(this.nearbyPlayers);
@@ -107,7 +108,6 @@ public class MultiBreak {
         this.initBlocks(p, figure, playerDirection);
 
         ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
-        this.serverLevel = ((CraftWorld)block.getWorld()).getHandle();
         this.blockPos = CraftLocation.toBlockPosition(block.getLocation());
         this.blockState = serverLevel.getBlockState(this.blockPos);
         this.checkDestroySpeedChange(p);
@@ -205,6 +205,8 @@ public class MultiBreak {
             this.end(p, false);
             return;
         }
+        this.checkPause();
+        if (this.paused) return;
 
         this.progressTicks++;
         if ((this.progressTicks & 31) == 0) this.checkPlayers(); // every 32 ticks
@@ -215,6 +217,14 @@ public class MultiBreak {
         if ((this.progressTicks & 1) == 0) this.playParticles(multiBlockSnapshot); // every 2 ticks
         updateBlockAnimationPacket(p, multiBlockSnapshot);
     }
+
+
+    public void checkPause() {
+        if (this.lastTick == -1) return;
+        int currentTick = Bukkit.getServer().getCurrentTick();
+        this.paused = (currentTick - this.lastTick) > 1;
+    }
+
 
     public void checkDestroySpeedChange(Player p) {
         boolean isGrounded = p.isOnGround();
@@ -405,7 +415,6 @@ public class MultiBreak {
     // 2-6x faster than API version
     public Set<UUID> getNearbyPlayerUUIDs(Location blockLoc) {
         Set<UUID> uuids = new HashSet<>();
-        CraftWorld craftWorld = (CraftWorld) blockLoc.getWorld();
 
         double x = blockLoc.getX();
         double y = blockLoc.getY();
@@ -416,11 +425,11 @@ public class MultiBreak {
                 x + radius, y + radius, z + radius
         );
 
-        List<net.minecraft.world.entity.Entity> entityList = craftWorld.getHandle().getEntities((net.minecraft.world.entity.Entity) null, aabb, isPlayer);
+        List<net.minecraft.world.entity.Entity> entityList = this.serverLevel.getEntities((net.minecraft.world.entity.Entity) null, aabb, isPlayer);
 
         for (net.minecraft.world.entity.Entity entity : entityList) {
-            Player p = (Player) entity.getBukkitEntity();
-            uuids.add(p.getUniqueId());
+            ServerPlayer serverPlayer = (ServerPlayer) entity;
+            uuids.add(serverPlayer.getUUID());
         }
         return uuids;
     }
@@ -484,6 +493,18 @@ public class MultiBreak {
 
     public void setProgressBroken(float progressBroken) {
         this.progressBroken = progressBroken;
+    }
+
+    public void setPaused(boolean paused) {
+        this.paused = paused;
+    }
+
+    public void setLastTick(int lastTick) {
+        this.lastTick = lastTick;
+    }
+
+    public int getLastTick() {
+        return lastTick;
     }
 
     @Override

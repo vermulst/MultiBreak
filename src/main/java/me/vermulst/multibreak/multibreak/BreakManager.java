@@ -148,11 +148,11 @@ public class BreakManager {
      *
      * @param p - player breaking
      */
-    public void scheduleMultiBreak(Player p, Figure figure, Block block) {
+    public void scheduleMultiBreak(Player p, Figure figure, Block block, boolean isStaticBreak) {
         if (multiBreakTask.containsKey(p.getUniqueId())) {
             endMultiBreak(p, this.getMultiBreak(p), false);
         }
-        MultiBreakRunnable multiBreakRunnable = new MultiBreakRunnable(p, block, figure, this);
+        MultiBreakRunnable multiBreakRunnable = new MultiBreakRunnable(p, block, figure, this, isStaticBreak);
         int taskID = multiBreakRunnable.runTaskTimer(Main.getInstance(), 1, 1).getTaskId();
         multiBreakTask.put(p.getUniqueId(), taskID);
     }

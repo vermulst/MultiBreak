@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'com.github.vermulst'
-version = '1.1.1'
+version = '1.2.0'
 
 
 def deploymentProperties = new Properties()
@@ -33,7 +33,7 @@ repositories {
 }
 
 dependencies {
-    paperweight.paperDevBundle("1.21.8-R0.1-SNAPSHOT")
+    paperweight.paperDevBundle("1.21.3-R0.1-SNAPSHOT")
     implementation 'org.bstats:bstats-bukkit:3.0.2'
 }
 

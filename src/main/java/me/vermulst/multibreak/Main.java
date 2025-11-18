@@ -56,7 +56,8 @@ public final class Main extends JavaPlugin {
         commands.init();
         commands.register(this);
 
-        highPriorityExecutor = Executors.newFixedThreadPool(2, (Runnable r) -> {
+        int threads = Math.min(2, Runtime.getRuntime().availableProcessors()/2);
+        highPriorityExecutor = Executors.newFixedThreadPool(threads, (Runnable r) -> {
             Thread t = new Thread(r, "MultiBreak-High-Priority-Pool");
             t.setPriority(Thread.MAX_PRIORITY);
             return t;

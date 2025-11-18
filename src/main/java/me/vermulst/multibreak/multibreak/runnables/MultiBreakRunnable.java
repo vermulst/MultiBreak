@@ -4,6 +4,7 @@ import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.multibreak.BreakManager;
 import me.vermulst.multibreak.multibreak.MultiBreak;
 import me.vermulst.multibreak.utils.BreakUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
@@ -20,13 +21,15 @@ public class MultiBreakRunnable extends BukkitRunnable {
     private boolean init = false;
     private final Figure figure;
     private final BreakManager breakManager;
+    private final boolean isStaticBreak;
 
 
-    public MultiBreakRunnable(Player p, Block block, Figure figure, BreakManager breakManager) {
+    public MultiBreakRunnable(Player p, Block block, Figure figure, BreakManager breakManager, boolean isStaticBreak) {
         this.p = p;
         this.block = block;
         this.figure = figure;
         this.breakManager = breakManager;
+        this.isStaticBreak = isStaticBreak;
     }
 
     // Starts at tick 1, not at tick 0.
@@ -59,6 +62,9 @@ public class MultiBreakRunnable extends BukkitRunnable {
 
             if (multiBreak == null) {
                 multiBreak = breakManager.initMultiBreak(p, blockMining, this.figure);
+                if (this.isStaticBreak) {
+                    multiBreak.setLastTick(Bukkit.getCurrentTick());
+                }
                 if (multiBreak == null) {
                     cancelMultiBreak(null);
                     return;
@@ -73,7 +79,7 @@ public class MultiBreakRunnable extends BukkitRunnable {
                     cancelMultiBreak(null);
                     return;
                 }
-                breakManager.scheduleMultiBreak(p, this.figure, this.block);
+                breakManager.scheduleMultiBreak(p, this.figure, this.block, false);
             }
         }
 

@@ -13,7 +13,7 @@ public class BreakUtils {
 
     private static int getRange(Player p) {
         double range = p.getAttribute(Attribute.BLOCK_INTERACTION_RANGE).getValue();;
-        return (int) Math.ceil(range);
+        return (int) Math.ceil(range + 3);
     }
 
     public static BlockFace getBlockFace(Player p) {

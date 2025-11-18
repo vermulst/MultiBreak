@@ -1,6 +1,7 @@
 package me.vermulst.multibreak.multibreak.event;
 
 import com.destroystokyo.paper.event.server.ServerTickEndEvent;
+import com.destroystokyo.paper.event.server.ServerTickStartEvent;
 import me.vermulst.multibreak.config.Config;
 import me.vermulst.multibreak.multibreak.BreakManager;
 import org.bukkit.Bukkit;
@@ -33,6 +34,11 @@ public class RefreshEvents implements Listener {
         if (!breakManager.isBreaking(uuid)) return;
         if (!e.hasChangedPosition() && !e.hasChangedOrientation()) return;
         breakManager.getMovedPlayers().add(uuid);
+    }
+
+    @EventHandler
+    public void serverTickStart(ServerTickStartEvent e) {
+
     }
 
 
