@@ -71,12 +71,14 @@ public class MultiBreakRunnable extends BukkitRunnable {
 
             if (multiBreak == null) {
                 multiBreak = breakManager.initMultiBreak(p, blockMining, this.figure);
-                if (this.isStaticBreak) {
-                    multiBreak.setLastTick(Bukkit.getCurrentTick());
-                }
                 if (multiBreak == null) {
                     cancelMultiBreak(null);
                     return;
+                }
+                if (this.isStaticBreak) {
+                    multiBreak.setLastTick(Bukkit.getCurrentTick());
+                } else {
+                    multiBreak.setLastTick(-1);
                 }
             }
 

@@ -480,6 +480,9 @@ public class MultiBreak {
     }
 
     public void setLastTick(int lastTick) {
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            p.sendMessage("setting last tick " + lastTick);
+        }
         this.lastTick = lastTick;
     }
 
