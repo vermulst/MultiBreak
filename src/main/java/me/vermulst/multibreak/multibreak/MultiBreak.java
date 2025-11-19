@@ -104,6 +104,7 @@ public class MultiBreak {
 
         this.progressBroken = this.getDestroySpeedMain(serverPlayer);
         this.lastStage = -1;
+        this.paused = false;
     }
 
 

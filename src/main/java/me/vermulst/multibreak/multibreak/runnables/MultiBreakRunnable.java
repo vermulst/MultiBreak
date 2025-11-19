@@ -37,7 +37,7 @@ public class MultiBreakRunnable extends BukkitRunnable {
     public void run() {
         UUID uuid = p.getUniqueId();
         MultiBreak multiBreak = breakManager.getMultiBreak(p);
-        boolean isInitializedStaticBreak = multiBreak != null && multiBreak.isStaticBreak();
+        boolean isInitializedStaticBreak = multiBreak != null && isStaticBreak;
         boolean hasMoved = !init;
         if (!hasMoved && breakManager.getMovedPlayers().containsKey(uuid) && !isInitializedStaticBreak) {
             int movedTick = breakManager.getMovedPlayers().get(uuid);
@@ -77,8 +77,6 @@ public class MultiBreakRunnable extends BukkitRunnable {
                 }
                 if (this.isStaticBreak) {
                     multiBreak.setLastTick(Bukkit.getCurrentTick());
-                } else {
-                    multiBreak.setLastTick(-1);
                 }
             }
 
