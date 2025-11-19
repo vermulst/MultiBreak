@@ -71,6 +71,12 @@ public class MultiBreak {
 
     public MultiBreak(Player p, Block block, Vector playerDirection, Figure figure, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
         this.serverLevel = ((CraftWorld)block.getWorld()).getHandle();
+        ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
+        this.blockPos = CraftLocation.toBlockPosition(block.getLocation());
+        this.blockState = serverLevel.getBlockState(this.blockPos);
+        this.isGrounded = p.isOnGround();
+        this.isSubmerged = serverPlayer.isEyeInFluid(FluidTags.WATER);
+
         this.playerUUID = p.getUniqueId();
         this.nearbyPlayers = getNearbyPlayerUUIDs(block.getLocation());
         this.updateNearbyPlayerConnections();
@@ -79,17 +85,17 @@ public class MultiBreak {
         this.playerDirection = IntVector.of(playerDirection);
         this.initBlocks(p, figure, playerDirection, includedMaterials, ignoredMaterials);
 
+        this.progressBroken = this.getDestroySpeedMain(serverPlayer);
+    }
+
+    public void reset(Player p, Block block, Vector playerDirection, Figure figure, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
+        this.serverLevel = ((CraftWorld)block.getWorld()).getHandle();
         ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
         this.blockPos = CraftLocation.toBlockPosition(block.getLocation());
         this.blockState = serverLevel.getBlockState(this.blockPos);
         this.isGrounded = p.isOnGround();
         this.isSubmerged = serverPlayer.isEyeInFluid(FluidTags.WATER);
 
-        this.progressBroken = this.getDestroySpeedMain(serverPlayer);
-    }
-
-    public void reset(Player p, Block block, Vector playerDirection, Figure figure, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
-        this.serverLevel = ((CraftWorld)block.getWorld()).getHandle();
         this.nearbyPlayers = getNearbyPlayerUUIDs(block.getLocation());
         this.updateNearbyPlayerConnections();
         this.updateParticleBuilderReceivers(this.nearbyPlayers);
@@ -99,11 +105,6 @@ public class MultiBreak {
         this.block = block;
         this.playerDirection = IntVector.of(playerDirection);
         this.initBlocks(p, figure, playerDirection, includedMaterials, ignoredMaterials);
-
-        ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
-        this.blockPos = CraftLocation.toBlockPosition(block.getLocation());
-        this.blockState = serverLevel.getBlockState(this.blockPos);
-        this.checkDestroySpeedChange(p);
 
         this.progressBroken = this.getDestroySpeedMain(serverPlayer);
         this.lastStage = -1;
@@ -470,7 +471,9 @@ public class MultiBreak {
     }
 
     public MultiBlock[] getMultiBlockSnapshot() {
-        return Arrays.copyOf(this.multiBlocks, this.multiBlocks.length);
+        return Arrays.stream(this.multiBlocks)
+                .filter(Objects::nonNull)
+                .toArray(MultiBlock[]::new);
     }
 
     public void invalidateDestroySpeedCache() {
