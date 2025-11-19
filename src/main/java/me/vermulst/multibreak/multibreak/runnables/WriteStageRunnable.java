@@ -16,17 +16,17 @@ public class WriteStageRunnable extends BukkitRunnable {
 
     private final int stage;
     private final ServerGamePacketListenerImpl[] connections;
-    private final MultiBlock[] multiBlocks;
+    private final MultiBlock[] multiBlocksSnapshot;
     private final Block mainBlock;
     private final ReentrantLock lock;
     private final MultiBreak multiBreak;
 
-    public WriteStageRunnable(MultiBlock[] multiBlocks, Block mainBlock, int stage,
+    public WriteStageRunnable(MultiBlock[] multiBlocksSnapshot, Block mainBlock, int stage,
                               ServerGamePacketListenerImpl[] connections, ReentrantLock lock,
                               MultiBreak multiBreak) {
         this.stage = stage;
         this.connections = connections;
-        this.multiBlocks = multiBlocks;
+        this.multiBlocksSnapshot = multiBlocksSnapshot;
         this.mainBlock = mainBlock;
         this.lock = lock;
         this.multiBreak = multiBreak;
@@ -37,13 +37,13 @@ public class WriteStageRunnable extends BukkitRunnable {
     public void run() {
         if (this.stage != -1 && multiBreak.hasEnded()) return;
 
-        int capacity = Math.max(this.multiBlocks.length - 1, 0);
+        int capacity = Math.max(this.multiBlocksSnapshot.length - 1, 0);
         List<ClientboundBlockDestructionPacket> packetsToSend = new ArrayList<>(capacity);
         try {
             lock.lock();
             if (this.stage != -1 && multiBreak.hasEnded()) return;
 
-            for (MultiBlock multiBlock : this.multiBlocks) {
+            for (MultiBlock multiBlock : this.multiBlocksSnapshot) {
                 if (!multiBlock.isVisible()) continue;
                 if (multiBlock.getBlock().equals(mainBlock)) continue;
 

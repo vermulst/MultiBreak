@@ -163,6 +163,7 @@ public class BreakManager {
             // if it did finish, multiblock is already removed by break event
             if (!finished) {
                 for (MultiBlock multiBlock : multiBreak.getMultiBlocks()) {
+                    if (multiBlock == null) continue;
                     Location location = multiBlock.getLocation();
                     if (!multiBreakLocationMap.containsKey(location)) continue;
                     Set<MultiBreak> multiBreaks = multiBreakLocationMap.get(location);
@@ -211,7 +212,7 @@ public class BreakManager {
         if (!multiBreak.isValid(includedMaterials, ignoredMaterials)) return null;
 
         MultiBlock[] multiBlocks =  multiBreak.getMultiBlocks();
-        for (MultiBlock mb : multiBreak.getMultiBlocks()) {
+        for (MultiBlock mb : multiBlocks) {
             Location location = mb.getLocation();
             multiBreakLocationMap
                     .computeIfAbsent(location, k -> new HashSet<>(multiBlocks.length))

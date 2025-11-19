@@ -20,6 +20,7 @@ public class Config {
     private Map<Material, String> materialOptions;
     private final EnumSet<Material> includedMaterials = EnumSet.noneOf(Material.class);
     private final EnumSet<Material> ignoredMaterials = EnumSet.noneOf(Material.class);
+    private int playSoundPingTreshold = 50;
 
     private final boolean[] options = new boolean[] {
             true, // fair mode
@@ -111,11 +112,18 @@ public class Config {
         fileConfiguration.set("ignored_materials", ignoredMaterialNames);
         fileConfiguration.setComments("ignored_materials", List.of("", "List of block types ignored by multibreaks."));
 
-        /** Max range **/
+        /** Play sound ping treshold **/
+        fileConfiguration.set("play_sound_ping_treshold", this.playSoundPingTreshold);
+        fileConfiguration.setComments("play_sound_ping_treshold", List.of(
+                "",
+                "The maximum ping (in ms) a player can have to hear multiple block breaks.",
+                "For players with high ping, this sound can become annoying, since it is desynced with the main block."
+        ));
+
+        /** Legacy */
+        fileConfiguration.set("fair_mode_leeway", null);
+        fileConfiguration.set("legacy_mode", null);
         fileConfiguration.set("max_break_range", null);
-        //fileConfiguration.setComments("max_break_range",
-        //        List.of("", "The maximum range in blocks from which a player can break blocks with multibreak.",
-        //                "Needed when for example increasing the block range attribute of a player."));
     }
 
     /** Load the config from file
@@ -131,6 +139,7 @@ public class Config {
         save = save || this.loadMaterialPresets(fileConfiguration);
         save = save || this.loadIncludedMaterials(fileConfiguration);
         save = save || this.loadIgnoredMaterials(fileConfiguration);
+        save = save || this.loadPlaySoundPingTreshold(fileConfiguration);
         if (save) {
             this.save(fileConfiguration);
         }
@@ -236,6 +245,13 @@ public class Config {
         return save;
     }
 
+    private boolean loadPlaySoundPingTreshold(FileConfiguration fileConfiguration) {
+        int defaultTreshold = 50;
+        boolean save = setIfMissing(fileConfiguration, "play_sound_ping_treshold", defaultTreshold);
+        this.playSoundPingTreshold = fileConfiguration.getInt("play_sound_ping_treshold", defaultTreshold);
+        return save;
+    }
+
     private boolean setIfMissing(ConfigurationSection config, String key, Object defaultValue) {
         if (!config.getKeys(false).contains(key)) {
             config.set(key, defaultValue);
@@ -284,7 +300,7 @@ public class Config {
         return this.options[0];
     }
 
-    public boolean isAsyncEnabled_() {
-        return this.options[1];
+    public int getPlaySoundPingTreshold() {
+        return playSoundPingTreshold;
     }
 }

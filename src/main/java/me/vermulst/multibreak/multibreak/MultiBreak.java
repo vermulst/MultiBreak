@@ -98,7 +98,6 @@ public class MultiBreak {
 
         this.block = block;
         this.playerDirection = IntVector.of(playerDirection);
-
         this.initBlocks(p, figure, playerDirection, includedMaterials, ignoredMaterials);
 
         ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
@@ -162,23 +161,6 @@ public class MultiBreak {
         this.checkVisible(p);
     }
 
-    private int getCapacity(FigureType figureType, int width, int height, int depth) {
-        switch (figureType) {
-            case LINEAR -> {
-                return width * height * depth;
-            }
-            case CIRCULAR -> {
-                return (width * height * depth * 11) / 21;
-            }
-            case TRIANGULAR -> {
-                return (width * height * depth) / 2;
-            }
-            default -> {
-                return 0;
-            }
-        }
-    }
-
     public void tick() {
         Player p = this.getPlayer();
         if (p == null) {
@@ -223,34 +205,27 @@ public class MultiBreak {
         MultiBlock[] multiBlockSnapshot = this.getMultiBlockSnapshot();
         this.writeStage(-1, multiBlockSnapshot);
         if (!finished) return;
-        World world = this.getBlock().getWorld();
+        boolean playSound = p.getPing() < Config.getInstance().getPlaySoundPingTreshold();
         int size = multiBlockSnapshot.length - 1;
-        float volume = (float) (1 / Math.log(((size) + 1) * Math.E));
+        World world = playSound ? this.getBlock().getWorld() : null;
+        float volume = playSound ? (float) (1 / Math.log(((size) + 1) * Math.E)) : 0F;
 
-        List<Block> blocksToBreak = new ArrayList<>();
-        List<BlockPos> blockPosToBreak = new ArrayList<>();
+        Map<Material, BlockData> blockDataCache = new EnumMap<>(Material.class);
         for (MultiBlock multiBlock : multiBlockSnapshot) {
             Block block = multiBlock.getBlock();
             Material blockType = block.getType();
 
             if (Config.getInstance().getIgnoredMaterials().contains(blockType)) continue;
             block.setMetadata("multi-broken", new FixedMetadataValue(Main.getInstance(), true));
-            if (multiBlock.isVisible()) {
-                block.setMetadata("isVisible", new FixedMetadataValue(Main.getInstance(), true));
-            }
-            blocksToBreak.add(block);
-            blockPosToBreak.add(CraftLocation.toBlockPosition(block.getLocation()));
-        }
-
-        Map<Material, BlockData> blockDataCache = new EnumMap<>(Material.class);
-        for (Block block : blocksToBreak) {
             BlockData blockData = blockDataCache.computeIfAbsent(block.getType(), Material::createBlockData);
             Location location = block.getLocation();
             boolean broken = p.breakBlock(block);
             if (!broken) continue;
-            world.playSound(location, blockData.getSoundGroup().getBreakSound(), volume, 1F);
-            if (block.hasMetadata("isVisible")) {
-                block.removeMetadata("isVisible", Main.getInstance());
+            if (playSound) {
+                world.playSound(location, blockData.getSoundGroup().getBreakSound(), volume, 1F);
+            }
+
+            if (multiBlock.isVisible()) {
                 breakParticleBuilder
                         .location(location.add(0.5, 0.5, 0.5))
                         .data(blockData)
@@ -272,6 +247,7 @@ public class MultiBreak {
         adjustedProgress = Math.min(adjustedProgress, 1.0f);
 
         int stage = (int) (9 * adjustedProgress);
+
         if (lastStage == -1 || stage > this.lastStage) {
             this.writeStage(stage, multiBlockSnapshot);
             this.lastStage = stage;
@@ -354,17 +330,21 @@ public class MultiBreak {
         if (!fairMode) return;
 
         ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
-        for (MultiBlock multiBlock : this.getMultiBlocks()) {
+        float mainBlockProgressPerTick = this.getDestroySpeed(serverPlayer, this.blockPos);
+        for (int i = 0; i < this.multiBlocks.length; i++) {
+            MultiBlock multiBlock = this.multiBlocks[i];
             BlockPos blockPos = CraftLocation.toBlockPosition(multiBlock.getBlock().getLocation());
             float blockProgressPerTick = this.getDestroySpeed(serverPlayer, blockPos);
             if (blockProgressPerTick == Float.POSITIVE_INFINITY) {
                 multiBlock.setVisible(false);
+            } else if (mainBlockProgressPerTick == Float.POSITIVE_INFINITY) {
+                this.multiBlocks[i] = null;
             }
         }
     }
 
 
-    public void playParticles(MultiBlock[] multiBlockSnapshot) {
+    public void playParticles(MultiBlock[] multiBlocksSnapshot) {
         boolean playerDirectionX = (playerDirection.x() == 1);
         boolean playerDirectionY = (playerDirection.y() == 1);
         boolean playerDirectionZ = (playerDirection.z() == 1);
@@ -378,7 +358,7 @@ public class MultiBreak {
         double sideOffsetY = (playerDirectionY) ? 0.5 : 0;
         double sideOffsetZ = (playerDirectionZ) ? 0.5 : 0;
         Location loc = new Location(this.getBlock().getWorld(), 0, 0, 0);
-        WriteParticleRunnable writeParticleRunnable = new WriteParticleRunnable(multiBlockSnapshot, this.getBlock(), particleBuilder, sideOffsetX, sideOffsetY, sideOffsetZ, loc);
+        WriteParticleRunnable writeParticleRunnable = new WriteParticleRunnable(multiBlocksSnapshot, this.getBlock(), particleBuilder, sideOffsetX, sideOffsetY, sideOffsetZ, loc);
         Main.getHighPriorityExecutor().submit(writeParticleRunnable);
     }
 

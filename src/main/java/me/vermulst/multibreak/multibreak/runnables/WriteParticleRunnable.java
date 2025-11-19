@@ -6,19 +6,17 @@ import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.List;
-
 public class WriteParticleRunnable extends BukkitRunnable {
 
-    private final MultiBlock[] multiBlocks;
+    private final MultiBlock[] multiBlocksSnapshot;
     private final Block block;
     private final ParticleBuilder particleBuilder;
     private final double sideOffsetX;
     private final double sideOffsetY;
     private final double sideOffsetZ;
     private final Location loc;
-    public WriteParticleRunnable(MultiBlock[] multiBlocks, Block block, ParticleBuilder particleBuilder, double sideOffsetX, double sideOffsetY, double sideOffsetZ, Location loc) {
-        this.multiBlocks = multiBlocks;
+    public WriteParticleRunnable(MultiBlock[] multiBlocksSnapshot, Block block, ParticleBuilder particleBuilder, double sideOffsetX, double sideOffsetY, double sideOffsetZ, Location loc) {
+        this.multiBlocksSnapshot = multiBlocksSnapshot;
         this.block = block;
         this.particleBuilder = particleBuilder;
         this.sideOffsetX = sideOffsetX;
@@ -29,7 +27,7 @@ public class WriteParticleRunnable extends BukkitRunnable {
 
     @Override
     public void run() {
-        for (MultiBlock multiBlock : multiBlocks) {
+        for (MultiBlock multiBlock : multiBlocksSnapshot) {
             if (multiBlock.getBlock().equals(block)) continue;
             if (!multiBlock.isVisible()) continue;
 
