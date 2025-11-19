@@ -146,6 +146,8 @@ public class BreakManager {
         if (multiBreakTask.containsKey(p.getUniqueId())) {
             endMultiBreak(p, this.getMultiBreak(p), false);
         }
+        MultiBreak multiBreakOffState = this.getMultiBreakOffstate(p);
+        if (multiBreakOffState != null && !isStaticBreak) multiBreakOffState.setLastTick(-1);
         MultiBreakRunnable multiBreakRunnable = new MultiBreakRunnable(p, block, figure, this, isStaticBreak);
         int taskID = multiBreakRunnable.runTaskTimer(Main.getInstance(), 1, 1).getTaskId();
         multiBreakTask.put(p.getUniqueId(), taskID);

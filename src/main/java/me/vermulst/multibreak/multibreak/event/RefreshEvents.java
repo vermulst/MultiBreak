@@ -50,7 +50,6 @@ public class RefreshEvents implements Listener {
                 );
                 previousLocations.put(uuid, newLocation);
                 breakManager.getMovedPlayers().put(uuid, Bukkit.getCurrentTick());
-                p.sendMessage("moved");
             }
         }
     }

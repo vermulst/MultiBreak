@@ -36,11 +36,13 @@ public class MultiBreakRunnable extends BukkitRunnable {
     @Override
     public void run() {
         UUID uuid = p.getUniqueId();
+        MultiBreak multiBreak = breakManager.getMultiBreak(p);
+        boolean isInitializedStaticBreak = multiBreak != null && multiBreak.isStaticBreak();
         boolean hasMoved = !init;
-        if (!hasMoved && breakManager.getMovedPlayers().containsKey(uuid)) {
+        if (!hasMoved && breakManager.getMovedPlayers().containsKey(uuid) && !isInitializedStaticBreak) {
             int movedTick = breakManager.getMovedPlayers().get(uuid);
             int difference = Bukkit.getCurrentTick() - movedTick;
-            int potentialRaytraceDelayTicks = (int) Math.ceil((double) (p.getPing() + 100) / 50);
+            int potentialRaytraceDelayTicks = 2 + (p.getPing() + 49) / 50;
             if (difference <= potentialRaytraceDelayTicks) {
                 hasMoved = true;
             } else {
@@ -48,9 +50,6 @@ public class MultiBreakRunnable extends BukkitRunnable {
             }
         }
         RayTraceResult rayTraceResult = hasMoved ? BreakUtils.getRayTraceResult(p) : null;
-
-        // check once, if block changed since from tick 0 -> 1.
-        MultiBreak multiBreak = breakManager.getMultiBreak(p);
 
         if (hasMoved) {
             if (rayTraceResult == null) {
@@ -61,6 +60,7 @@ public class MultiBreakRunnable extends BukkitRunnable {
             Block blockMining = rayTraceResult.getHitBlock();
             BlockFace blockFace = rayTraceResult.getHitBlockFace();
 
+            // check once, if block changed since from tick 0 -> 1.
             if (!init) {
                 if (block.getType().isAir() || !blockMining.equals(block)) {
                     cancelMultiBreak(multiBreak);

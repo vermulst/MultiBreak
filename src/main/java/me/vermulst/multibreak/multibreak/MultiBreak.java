@@ -192,7 +192,7 @@ public class MultiBreak {
 
 
     public void checkPause() {
-        if (this.lastTick == -1) return;
+        if (!this.isStaticBreak()) return;
         int currentTick = Bukkit.getServer().getCurrentTick();
         this.paused = (currentTick - this.lastTick) > 1;
     }
@@ -364,9 +364,9 @@ public class MultiBreak {
 
 
     public void playParticles(List<MultiBlock> multiBlockSnapshot) {
-        boolean playerDirectionX = (playerDirection.x == 1);
-        boolean playerDirectionY = (playerDirection.y == 1);
-        boolean playerDirectionZ = (playerDirection.z == 1);
+        boolean playerDirectionX = (playerDirection.x() == 1);
+        boolean playerDirectionY = (playerDirection.y() == 1);
+        boolean playerDirectionZ = (playerDirection.z() == 1);
         double offsetX = 0.45, offsetY = 0.45, offsetZ = 0.45;
         if (playerDirectionX) offsetX = 0.0;
         if (playerDirectionY) offsetY = 0.0;
@@ -461,6 +461,10 @@ public class MultiBreak {
 
     public int getEnded() {
         return ended;
+    }
+
+    public boolean isStaticBreak() {
+        return lastTick != -1;
     }
 
     public void setProgressTicks(int progressTicks) {
