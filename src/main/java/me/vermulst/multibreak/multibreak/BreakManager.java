@@ -8,6 +8,7 @@ import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.item.FigureItemDataType;
 import me.vermulst.multibreak.api.event.MultiBreakStartEvent;
 import me.vermulst.multibreak.multibreak.runnables.MultiBreakRunnable;
+import me.vermulst.multibreak.utils.BlockFilter;
 import me.vermulst.multibreak.utils.BreakUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
@@ -237,13 +238,7 @@ public class BreakManager {
     public void filter(Set<Block> blocks, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
         blocks.removeIf(block -> {
             Material mainBlockType = block.getType();
-            if (includedMaterials != null && !includedMaterials.isEmpty() && !includedMaterials.contains(mainBlockType)) {
-                return true;
-            }
-            if (ignoredMaterials != null && !ignoredMaterials.isEmpty() && ignoredMaterials.contains(mainBlockType)) {
-                return true;
-            }
-            return false;
+            return BlockFilter.isExcluded(mainBlockType, includedMaterials, ignoredMaterials);
         });
     }
 

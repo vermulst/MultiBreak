@@ -87,7 +87,7 @@ public abstract class Figure {
 
 
     private Set<Vector> applyRotation(Set<Vector> vectors) {
-        HashSet<Vector> rotatedVectors = new HashSet<>();
+        Set<Vector> rotatedVectors = new HashSet<>();
         Matrix4x4 rotationMatrix = new Matrix4x4();
         rotationMatrix.setRotationX(this.getRotationWidth() * (Math.PI / 180));
         rotationMatrix.setRotationY(this.getRotationHeight() * (Math.PI / 180));
@@ -95,10 +95,10 @@ public abstract class Figure {
 
         for (Vector vector : vectors) {
             rotationMatrix.transform(vector);
-            vector.setX(Math.round(vector.getX()));
-            vector.setY(Math.round(vector.getY()));
-            vector.setZ(Math.round(vector.getZ()));
-            rotatedVectors.add(new Vector(Math.round(vector.getX()), Math.round(vector.getY()), Math.round(vector.getZ())));
+            long x = Math.round(vector.getX());
+            long y = Math.round(vector.getY());
+            long z = Math.round(vector.getZ());
+            rotatedVectors.add(new Vector(x, y, z));
         }
         return rotatedVectors;
     }

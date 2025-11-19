@@ -11,8 +11,8 @@ import java.util.Map;
 
 public class Commands {
 
-    Map<String, CommandExecutor> commands = new HashMap<>();
-    Map<String, TabCompleter> tabCompleters = new HashMap<>();
+    private final Map<String, CommandExecutor> commands = new HashMap<>();
+    private final Map<String, TabCompleter> tabCompleters = new HashMap<>();
 
     public void init() {
         commands.put("multibreak", new MultiBreakCommand());

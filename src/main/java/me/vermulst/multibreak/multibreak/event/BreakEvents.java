@@ -109,14 +109,17 @@ public class BreakEvents implements Listener {
         Figure figure = breakManager.getFigure(p, item);
         if (figure == null) return;
         MultiBreak multiBreak = breakManager.getMultiBreak(p);
+
+        // Update static break
         if (multiBreak != null) {
-            // probably gets called somehow
-            if (!multiBreak.isStaticBreak()) return;
+            if (multiBreak.isNotStatic()) return;
             RayTraceResult rayTraceResult = BreakUtils.getRayTraceResultExact(p);
             if (rayTraceResult == null) return;
             multiBreak.setLastTick(Bukkit.getCurrentTick());
             return;
         }
+
+        // Initiate static breaks
         if (breakManager.isBreaking(p.getUniqueId())) return;
         MultiBreak multiBreakOffState = breakManager.getMultiBreakOffstate(p);
         if (multiBreakOffState == null) return;

@@ -7,6 +7,7 @@ import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.figure.types.FigureType;
 import me.vermulst.multibreak.multibreak.runnables.WriteParticleRunnable;
 import me.vermulst.multibreak.multibreak.runnables.WriteStageRunnable;
+import me.vermulst.multibreak.utils.BlockFilter;
 import me.vermulst.multibreak.utils.IntVector;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -30,6 +31,10 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 
 public class MultiBreak {
+
+    private static final int CHECK_PLAYERS_INTERVAL = 32;
+    private static final int PLAY_PARTICLES_INTERVAL = 2;
+    private static final double CHECK_PLAYERS_RADIUS = 32;
 
     private final UUID playerUUID;
     private Set<UUID> nearbyPlayers;
@@ -182,18 +187,18 @@ public class MultiBreak {
         if (this.paused) return;
 
         this.progressTicks++;
-        if ((this.progressTicks & 31) == 0) this.checkPlayers(); // every 32 ticks
+        if ((this.progressTicks & (CHECK_PLAYERS_INTERVAL - 1)) == 0) this.checkPlayers();
         this.checkDestroySpeedChange(p);
         //this.checkRemove();
 
         List<MultiBlock> multiBlockSnapshot = new ArrayList<>(this.multiBlocks);
-        if ((this.progressTicks & 1) == 0) this.playParticles(multiBlockSnapshot); // every 2 ticks
+        if ((this.progressTicks & (PLAY_PARTICLES_INTERVAL - 1)) == 0) this.playParticles(multiBlockSnapshot);
         updateBlockAnimationPacket(p, multiBlockSnapshot);
     }
 
 
     public void checkPause() {
-        if (!this.isStaticBreak()) return;
+        if (this.isNotStatic()) return;
         int currentTick = Bukkit.getServer().getCurrentTick();
         this.paused = (currentTick - this.lastTick) > 1;
     }
@@ -343,13 +348,10 @@ public class MultiBreak {
     }
 
     public void checkValid(Player p, EnumSet<Material> includedMaterials, EnumSet<Material> excludedMaterials) {
-        if (includedMaterials != null && !includedMaterials.isEmpty()) {
-            this.getMultiBlocks().removeIf(multiBlock -> !includedMaterials.contains(multiBlock.getBlock().getType()));
-        }
-        if (excludedMaterials != null && !excludedMaterials.isEmpty()) {
-            this.getMultiBlocks().removeIf(multiBlock -> excludedMaterials.contains(multiBlock.getBlock().getType()));
-        }
-        this.getMultiBlocks().removeIf(multiBlock -> multiBlock.getBlock().getType().equals(Material.AIR));
+        this.getMultiBlocks().removeIf(multiBlock -> {
+            Material type = multiBlock.getBlock().getType();
+            return BlockFilter.isExcluded(type, includedMaterials, excludedMaterials);
+        });
         boolean fairMode = Config.getInstance().isFairModeEnabled();
         if (!fairMode) return;
 
@@ -392,10 +394,9 @@ public class MultiBreak {
         double x = blockLoc.getX();
         double y = blockLoc.getY();
         double z = blockLoc.getZ();
-        double radius = 32.0;
         AABB aabb = new AABB(
-                x - radius, y - radius, z - radius,
-                x + radius, y + radius, z + radius
+                x - CHECK_PLAYERS_RADIUS, y - CHECK_PLAYERS_RADIUS, z - CHECK_PLAYERS_RADIUS,
+                x + CHECK_PLAYERS_RADIUS, y + CHECK_PLAYERS_RADIUS, z + CHECK_PLAYERS_RADIUS
         );
 
         List<net.minecraft.world.entity.Entity> entityList = this.serverLevel.getEntities((net.minecraft.world.entity.Entity) null, aabb, isPlayer);
@@ -464,8 +465,8 @@ public class MultiBreak {
         return ended;
     }
 
-    public boolean isStaticBreak() {
-        return lastTick != -1;
+    public boolean isNotStatic() {
+        return lastTick == -1;
     }
 
     public void setProgressTicks(int progressTicks) {
@@ -476,19 +477,8 @@ public class MultiBreak {
         this.progressBroken = progressBroken;
     }
 
-    public void setPaused(boolean paused) {
-        this.paused = paused;
-    }
-
     public void setLastTick(int lastTick) {
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            p.sendMessage("setting last tick " + lastTick);
-        }
         this.lastTick = lastTick;
-    }
-
-    public int getLastTick() {
-        return lastTick;
     }
 
     @Override
