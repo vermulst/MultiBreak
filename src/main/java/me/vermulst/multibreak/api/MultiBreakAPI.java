@@ -3,11 +3,16 @@ package me.vermulst.multibreak.api;
 import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.item.FigureItemDataType;
+import me.vermulst.multibreak.multibreak.BreakManager;
+import me.vermulst.multibreak.utils.BreakUtils;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.UUID;
 
 public final class MultiBreakAPI {
 
@@ -30,7 +35,7 @@ public final class MultiBreakAPI {
      * Sets a Figure onto an ItemStack, returning the modified ItemStack.
      *
      * @param itemStack The ItemStack to modify.
-     * @param figure The Figure to apply.
+     * @param figure    The Figure to apply.
      * @return The modified ItemStack with the Figure data.
      */
     @NotNull
@@ -92,5 +97,27 @@ public final class MultiBreakAPI {
      */
     public static boolean isMultiBroken(@NotNull Block block) {
         return block.hasMetadata("multi-broken");
+    }
+
+
+    /**
+     * Call this whenever you update a player's interaction range.
+     * In order to keep MultiBreak's internal cache in sync.
+     *
+     * @param uuid - uuid of player
+     */
+    public static void updateInteractionRange(UUID uuid) {
+        BreakUtils.interactionRangeCache.remove(uuid);
+    }
+
+
+    /**
+     * Call whenever you update the main hand item of a player.
+     * In order to keep MultiBreak's internal cache in sync.
+     *
+     * @param p - player
+     */
+    public static void updateTool(Player p) {
+        BreakManager.getInstance().refreshTool(p);
     }
 }

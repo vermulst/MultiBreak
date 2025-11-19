@@ -1,8 +1,8 @@
 package me.vermulst.multibreak.utils;
 
 public record SimpleLocation(double x, double y, double z, float yaw, float pitch) {
-    private static final double POS_EPSILON = 0.005;
-    private static final float ROT_EPSILON = 0.1f;
+    private static final double POS_EPSILON = 0.01;
+    private static final float ROT_EPSILON = 0.2f;
 
     public boolean isDifferent(org.bukkit.Location loc) {
         if (Math.abs(this.yaw - loc.getYaw()) > ROT_EPSILON) return true;

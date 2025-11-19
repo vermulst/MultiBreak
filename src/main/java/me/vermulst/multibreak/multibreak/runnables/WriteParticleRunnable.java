@@ -10,14 +10,14 @@ import java.util.List;
 
 public class WriteParticleRunnable extends BukkitRunnable {
 
-    private final List<MultiBlock> multiBlocks;
+    private final MultiBlock[] multiBlocks;
     private final Block block;
     private final ParticleBuilder particleBuilder;
     private final double sideOffsetX;
     private final double sideOffsetY;
     private final double sideOffsetZ;
     private final Location loc;
-    public WriteParticleRunnable(List<MultiBlock> multiBlocks, Block block, ParticleBuilder particleBuilder, double sideOffsetX, double sideOffsetY, double sideOffsetZ, Location loc) {
+    public WriteParticleRunnable(MultiBlock[] multiBlocks, Block block, ParticleBuilder particleBuilder, double sideOffsetX, double sideOffsetY, double sideOffsetZ, Location loc) {
         this.multiBlocks = multiBlocks;
         this.block = block;
         this.particleBuilder = particleBuilder;

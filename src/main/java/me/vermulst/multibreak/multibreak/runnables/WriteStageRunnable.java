@@ -15,14 +15,14 @@ import java.util.concurrent.locks.ReentrantLock;
 public class WriteStageRunnable extends BukkitRunnable {
 
     private final int stage;
-    private final List<ServerGamePacketListenerImpl> connections;
-    private final List<MultiBlock> multiBlocks;
+    private final ServerGamePacketListenerImpl[] connections;
+    private final MultiBlock[] multiBlocks;
     private final Block mainBlock;
     private final ReentrantLock lock;
     private final MultiBreak multiBreak;
 
-    public WriteStageRunnable(List<MultiBlock> multiBlocks, Block mainBlock, int stage,
-                              List<ServerGamePacketListenerImpl> connections, ReentrantLock lock,
+    public WriteStageRunnable(MultiBlock[] multiBlocks, Block mainBlock, int stage,
+                              ServerGamePacketListenerImpl[] connections, ReentrantLock lock,
                               MultiBreak multiBreak) {
         this.stage = stage;
         this.connections = connections;
@@ -37,7 +37,7 @@ public class WriteStageRunnable extends BukkitRunnable {
     public void run() {
         if (this.stage != -1 && multiBreak.hasEnded()) return;
 
-        int capacity = Math.max(this.multiBlocks.size() - 1, 0);
+        int capacity = Math.max(this.multiBlocks.length - 1, 0);
         List<ClientboundBlockDestructionPacket> packetsToSend = new ArrayList<>(capacity);
         try {
             lock.lock();
@@ -69,6 +69,7 @@ public class WriteStageRunnable extends BukkitRunnable {
         // Send packets outside lock
         if (!packetsToSend.isEmpty()) {
             for (ServerGamePacketListenerImpl connection : connections) {
+                if (connection == null) continue;
                 for (ClientboundBlockDestructionPacket packet : packetsToSend) {
                     connection.send(packet);
                 }

@@ -51,8 +51,8 @@ public class MultiBreakStartEvent extends Event {
         return multiBreak;
     }
 
-    public List<Block> getBlocks() {
-        return new ArrayList<>(multiBreak.getBlocks());
+    public Block[] getBlocks() {
+        return multiBreak.getBlocks();
     }
 
     public @NotNull Block getBlock() {

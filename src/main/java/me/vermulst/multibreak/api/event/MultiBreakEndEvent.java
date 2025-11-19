@@ -7,8 +7,6 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
-
 public class MultiBreakEndEvent extends Event {
     private static final HandlerList HANDLERS_LIST = new HandlerList();
     public static HandlerList getHandlerList() {
@@ -42,7 +40,7 @@ public class MultiBreakEndEvent extends Event {
         return multiBreak;
     }
 
-    public List<Block> getBlocks() {
+    public Block[] getBlocks() {
         return multiBreak.getBlocks();
     }
 

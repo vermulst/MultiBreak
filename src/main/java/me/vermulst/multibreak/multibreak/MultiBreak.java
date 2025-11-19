@@ -38,13 +38,13 @@ public class MultiBreak {
 
     private final UUID playerUUID;
     private Set<UUID> nearbyPlayers;
-    private List<ServerGamePacketListenerImpl> nearbyPlayerConnections;
+    private ServerGamePacketListenerImpl[] nearbyPlayerConnections;
     private Block block;
     private IntVector playerDirection;
     private int progressTicks; // ticks
     private float progressBroken; // 0 - 1.0
     private int lastStage = -1;
-    private List<MultiBlock> multiBlocks;
+    private MultiBlock[] multiBlocks;
     private final ReentrantLock packetLock = new ReentrantLock();
     private volatile int ended = -1; // tick at which it was broken, 0 = canceled
 
@@ -69,7 +69,7 @@ public class MultiBreak {
     private BlockState blockState;
 
 
-    public MultiBreak(Player p, Block block, Vector playerDirection, Figure figure) {
+    public MultiBreak(Player p, Block block, Vector playerDirection, Figure figure, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
         this.serverLevel = ((CraftWorld)block.getWorld()).getHandle();
         this.playerUUID = p.getUniqueId();
         this.nearbyPlayers = getNearbyPlayerUUIDs(block.getLocation());
@@ -77,7 +77,7 @@ public class MultiBreak {
         this.updateParticleBuilderReceivers(this.nearbyPlayers);
         this.block = block;
         this.playerDirection = IntVector.of(playerDirection);
-        this.initBlocks(p, figure, playerDirection);
+        this.initBlocks(p, figure, playerDirection, includedMaterials, ignoredMaterials);
 
         ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
         this.blockPos = CraftLocation.toBlockPosition(block.getLocation());
@@ -88,7 +88,7 @@ public class MultiBreak {
         this.progressBroken = this.getDestroySpeedMain(serverPlayer);
     }
 
-    public void reset(Player p, Block block, Vector playerDirection, Figure figure) {
+    public void reset(Player p, Block block, Vector playerDirection, Figure figure, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
         this.serverLevel = ((CraftWorld)block.getWorld()).getHandle();
         this.nearbyPlayers = getNearbyPlayerUUIDs(block.getLocation());
         this.updateNearbyPlayerConnections();
@@ -99,8 +99,7 @@ public class MultiBreak {
         this.block = block;
         this.playerDirection = IntVector.of(playerDirection);
 
-        this.multiBlocks.clear();
-        this.initBlocks(p, figure, playerDirection);
+        this.initBlocks(p, figure, playerDirection, includedMaterials, ignoredMaterials);
 
         ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
         this.blockPos = CraftLocation.toBlockPosition(block.getLocation());
@@ -148,16 +147,19 @@ public class MultiBreak {
         }
     }
 
-    public void initBlocks(Player p, Figure figure, Vector blockFaceDirection) {
+    public void initBlocks(Player p, Figure figure, Vector blockFaceDirection, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
         if (figure == null) return;
 
-        int capacity = this.getCapacity(figure.getFigureType(), figure.getWidth(), figure.getHeight(), figure.getDepth());
-        this.multiBlocks = new ArrayList<>(capacity);
         Set<Block> blocks = figure.getBlocks(p, this.getBlock(), blockFaceDirection);
+        Set<MultiBlock> multiBlocks = new HashSet<>(blocks.size());
         for (Block block : blocks) {
+            Material material = block.getType();
+            if (BlockFilter.isExcluded(material, includedMaterials, ignoredMaterials)) continue;
             MultiBlock multiBlock = new MultiBlock(block);
-            this.getMultiBlocks().add(multiBlock);
+            multiBlocks.add(multiBlock);
         }
+        this.multiBlocks = multiBlocks.toArray(new MultiBlock[0]);
+        this.checkVisible(p);
     }
 
     private int getCapacity(FigureType figureType, int width, int height, int depth) {
@@ -191,7 +193,7 @@ public class MultiBreak {
         this.checkDestroySpeedChange(p);
         //this.checkRemove();
 
-        List<MultiBlock> multiBlockSnapshot = new ArrayList<>(this.multiBlocks);
+        MultiBlock[] multiBlockSnapshot = this.getMultiBlockSnapshot();
         if ((this.progressTicks & (PLAY_PARTICLES_INTERVAL - 1)) == 0) this.playParticles(multiBlockSnapshot);
         updateBlockAnimationPacket(p, multiBlockSnapshot);
     }
@@ -218,11 +220,11 @@ public class MultiBreak {
 
     public void end(Player p, boolean finished) {
         this.ended = finished ? Bukkit.getCurrentTick() : 0;
-        List<MultiBlock> multiBlockSnapshot = new ArrayList<>(this.multiBlocks);
+        MultiBlock[] multiBlockSnapshot = this.getMultiBlockSnapshot();
         this.writeStage(-1, multiBlockSnapshot);
         if (!finished) return;
         World world = this.getBlock().getWorld();
-        int size = multiBlockSnapshot.size() - 1;
+        int size = multiBlockSnapshot.length - 1;
         float volume = (float) (1 / Math.log(((size) + 1) * Math.E));
 
         List<Block> blocksToBreak = new ArrayList<>();
@@ -257,7 +259,7 @@ public class MultiBreak {
         }
     }
 
-    public void updateBlockAnimationPacket(Player p, List<MultiBlock> multiBlockSnapshot) {
+    public void updateBlockAnimationPacket(Player p, MultiBlock[] multiBlockSnapshot) {
         float breakSpeed = this.getDestroySpeedMain(p);
         this.progressBroken += breakSpeed;
         this.progressBroken = Math.min(this.progressBroken, 1.0f);
@@ -277,7 +279,7 @@ public class MultiBreak {
     }
 
 
-    public void writeStage(int stage, List<MultiBlock> multiBlockSnapshot) {
+    public void writeStage(int stage, MultiBlock[] multiBlockSnapshot) {
         WriteStageRunnable writeStageRunnable = new WriteStageRunnable(
                 multiBlockSnapshot,
                 this.getBlock(),
@@ -347,11 +349,7 @@ public class MultiBreak {
         return true;
     }
 
-    public void checkValid(Player p, EnumSet<Material> includedMaterials, EnumSet<Material> excludedMaterials) {
-        this.getMultiBlocks().removeIf(multiBlock -> {
-            Material type = multiBlock.getBlock().getType();
-            return BlockFilter.isExcluded(type, includedMaterials, excludedMaterials);
-        });
+    public void checkVisible(Player p) {
         boolean fairMode = Config.getInstance().isFairModeEnabled();
         if (!fairMode) return;
 
@@ -366,7 +364,7 @@ public class MultiBreak {
     }
 
 
-    public void playParticles(List<MultiBlock> multiBlockSnapshot) {
+    public void playParticles(MultiBlock[] multiBlockSnapshot) {
         boolean playerDirectionX = (playerDirection.x() == 1);
         boolean playerDirectionY = (playerDirection.y() == 1);
         boolean playerDirectionZ = (playerDirection.z() == 1);
@@ -409,13 +407,12 @@ public class MultiBreak {
     }
 
     public void updateNearbyPlayerConnections() {
-        List<ServerGamePacketListenerImpl> connections = new ArrayList<>(this.nearbyPlayers.size());
+        ServerGamePacketListenerImpl[] connections = new ServerGamePacketListenerImpl[this.nearbyPlayers.size()];
+        int index = 0;
         for (UUID uuid : this.nearbyPlayers) {
             Player p = Bukkit.getPlayer(uuid);
-            if (p != null && p.isOnline()) {
-                ServerGamePacketListenerImpl connection = ((CraftPlayer)p).getHandle().connection;
-                connections.add(connection);
-            }
+            if (p == null) continue;
+            connections[index++] = ((CraftPlayer)p).getHandle().connection;
         }
         this.nearbyPlayerConnections = connections;
     }
@@ -424,11 +421,11 @@ public class MultiBreak {
         return Bukkit.getPlayer(this.playerUUID);
     }
 
-    public List<Block> getBlocks() {
-        List<MultiBlock> multiBlocks = this.getMultiBlocks();
-        List<Block> blocks = new ArrayList<>(multiBlocks.size());
-        for (MultiBlock multiBlock : multiBlocks) {
-            blocks.add(multiBlock.getBlock());
+    public Block[] getBlocks() {
+        MultiBlock[] multiBlocks = this.getMultiBlocks();
+        Block[] blocks = new Block[multiBlocks.length];
+        for (int i = 0; i < multiBlocks.length; i++) {
+            blocks[i] = multiBlocks[i].getBlock();
         }
         return blocks;
     }
@@ -441,7 +438,7 @@ public class MultiBreak {
         return progressTicks;
     }
 
-    public List<MultiBlock> getMultiBlocks() {
+    public MultiBlock[] getMultiBlocks() {
         return multiBlocks;
     }
 
@@ -490,6 +487,10 @@ public class MultiBreak {
                 ", multiBlocks=" + multiBlocks +
                 ", ended=" + ended +
                 '}';
+    }
+
+    public MultiBlock[] getMultiBlockSnapshot() {
+        return Arrays.copyOf(this.multiBlocks, this.multiBlocks.length);
     }
 
     public void invalidateDestroySpeedCache() {

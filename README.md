@@ -19,7 +19,7 @@
 <dependency>
 	<groupId>com.github.vermulst</groupId>
 	<artifactId>MultiBreak</artifactId>
-	<version>v1.1.0-prerelease</version>
+	<version>v1.2.0</version>
 	<scope>provided</scope>
 </dependency>
 ```
@@ -44,7 +44,7 @@ dependencies {
 
 @EventHandler
 public void figureRequest(FetchFigureEvent e) {
-	if (!Material.IRON_PICKAXE.equals(e.getItem().getType()) return;
+	if (!Material.IRON_PICKAXE.equals(e.getItem().getType())) return;
 	Figure figure = e.getFigure(); // get figure on the tool
 	Figure newFigure = new FigureLinear(3, 3, 1);
 	e.setFigure(newFigure);
@@ -52,8 +52,8 @@ public void figureRequest(FetchFigureEvent e) {
 
 @EventHandler
 public void filterBlocks(FilterBlocksEvent e) {
-	e.includeOnly(EnumSet.of(Material.GRASS_BLOCK, Material.STONE, Material.DIRT));
-	e.exclude(Material.DIRT)
+	e.includeOnly(EnumSet.of(Material.GRASS_BLOCK, Material.STONE, Material.DIRT)); // replace included list
+	e.exclude(Material.DIRT); // add this to the excluded list
 }
 
 @EventHandler
@@ -78,18 +78,28 @@ public void multiBreakEnd(MultiBreakEndEvent e) {
 
 ```java
 
-public void giveItem() {
-	.
-	.
-	// no need to use "e.setFigure(figure)" when applied to an itemstack
-	MultiBreakAPI.setFigure(@NotNull ItemStack itemStack, @NotNull Figure figure)
+public void giveItem(Player p) {
+    ItemStack itemStack = new ItemStack(Material.DIAMOND_PICKAXE);
+    Figure square_3x3x1 = new FigureLinear(3, 3, 1);
+    
+    // ***
+    
+    // this figure will be passed into the FetchFigureEvent
+    // you can also set it directly in the event if you want to use your own datatype
+    MultiBreakAPI.setFigure(itemStack, square_3x3x1);
 
-	if (!MultiBreakAPI.hasFigure(@NotNull ItemStack itemStack)) return;
-	Figure figure = MultiBreakAPI.getFigure(@NotNull ItemStack itemStack)
-	figure.getWidth();
-	// use for whatever you want (e.g. lore)
-	.
-	.
+    // ***
+    
+    if (!MultiBreakAPI.hasFigure(itemStack)) return; // return true
+    Figure figure = MultiBreakAPI.getFigure(itemStack);
+    figure.getWidth(); // use for whatever you want (e.g. lore)
+	
+    // ***
+    
+    p.getInventory().setItemInMainHand(itemStack);
+    MultiBreakAPI.updateTool(p); // use this when setting the main hand to a multibreak tool
+    
+    // ***
 }
 ```
 

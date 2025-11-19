@@ -12,13 +12,18 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 public class BreakUtils {
 
+    public static final Map<UUID, Double> interactionRangeCache = new HashMap<>();
     private static final int INTERACTION_RANGE_LEEWAY = 2;
 
     private static double getRange(Player p) {
-        double range = p.getAttribute(Attribute.BLOCK_INTERACTION_RANGE).getValue();;
-        return range + INTERACTION_RANGE_LEEWAY;
+        UUID uuid = p.getUniqueId();
+        return interactionRangeCache.computeIfAbsent(uuid, u -> p.getAttribute(Attribute.BLOCK_INTERACTION_RANGE).getValue() + INTERACTION_RANGE_LEEWAY);
     }
 
     public static RayTraceResult getRayTraceResultExact(Player p) {

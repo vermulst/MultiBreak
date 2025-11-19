@@ -30,28 +30,33 @@ public class RefreshEvents implements Listener {
     }
 
 
-    private Map<UUID, SimpleLocation> previousLocations = new HashMap<>();
+    private final Map<UUID, SimpleLocation> previousLocations = new HashMap<>();
 
     /** Mark player as moved, to perform new raytrace in MultiBreakRunnable */
     @EventHandler
     public void tickStartEvent(ServerTickStartEvent e) {
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            UUID uuid = p.getUniqueId();
-            if (!breakManager.isBreaking(uuid)) return;
+        for (UUID uuid : breakManager.getBreakingPlayers()) {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p == null) continue;
             Location loc = p.getLocation();
             SimpleLocation previousLocation = previousLocations.get(uuid);
             if (previousLocation == null || previousLocation.isDifferent(loc)) {
                 SimpleLocation newLocation = new SimpleLocation(
-                        p.getLocation().getX(),
-                        p.getLocation().getY(),
-                        p.getLocation().getZ(),
-                        p.getLocation().getYaw(),
-                        p.getLocation().getPitch()
+                        loc.getX(),
+                        loc.getY(),
+                        loc.getZ(),
+                        loc.getYaw(),
+                        loc.getPitch()
                 );
                 previousLocations.put(uuid, newLocation);
                 breakManager.getMovedPlayers().put(uuid, Bukkit.getCurrentTick());
             }
         }
+    }
+
+    @EventHandler
+    public void quitEvent(PlayerQuitEvent e) {
+        previousLocations.remove(e.getPlayer().getUniqueId());
     }
 
     /**  Refresh break speed ever tick, checking for new target block */

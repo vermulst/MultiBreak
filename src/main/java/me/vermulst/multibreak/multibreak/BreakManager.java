@@ -56,6 +56,7 @@ public class BreakManager {
                 if (newFigure != null && newFigure.equals(previousFigure)) return;
                 lastTargetBlock.remove(uuid);
                 refreshBreakSpeed(p, newFigure);
+                BreakUtils.interactionRangeCache.remove(uuid);
             }
         }.runTaskLater(Main.getInstance(), 1L);
     }
@@ -190,29 +191,30 @@ public class BreakManager {
         EnumSet<Material> includedMaterials = config.getIncludedMaterials();
         EnumSet<Material> ignoredMaterials = config.getIgnoredMaterials();
 
-        MultiBreak multiBreak = multiBreakMap.get(p.getUniqueId());
-        if (multiBreak != null) {
-            multiBreak.reset(p, block, blockFace.getDirection(), figure);
-        } else {
-            multiBreak = new MultiBreak(p, block, blockFace.getDirection(), figure);
-            multiBreakMap.put(p.getUniqueId(), multiBreak);
-        }
-
-        MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, block);
-        if (!event.callEvent()) return null;
         FilterBlocksEvent filterBlocksEvent = new FilterBlocksEvent(figure, p, p.getInventory().getItemInMainHand(), includedMaterials, ignoredMaterials);
         filterBlocksEvent.callEvent();
         includedMaterials = filterBlocksEvent.getIncludedMaterials();
         ignoredMaterials = filterBlocksEvent.getExcludedMaterials();
-        multiBreak = event.getMultiBreak();
-        if (!multiBreak.isValid(includedMaterials, ignoredMaterials)) return null;
-        multiBreak.checkValid(p, includedMaterials, ignoredMaterials);
 
-        List<MultiBlock> multiBlocks =  multiBreak.getMultiBlocks();
+
+        MultiBreak multiBreak = multiBreakMap.get(p.getUniqueId());
+        if (multiBreak != null) {
+            multiBreak.reset(p, block, blockFace.getDirection(), figure, includedMaterials, ignoredMaterials);
+        } else {
+            multiBreak = new MultiBreak(p, block, blockFace.getDirection(), figure, includedMaterials, ignoredMaterials);
+            multiBreakMap.put(p.getUniqueId(), multiBreak);
+        }
+        MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, block);
+        if (!event.callEvent()) return null;
+        multiBreak = event.getMultiBreak();
+
+        if (!multiBreak.isValid(includedMaterials, ignoredMaterials)) return null;
+
+        MultiBlock[] multiBlocks =  multiBreak.getMultiBlocks();
         for (MultiBlock mb : multiBreak.getMultiBlocks()) {
             Location location = mb.getLocation();
             multiBreakLocationMap
-                    .computeIfAbsent(location, k -> new HashSet<>(multiBlocks.size()))
+                    .computeIfAbsent(location, k -> new HashSet<>(multiBlocks.length))
                     .add(multiBreak);
         }
 
@@ -321,22 +323,24 @@ public class BreakManager {
 
     public void onPlayerQuit(Player p) {
         endMultiBreak(p, getMultiBreak(p), false);
-        figureCache.remove(p.getUniqueId());
-        lastTargetBlock.remove(p.getUniqueId());
-        multiBreakMap.remove(p.getUniqueId());
+        UUID uuid = p.getUniqueId();
+        figureCache.remove(uuid);
+        lastTargetBlock.remove(uuid);
+        multiBreakMap.remove(uuid);
+        movedPlayers.remove(uuid);
+        BreakUtils.interactionRangeCache.remove(uuid);
     }
 
     public void handleBlockRemoval(Location location) {
         if (!multiBreakLocationMap.containsKey(location)) return;
         Set<MultiBreak> multiBreaks = multiBreakLocationMap.get(location);
         for (MultiBreak multiBreak : multiBreaks) {
-            Iterator<MultiBlock> iterator = multiBreak.getMultiBlocks().iterator();
-            while (iterator.hasNext()) {
-                MultiBlock multiBlock = iterator.next();
-
-                if (multiBlock.getLocation().equals(location)) {
-                    multiBreak.writeStage(-1, Collections.singletonList(multiBlock));
-                    iterator.remove();
+            MultiBlock[] multiBlocks = multiBreak.getMultiBlocks();
+            for (int i = 0; i < multiBlocks.length; i++) {
+                MultiBlock multiBlock = multiBreak.getMultiBlocks()[i];
+                if (multiBlock != null && multiBlock.getLocation().equals(location)) {
+                    multiBreak.writeStage(-1, new MultiBlock[]{multiBlock});
+                    multiBlocks[i] = null;
                     break;
                 }
             }
@@ -353,26 +357,35 @@ public class BreakManager {
         }
 
         for (MultiBreak multiBreak : breaksToUpdate) {
-            List<MultiBlock> multiBlocksToRemove = new ArrayList<>();
-            Iterator<MultiBlock> iterator = multiBreak.getMultiBlocks().iterator();
+            MultiBlock[] multiBlocks = multiBreak.getMultiBlocks();
+            int removeCount = 0;
 
-            while (iterator.hasNext()) {
-                MultiBlock multiBlock = iterator.next();
-
-                if (locations.contains(multiBlock.getLocation())) {
-                    multiBlocksToRemove.add(multiBlock);
-                    iterator.remove();
+            for (MultiBlock multiBlock : multiBlocks) {
+                if (multiBlock != null && locations.contains(multiBlock.getLocation())) {
+                    removeCount++;
                 }
             }
 
-            if (!multiBlocksToRemove.isEmpty()) {
-                multiBreak.writeStage(-1, multiBlocksToRemove);
+            if (removeCount > 0) {
+                MultiBlock[] toRemove = new MultiBlock[removeCount];
+                int idx = 0;
+                for (int i = 0; i < multiBlocks.length; i++) {
+                    if (multiBlocks[i] != null && locations.contains(multiBlocks[i].getLocation())) {
+                        toRemove[idx++] = multiBlocks[i];
+                        multiBlocks[i] = null;
+                    }
+                }
+                multiBreak.writeStage(-1, toRemove);
             }
         }
     }
 
     public boolean isBreaking(UUID uuid) {
         return multiBreakTask.containsKey(uuid);
+    }
+
+    public Set<UUID> getBreakingPlayers() {
+        return multiBreakTask.keySet();
     }
 
     public Map<UUID, Integer> getMovedPlayers() {
