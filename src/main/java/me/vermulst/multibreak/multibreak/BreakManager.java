@@ -25,6 +25,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -144,7 +145,7 @@ public class BreakManager {
      *
      * @param p - player breaking
      */
-    public void scheduleMultiBreak(Player p, Figure figure, Block block, boolean isStaticBreak) {
+    public void scheduleMultiBreak(Player p, @NotNull Figure figure, Block block, boolean isStaticBreak) {
         if (multiBreakTask.containsKey(p.getUniqueId())) {
             endMultiBreak(p, this.getMultiBreak(p), false);
         }
@@ -180,13 +181,13 @@ public class BreakManager {
         breakManager.getMovedPlayers().remove(uuid);
     }
 
-    public MultiBreak initMultiBreak(Player p, Block block, Figure figure) {
+    public MultiBreak initMultiBreak(Player p, Block block, @NotNull Figure figure) {
         if (block == null) return null;
         BlockFace blockFace = BreakUtils.getBlockFace(p);
         return this.initMultiBreak(p, block, figure, blockFace);
     }
 
-    public MultiBreak initMultiBreak(Player p, Block block, Figure figure, BlockFace blockFace) {
+    public MultiBreak initMultiBreak(Player p, Block block, @NotNull Figure figure, BlockFace blockFace) {
         if (blockFace == null) return null;
         Config config = Config.getInstance();
         EnumSet<Material> includedMaterials = config.getIncludedMaterials();
@@ -196,7 +197,6 @@ public class BreakManager {
         filterBlocksEvent.callEvent();
         includedMaterials = filterBlocksEvent.getIncludedMaterials();
         ignoredMaterials = filterBlocksEvent.getExcludedMaterials();
-
 
         MultiBreak multiBreak = multiBreakMap.get(p.getUniqueId());
         if (multiBreak != null) {

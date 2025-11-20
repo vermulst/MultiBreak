@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
@@ -19,12 +20,12 @@ public class MultiBreakRunnable extends BukkitRunnable {
     private final Player p;
     private final Block block;
     private boolean init = false;
-    private final Figure figure;
+    private final @NotNull Figure figure;
     private final BreakManager breakManager;
     private final boolean isStaticBreak;
 
 
-    public MultiBreakRunnable(Player p, Block block, Figure figure, BreakManager breakManager, boolean isStaticBreak) {
+    public MultiBreakRunnable(Player p, Block block, @NotNull Figure figure, BreakManager breakManager, boolean isStaticBreak) {
         this.p = p;
         this.block = block;
         this.figure = figure;

@@ -25,6 +25,7 @@ import org.bukkit.craftbukkit.util.CraftLocation;
 import org.bukkit.entity.Player;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.util.Vector;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
@@ -69,7 +70,7 @@ public class MultiBreak {
     private BlockState blockState;
 
 
-    public MultiBreak(Player p, Block block, Vector playerDirection, Figure figure, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
+    public MultiBreak(Player p, Block block, Vector playerDirection, @NotNull Figure figure, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
         this.serverLevel = ((CraftWorld)block.getWorld()).getHandle();
         ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
         this.blockPos = CraftLocation.toBlockPosition(block.getLocation());
@@ -88,7 +89,7 @@ public class MultiBreak {
         this.progressBroken = this.getDestroySpeedMain(serverPlayer);
     }
 
-    public void reset(Player p, Block block, Vector playerDirection, Figure figure, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
+    public void reset(Player p, Block block, Vector playerDirection, @NotNull Figure figure, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
         this.serverLevel = ((CraftWorld)block.getWorld()).getHandle();
         ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
         this.blockPos = CraftLocation.toBlockPosition(block.getLocation());
@@ -147,9 +148,7 @@ public class MultiBreak {
         }
     }
 
-    public void initBlocks(Player p, Figure figure, Vector blockFaceDirection, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
-        if (figure == null) return;
-
+    public void initBlocks(Player p, @NotNull Figure figure, Vector blockFaceDirection, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
         boolean fairMode = Config.getInstance().isFairModeEnabled();
         ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
         float mainBlockProgressPerTick = this.getDestroySpeed(serverPlayer, this.blockPos);

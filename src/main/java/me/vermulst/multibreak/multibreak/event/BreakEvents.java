@@ -62,6 +62,10 @@ public class BreakEvents implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void breakBlockType(BlockBreakEvent e) {
+        Player p = e.getPlayer();
+        Figure figure = breakManager.getFigure(p);
+        if (figure == null) return;
+
         Block block = e.getBlock();
         Location location = block.getLocation();
         if (!breakManager.isMultiBreak(e)) {
@@ -72,17 +76,15 @@ public class BreakEvents implements Listener {
             }
             return;
         }
-        Player p = e.getPlayer();
         MultiBreak multiBreak = breakManager.getMultiBreak(p);
 
         // insta mine
         if (multiBreak == null) {
-            Figure figure = breakManager.getFigure(p);
             BlockFace blockFace = BreakUtils.getBlockFace(p);
             if (blockFace == null) {
-                blockFace = BreakUtils.getThickRaytraceBlockFace(p, e.getBlock());
+                blockFace = BreakUtils.getThickRaytraceBlockFace(p, block);
             }
-            multiBreak = breakManager.initMultiBreak(p, e.getBlock(), figure, blockFace);
+            multiBreak = breakManager.initMultiBreak(p, block, figure, blockFace);
             if (multiBreak == null) {
                 breakManager.handleBlockRemoval(location);
                 return;
@@ -91,7 +93,6 @@ public class BreakEvents implements Listener {
 
         // Mismatch (player switched to an instamine-block while breaking)
         if (!block.equals(multiBreak.getBlock())) {
-            Figure figure = breakManager.getFigure(p);
             multiBreak = breakManager.initMultiBreak(p, block, figure);
         }
         MultiBreakEndEvent event = new MultiBreakEndEvent(p, multiBreak, true);
