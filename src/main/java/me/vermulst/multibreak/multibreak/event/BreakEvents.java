@@ -17,12 +17,15 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageAbortEvent;
 import org.bukkit.event.block.BlockDamageEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerAnimationEvent;
 import org.bukkit.event.player.PlayerAnimationType;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.*;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.util.RayTraceResult;
+
+import java.util.UUID;
 
 public class BreakEvents implements Listener {
 
@@ -101,7 +104,23 @@ public class BreakEvents implements Listener {
         breakManager.handleBlockRemoval(location);
     }
 
-    /** Weird edge case where animation persists after breaking stops */
+    /** so that punching a mob won't cause static breaks */
+    @EventHandler
+    public void combat(EntityDamageByEntityEvent e) {
+        if (!(e.getDamager() instanceof Player p)) return;
+        ItemStack item = p.getInventory().getItemInMainHand();
+        Figure figure = breakManager.getFigure(p, item);
+        if (figure == null) return;
+        MultiBreak multiBreak = breakManager.getMultiBreakOffstate(p);
+        if (multiBreak == null) {
+            UUID uuid = p.getUniqueId();
+            multiBreak = new MultiBreak(uuid);
+            breakManager.getMultiBreakMap().put(uuid, multiBreak);
+        }
+        multiBreak.setEnded(Bukkit.getCurrentTick());
+    }
+
+    /** out-of-range breaks like jump breaks for breaking trees for example */
     @EventHandler
     public void mining(PlayerAnimationEvent e) {
         if (!e.getAnimationType().equals(PlayerAnimationType.ARM_SWING)) return;
@@ -140,6 +159,4 @@ public class BreakEvents implements Listener {
         Player p = e.getPlayer();
         breakManager.onPlayerQuit(p);
     }
-
-
 }

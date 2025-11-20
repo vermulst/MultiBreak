@@ -69,6 +69,9 @@ public class MultiBreak {
     private BlockPos blockPos;
     private BlockState blockState;
 
+    public MultiBreak(UUID uuid) {
+        this.playerUUID = uuid;
+    }
 
     public MultiBreak(Player p, Block block, Vector playerDirection, @NotNull Figure figure, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
         this.serverLevel = ((CraftWorld)block.getWorld()).getHandle();
@@ -413,6 +416,10 @@ public class MultiBreak {
 
     public int getEnded() {
         return ended;
+    }
+
+    public void setEnded(int ended) {
+        this.ended = ended;
     }
 
     public boolean isNotStatic() {

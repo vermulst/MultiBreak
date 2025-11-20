@@ -393,4 +393,8 @@ public class BreakManager {
     public Map<UUID, Integer> getMovedPlayers() {
         return movedPlayers;
     }
+
+    public Map<UUID, MultiBreak> getMultiBreakMap() {
+        return multiBreakMap;
+    }
 }
