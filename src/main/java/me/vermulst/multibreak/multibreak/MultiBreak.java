@@ -170,7 +170,6 @@ public class MultiBreak {
             multiBlocks.add(multiBlock);
         }
         this.multiBlocks = multiBlocks.toArray(new MultiBlock[0]);
-        //this.checkVisible(p);
     }
 
 
