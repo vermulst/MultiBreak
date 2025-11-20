@@ -30,11 +30,11 @@ public class FigureTriangle extends FigureIterable {
             triangles.add(vertexRight.clone().add(new Vector(0, 0, i)));
         }
         Set<Vector> vectors = this.iterateOverBoundingBox(triangles, rotated);
-        vectors.removeIf(vector -> !this.isPointInAnyTriangle(vector, triangles));
+        vectors.removeIf(vector -> !isPointInAnyTriangle(vector, triangles));
         return vectors;
     }
 
-    private boolean isPointInAnyTriangle(Vector point, List<Vector> triangles) {
+    private static boolean isPointInAnyTriangle(Vector point, List<Vector> triangles) {
         for (int i = 0; i < triangles.size(); i += 3) {
             if (point.getZ() != triangles.get(i).getZ()) continue;
             if (isPointInTriangle(point, triangles.get(i), triangles.get(i + 1), triangles.get(i + 2))) {
@@ -44,7 +44,7 @@ public class FigureTriangle extends FigureIterable {
         return false;
     }
 
-    private boolean isPointInTriangle(Vector point, Vector v1, Vector v2, Vector v3) {
+    private static boolean isPointInTriangle(Vector point, Vector v1, Vector v2, Vector v3) {
         double x = point.getX();
         double y = point.getY();
         double x1 = v1.getX();
@@ -62,7 +62,7 @@ public class FigureTriangle extends FigureIterable {
         return alpha >= 0 && beta >= 0 && gamma >= 0 && alpha <= 1 && beta <= 1 && gamma <= 1;
     }
 
-    public int[] getBoundPair(int length, int offSetRight) {
+    private static int[] getBoundPair(int length, int offSetRight) {
         double bound = (double) (length - 1) / 2;
         int lowerBound = (int) Math.ceil(bound);
         int higherBound = (int) Math.floor(bound);

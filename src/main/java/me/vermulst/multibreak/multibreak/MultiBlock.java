@@ -5,6 +5,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class MultiBlock {
@@ -12,7 +13,7 @@ public class MultiBlock {
     private final Block block;
     private boolean isVisible;
     private final Material type;
-    private final int sourceID = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
+    private final int sourceID;
 
     private volatile int lastStage = 0;
 
@@ -25,10 +26,11 @@ public class MultiBlock {
             BlockFace.DOWN
     };
 
-    public MultiBlock(Block block) {
+    public MultiBlock(Block block, int sourceID) {
         this.block = block;
         this.type = block.getType();
         this.isVisible = this.initVisibility(block);
+        this.sourceID = sourceID;
     }
 
     public boolean initVisibility(Block b) {

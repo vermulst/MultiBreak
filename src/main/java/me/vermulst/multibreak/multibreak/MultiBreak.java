@@ -156,10 +156,14 @@ public class MultiBreak {
 
         Set<Block> blocks = figure.getBlocks(p, this.getBlock(), blockFaceDirection);
         Set<MultiBlock> multiBlocks = new HashSet<>(blocks.size());
+        int uuidHash = this.playerUUID.hashCode();
+        int worldHash = this.block.getWorld().getUID().hashCode();
+        int baseHash = getBaseHash(uuidHash, worldHash);
         for (Block block : blocks) {
             Material material = block.getType();
             if (BlockFilter.isExcluded(material, includedMaterials, ignoredMaterials)) continue;
-            MultiBlock multiBlock = new MultiBlock(block);
+            int sourceID = getSourceID(baseHash, block.getX(), block.getY(), block.getZ());
+            MultiBlock multiBlock = new MultiBlock(block, sourceID);
             BlockPos blockPos = CraftLocation.toBlockPosition(block.getLocation());
             float blockProgressPerTick = this.getDestroySpeed(serverPlayer, blockPos);
             if (blockProgressPerTick == Float.POSITIVE_INFINITY) {
@@ -171,7 +175,6 @@ public class MultiBreak {
         }
         this.multiBlocks = multiBlocks.toArray(new MultiBlock[0]);
     }
-
 
     public void tick() {
         Player p = this.getPlayer();
@@ -452,5 +455,20 @@ public class MultiBreak {
 
     public void invalidateHasCorrectToolCache() {
         this.hasCorrectToolCache.clear();
+    }
+
+    private static int getBaseHash(int uuidHash, int worldHash) {
+        int hash = 17;
+        hash = 31 * hash + uuidHash;
+        hash = 31 * hash + worldHash;
+        return hash;
+    }
+
+    private static int getSourceID(int baseHash, int x, int y, int z) {
+        int hash = baseHash;
+        hash = 31 * hash + x;
+        hash = 31 * hash + y;
+        hash = 31 * hash + z;
+        return hash;
     }
 }
