@@ -150,17 +150,29 @@ public class MultiBreak {
     public void initBlocks(Player p, Figure figure, Vector blockFaceDirection, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
         if (figure == null) return;
 
+        boolean fairMode = Config.getInstance().isFairModeEnabled();
+        ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
+        float mainBlockProgressPerTick = this.getDestroySpeed(serverPlayer, this.blockPos);
+
         Set<Block> blocks = figure.getBlocks(p, this.getBlock(), blockFaceDirection);
         Set<MultiBlock> multiBlocks = new HashSet<>(blocks.size());
         for (Block block : blocks) {
             Material material = block.getType();
             if (BlockFilter.isExcluded(material, includedMaterials, ignoredMaterials)) continue;
             MultiBlock multiBlock = new MultiBlock(block);
+            BlockPos blockPos = CraftLocation.toBlockPosition(block.getLocation());
+            float blockProgressPerTick = this.getDestroySpeed(serverPlayer, blockPos);
+            if (blockProgressPerTick == Float.POSITIVE_INFINITY) {
+                multiBlock.setVisible(false); // dont show animation
+            } else if (fairMode && mainBlockProgressPerTick == Float.POSITIVE_INFINITY) {
+                continue; // skip if block takes > 1 ticks and main block is instant
+            }
             multiBlocks.add(multiBlock);
         }
         this.multiBlocks = multiBlocks.toArray(new MultiBlock[0]);
-        this.checkVisible(p);
+        //this.checkVisible(p);
     }
+
 
     public void tick() {
         Player p = this.getPlayer();
@@ -293,28 +305,6 @@ public class MultiBreak {
         this.particleBuilder.receivers(onlinePlayers);
     }
 
-    // todo: do this just when the block got rid of, linked to player
-    /*public void checkRemove() {
-        Iterator<MultiBlock> iterator = this.multiBlocks.iterator();
-        List<MultiBlock> blocksToStageZero = null;
-
-        Map<Location, Integer> multiblockMap = BreakManager.getInstance().getMultiblockMap();
-        while (iterator.hasNext()) {
-            MultiBlock multiBlock = iterator.next();
-            if (!multiblockMap.containsKey(multiBlock.getLocation())) {
-                if (blocksToStageZero == null) {
-                    blocksToStageZero = new ArrayList<>();
-                }
-                blocksToStageZero.add(multiBlock);
-                iterator.remove(); // The fastest way to remove during iteration
-            }
-        }
-
-        if (blocksToStageZero != null && !blocksToStageZero.isEmpty()) {
-            this.writeStage(this.nearbyPlayers, -1, blocksToStageZero);
-        }
-    }*/
-
     public boolean isValid(EnumSet<Material> includedMaterials, EnumSet<Material> excludedMaterials) {
         Material mainBlockType = this.getBlock().getType();
         if (includedMaterials != null && !includedMaterials.isEmpty() && !includedMaterials.contains(mainBlockType)) {
@@ -325,25 +315,6 @@ public class MultiBreak {
         }
         return true;
     }
-
-    public void checkVisible(Player p) {
-        boolean fairMode = Config.getInstance().isFairModeEnabled();
-        if (!fairMode) return;
-
-        ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
-        float mainBlockProgressPerTick = this.getDestroySpeed(serverPlayer, this.blockPos);
-        for (int i = 0; i < this.multiBlocks.length; i++) {
-            MultiBlock multiBlock = this.multiBlocks[i];
-            BlockPos blockPos = CraftLocation.toBlockPosition(multiBlock.getBlock().getLocation());
-            float blockProgressPerTick = this.getDestroySpeed(serverPlayer, blockPos);
-            if (blockProgressPerTick == Float.POSITIVE_INFINITY) {
-                multiBlock.setVisible(false);
-            } else if (mainBlockProgressPerTick == Float.POSITIVE_INFINITY) {
-                this.multiBlocks[i] = null;
-            }
-        }
-    }
-
 
     public void playParticles(MultiBlock[] multiBlocksSnapshot) {
         boolean playerDirectionX = (playerDirection.x() == 1);

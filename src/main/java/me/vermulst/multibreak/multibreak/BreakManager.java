@@ -213,6 +213,7 @@ public class BreakManager {
 
         MultiBlock[] multiBlocks =  multiBreak.getMultiBlocks();
         for (MultiBlock mb : multiBlocks) {
+            if (mb == null) continue;
             Location location = mb.getLocation();
             multiBreakLocationMap
                     .computeIfAbsent(location, k -> new HashSet<>(multiBlocks.length))
