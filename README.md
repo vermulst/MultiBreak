@@ -35,7 +35,7 @@ repositories {
 ```
 ```groovy
 dependencies {
-	compileOnly 'com.github.vermulst:MultiBreak:v1.1.0-prerelease'
+	compileOnly 'com.github.vermulst:MultiBreak:v1.2.0'
 }
 ```
 
