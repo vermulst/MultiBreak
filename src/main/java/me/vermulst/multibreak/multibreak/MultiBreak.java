@@ -302,10 +302,12 @@ public class MultiBreak {
         List<Player> onlinePlayers = new ArrayList<>(playerUUIDs.size());
         for (UUID uuid : playerUUIDs) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null && player.isOnline()) {
-                onlinePlayers.add(player);
-            }
+            if (player == null) continue;
+            if (player.getName().startsWith(".")) continue; // skip bedrock players
+            if (!player.isOnline()) continue;
+            onlinePlayers.add(player);
         }
+
         this.particleBuilder.receivers(onlinePlayers);
     }
 
