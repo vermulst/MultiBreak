@@ -11,6 +11,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -95,6 +96,13 @@ public class RefreshEvents implements Listener {
     public void emptyHeldSlot(PlayerDropItemEvent e) {
         Player p = e.getPlayer();
         if (p.getInventory().getItemInMainHand().getType() != Material.AIR) return;
+        breakManager.refreshTool(p);
+    }
+
+    @EventHandler
+    public void placeLastBlock(BlockPlaceEvent e) {
+        Player p = e.getPlayer();
+        if (p.getInventory().getItemInMainHand().getAmount() != 1) return;
         breakManager.refreshTool(p);
     }
 
