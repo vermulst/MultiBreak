@@ -99,11 +99,19 @@ public class RefreshEvents implements Listener {
         breakManager.refreshTool(p);
     }
 
+
     @EventHandler
     public void placeLastBlock(BlockPlaceEvent e) {
         Player p = e.getPlayer();
         if (p.getInventory().getItemInMainHand().getAmount() != 1) return;
         breakManager.refreshTool(p);
+    }
+
+    @EventHandler
+    public void eatEvent(PlayerItemConsumeEvent e) {
+        Player p = e.getPlayer();
+        if (p.getInventory().getItemInMainHand().getAmount() != 1) return;
+        breakManager.refreshTool(e.getPlayer());
     }
 
 
