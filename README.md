@@ -1,10 +1,10 @@
 
 # Releases
-[**Spigot**](https://www.spigotmc.org/resources/multibreak-1-18-1-20.113810/)
 
-[**Paper**](https://hangar.papermc.io/vermulst/MultiBreak)
-
-[**Modrinth**](https://modrinth.com/plugin/multibreak)
+![Latest Version](https://img.shields.io/modrinth/v/multibreak?color=5865F2&label=Version&logo=github&style=flat-square)\
+[![Modrinth Downloads](https://img.shields.io/modrinth/dt/multibreak?color=1bd96a&label=Modrinth&logo=modrinth&style=flat-square)](https://modrinth.com/plugin/multibreak)\
+[![Spigot Downloads](https://img.shields.io/spiget/downloads/113810?color=ED8106&label=Spigot&logo=spigot&style=flat-square)](https://www.spigotmc.org/resources/multibreak-1-21.113810/)\
+[![Paper](https://img.shields.io/badge/dynamic/json?color=009688&label=Paper&query=stats.downloads&url=https%3A%2F%2Fhangar.papermc.io%2Fapi%2Fv1%2Fprojects%2Fvermulst%2FMultiBreak&style=flat-square&logo=paper)](https://hangar.papermc.io/vermulst/MultiBreak)
 
 # API usage
 
