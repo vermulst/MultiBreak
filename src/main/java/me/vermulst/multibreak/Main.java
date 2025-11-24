@@ -31,8 +31,6 @@ public final class Main extends JavaPlugin {
         int pluginId = 20516;
         new Metrics(this, pluginId);
 
-        MultiBreakAPI.init();
-
         // config
         if (Config.getInstance().load(this.getConfig())) {
             this.saveConfig();

@@ -1,6 +1,7 @@
 package me.vermulst.multibreak.multibreak;
 
 import me.vermulst.multibreak.Main;
+import me.vermulst.multibreak.api.MultiBreakAPI;
 import me.vermulst.multibreak.api.event.FetchFigureEvent;
 import me.vermulst.multibreak.api.event.FilterBlocksEvent;
 import me.vermulst.multibreak.config.Config;
@@ -10,6 +11,7 @@ import me.vermulst.multibreak.api.event.MultiBreakStartEvent;
 import me.vermulst.multibreak.multibreak.runnables.MultiBreakRunnable;
 import me.vermulst.multibreak.utils.BlockFilter;
 import me.vermulst.multibreak.utils.BreakUtils;
+import me.vermulst.multibreak.utils.LocationKeyUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import org.bukkit.*;
@@ -33,7 +35,7 @@ public class BreakManager {
     private final Map<UUID, Integer> movedPlayers = new HashMap<>();
     private final Map<UUID, Integer> multiBreakTask = new HashMap<>();
     private final Map<UUID, Figure> figureCache = new HashMap<>();
-    private final Map<UUID, Block> lastTargetBlock = new HashMap<>();
+    private final Map<UUID, Long> lastTargetBlock = new HashMap<>();
     private final Map<UUID, MultiBreak> multiBreakMap = new HashMap<>();
 
     private final Map<Location, Set<MultiBreak>> multiBreakLocationMap = new HashMap<>();
@@ -90,8 +92,9 @@ public class BreakManager {
             this.invalidateDestroySpeedCache(uuid);
             return;
         }
-        if (lastTargetBlock.containsKey(uuid) && targetBlock.equals(lastTargetBlock.get(uuid))) return;
-        lastTargetBlock.put(uuid, targetBlock);
+        long targetBlockKey = LocationKeyUtil.packBlock(targetBlock);
+        if (lastTargetBlock.containsKey(uuid) && lastTargetBlock.get(uuid) == targetBlockKey) return;
+        lastTargetBlock.put(uuid, targetBlockKey);
 
         this.removeModifier(attribute, modifierToRemove);
         this.invalidateDestroySpeedCache(uuid);
@@ -310,13 +313,8 @@ public class BreakManager {
     }
 
     public MultiBreak getMultiBreak(Player p) {
-        if (multiBreakMap.containsKey(p.getUniqueId())) {
-            MultiBreak multiBreak = multiBreakMap.get(p.getUniqueId());
-            if (!multiBreak.hasEnded()) {
-                return multiBreak;
-            }
-        }
-        return null;
+        MultiBreak multiBreak = multiBreakMap.get(p.getUniqueId());
+        return (multiBreak != null && !multiBreak.hasEnded()) ? multiBreak : null;
     }
 
     public MultiBreak getMultiBreakOffstate(Player p) {
@@ -343,6 +341,7 @@ public class BreakManager {
                 if (multiBlock != null && multiBlock.getLocation().equals(location)) {
                     multiBreak.writeStage(-1, new MultiBlock[]{multiBlock});
                     multiBlocks[i] = null;
+                    multiBreak.updateValidBlockCount();
                     break;
                 }
             }
@@ -360,24 +359,22 @@ public class BreakManager {
 
         for (MultiBreak multiBreak : breaksToUpdate) {
             MultiBlock[] multiBlocks = multiBreak.getMultiBlocks();
-            int removeCount = 0;
+            MultiBlock[] toRemove = new MultiBlock[multiBlocks.length]; // Max size
+            int idx = 0;
 
-            for (MultiBlock multiBlock : multiBlocks) {
-                if (multiBlock != null && locations.contains(multiBlock.getLocation())) {
-                    removeCount++;
+            for (int i = 0; i < multiBlocks.length; i++) {
+                if (multiBlocks[i] != null && locations.contains(multiBlocks[i].getLocation())) {
+                    toRemove[idx++] = multiBlocks[i];
+                    multiBlocks[i] = null;
                 }
             }
 
-            if (removeCount > 0) {
-                MultiBlock[] toRemove = new MultiBlock[removeCount];
-                int idx = 0;
-                for (int i = 0; i < multiBlocks.length; i++) {
-                    if (multiBlocks[i] != null && locations.contains(multiBlocks[i].getLocation())) {
-                        toRemove[idx++] = multiBlocks[i];
-                        multiBlocks[i] = null;
-                    }
+            if (idx > 0) {
+                if (idx < toRemove.length) {
+                    toRemove = Arrays.copyOf(toRemove, idx);
                 }
                 multiBreak.writeStage(-1, toRemove);
+                multiBreak.updateValidBlockCount();
             }
         }
     }

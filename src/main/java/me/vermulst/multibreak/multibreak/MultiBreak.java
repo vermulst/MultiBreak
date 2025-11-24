@@ -69,6 +69,7 @@ public class MultiBreak {
     private ServerLevel serverLevel;
     private BlockPos blockPos;
     private BlockState blockState;
+    private int validBlockCount;
 
     public MultiBreak(UUID uuid) {
         this.playerUUID = uuid;
@@ -92,6 +93,7 @@ public class MultiBreak {
         this.multiBreakType = multiBreakType;
 
         this.progressBroken = this.getDestroySpeedMain(serverPlayer);
+        this.validBlockCount = this.multiBlocks.length;
     }
 
     public void reset(Player p, Block block, Vector playerDirection, @NotNull Figure figure, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials, MultiBreakType multiBreakType) {
@@ -114,9 +116,10 @@ public class MultiBreak {
 
         this.progressBroken = this.getDestroySpeedMain(serverPlayer);
         this.multiBreakType = multiBreakType;
-        p.sendMessage(multiBreakType.toString());
         this.lastStage = -1;
         this.paused = false;
+
+        this.validBlockCount = this.multiBlocks.length;
     }
 
 
@@ -461,10 +464,20 @@ public class MultiBreak {
                 '}';
     }
 
+    public void updateValidBlockCount() {
+        validBlockCount = 0;
+        for (MultiBlock mb : multiBlocks) {
+            if (mb != null) validBlockCount++;
+        }
+    }
+
     public MultiBlock[] getMultiBlockSnapshot() {
-        return Arrays.stream(this.multiBlocks)
-                .filter(Objects::nonNull)
-                .toArray(MultiBlock[]::new);
+        MultiBlock[] snapshot = new MultiBlock[validBlockCount];
+        int idx = 0;
+        for (MultiBlock mb : multiBlocks) {
+            if (mb != null) snapshot[idx++] = mb;
+        }
+        return snapshot;
     }
 
     public void invalidateDestroySpeedCache() {

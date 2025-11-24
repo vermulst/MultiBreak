@@ -1,6 +1,5 @@
 package me.vermulst.multibreak.api;
 
-import me.vermulst.multibreak.Main;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.item.FigureItemDataType;
 import me.vermulst.multibreak.multibreak.BreakManager;
@@ -16,19 +15,7 @@ import java.util.UUID;
 
 public final class MultiBreakAPI {
 
-
-    private static FigureItemDataType DATA_TYPE_INSTANCE;
-
     private MultiBreakAPI() {
-    }
-
-    @ApiStatus.Internal
-    public static void init() {
-        if (DATA_TYPE_INSTANCE != null) {
-            throw new IllegalStateException("MultiBreakAPI already initialized!");
-        }
-        // Instantiate FigureItemDataType ONLY ONCE here
-        DATA_TYPE_INSTANCE = new FigureItemDataType();
     }
 
     /**
@@ -40,10 +27,7 @@ public final class MultiBreakAPI {
      */
     @NotNull
     public static ItemStack setFigure(@NotNull ItemStack itemStack, @NotNull Figure figure) {
-        if (DATA_TYPE_INSTANCE == null) {
-            throw new IllegalStateException("MultiBreakAPI not initialized. Load MultiBreak before.");
-        }
-        return DATA_TYPE_INSTANCE.set(itemStack, figure);
+        return new FigureItemDataType().set(itemStack, figure);
     }
 
     /**
@@ -54,10 +38,7 @@ public final class MultiBreakAPI {
      */
     @Nullable
     public static Figure getFigure(@NotNull ItemStack itemStack) {
-        if (DATA_TYPE_INSTANCE == null) {
-            throw new IllegalStateException("MultiBreakAPI not initialized. Load MultiBreak before.");
-        }
-        return DATA_TYPE_INSTANCE.get(itemStack);
+        return new FigureItemDataType().get(itemStack);
     }
 
     /**
@@ -68,10 +49,7 @@ public final class MultiBreakAPI {
      */
     @NotNull
     public static ItemStack removeFigure(@NotNull ItemStack itemStack) {
-        if (DATA_TYPE_INSTANCE == null) {
-            throw new IllegalStateException("MultiBreakAPI not initialized. Load MultiBreak before.");
-        }
-        return DATA_TYPE_INSTANCE.remove(itemStack);
+        return new FigureItemDataType().remove(itemStack);
     }
 
     /**
@@ -81,10 +59,7 @@ public final class MultiBreakAPI {
      * @return True if a Figure is present, false otherwise.
      */
     public static boolean hasFigure(@NotNull ItemStack itemStack) {
-        if (DATA_TYPE_INSTANCE == null) {
-            throw new IllegalStateException("MultiBreakAPI not initialized. Load MultiBreak before.");
-        }
-        return DATA_TYPE_INSTANCE.has(itemStack);
+        return new FigureItemDataType().has(itemStack);
     }
 
 
