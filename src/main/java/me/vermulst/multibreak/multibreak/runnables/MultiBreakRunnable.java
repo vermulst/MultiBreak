@@ -3,6 +3,7 @@ package me.vermulst.multibreak.multibreak.runnables;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.multibreak.BreakManager;
 import me.vermulst.multibreak.multibreak.MultiBreak;
+import me.vermulst.multibreak.multibreak.MultiBreakType;
 import me.vermulst.multibreak.utils.BreakUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
@@ -22,15 +23,15 @@ public class MultiBreakRunnable extends BukkitRunnable {
     private boolean init = false;
     private final @NotNull Figure figure;
     private final BreakManager breakManager;
-    private final boolean isStaticBreak;
+    private final MultiBreakType multiBreakType;
 
 
-    public MultiBreakRunnable(Player p, Block block, @NotNull Figure figure, BreakManager breakManager, boolean isStaticBreak) {
+    public MultiBreakRunnable(Player p, Block block, @NotNull Figure figure, BreakManager breakManager, MultiBreakType multiBreakType) {
         this.p = p;
         this.block = block;
         this.figure = figure;
         this.breakManager = breakManager;
-        this.isStaticBreak = isStaticBreak;
+        this.multiBreakType = multiBreakType;
     }
 
     // Starts at tick 1, not at tick 0.
@@ -38,7 +39,7 @@ public class MultiBreakRunnable extends BukkitRunnable {
     public void run() {
         UUID uuid = p.getUniqueId();
         MultiBreak multiBreak = breakManager.getMultiBreak(p);
-        boolean isInitializedStaticBreak = multiBreak != null && isStaticBreak;
+        boolean isInitializedStaticBreak = multiBreak != null && multiBreakType.isStatic();
         boolean hasMoved = !init;
         if (!hasMoved && breakManager.getMovedPlayers().containsKey(uuid) && !isInitializedStaticBreak) {
             int movedTick = breakManager.getMovedPlayers().get(uuid);
@@ -71,12 +72,12 @@ public class MultiBreakRunnable extends BukkitRunnable {
             }
 
             if (multiBreak == null) {
-                multiBreak = breakManager.initMultiBreak(p, blockMining, this.figure);
+                multiBreak = breakManager.initMultiBreak(p, blockMining, this.figure, this.multiBreakType);
                 if (multiBreak == null) {
                     cancelMultiBreak(null);
                     return;
                 }
-                if (this.isStaticBreak) {
+                if (this.multiBreakType.isStatic()) {
                     multiBreak.setLastTick(Bukkit.getCurrentTick());
                 }
             }
@@ -89,7 +90,7 @@ public class MultiBreakRunnable extends BukkitRunnable {
                     cancelMultiBreak(null);
                     return;
                 }
-                breakManager.scheduleMultiBreak(p, this.figure, this.block, false);
+                breakManager.scheduleMultiBreak(p, this.figure, this.block, this.multiBreakType);
             }
         }
 
@@ -112,7 +113,7 @@ public class MultiBreakRunnable extends BukkitRunnable {
         this.breakManager.endMultiBreak(p, multiBreak, false);
         float progressBroken = multiBreak.getProgressBroken();
         int progressTicks = multiBreak.getProgressTicks();
-        multiBreak = this.breakManager.initMultiBreak(p, this.block, this.figure);
+        multiBreak = this.breakManager.initMultiBreak(p, this.block, this.figure, this.multiBreakType);
         if (multiBreak == null) return null;
         multiBreak.setProgressBroken(progressBroken);
         multiBreak.setProgressTicks(progressTicks);

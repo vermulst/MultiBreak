@@ -47,11 +47,12 @@ public class MultiBreak {
     private int lastStage = -1;
     private MultiBlock[] multiBlocks;
     private final ReentrantLock packetLock = new ReentrantLock();
-    private volatile int ended = -1; // tick at which it was broken, 0 = canceled
+    private volatile int ended = -1; // tick at which it was broken
 
     // static break
     private boolean paused = false;
     private int lastTick = -1;
+    private MultiBreakType multiBreakType;
 
     private final Map<Material, Float> destroySpeedCache = new EnumMap<>(Material.class);
     private final Map<Material, Boolean> hasCorrectToolCache = new EnumMap<>(Material.class);
@@ -73,7 +74,7 @@ public class MultiBreak {
         this.playerUUID = uuid;
     }
 
-    public MultiBreak(Player p, Block block, Vector playerDirection, @NotNull Figure figure, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
+    public MultiBreak(Player p, Block block, Vector playerDirection, @NotNull Figure figure, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials, MultiBreakType multiBreakType) {
         this.serverLevel = ((CraftWorld)block.getWorld()).getHandle();
         ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
         this.blockPos = CraftLocation.toBlockPosition(block.getLocation());
@@ -88,11 +89,12 @@ public class MultiBreak {
         this.block = block;
         this.playerDirection = IntVector.of(playerDirection);
         this.initBlocks(p, figure, playerDirection, includedMaterials, ignoredMaterials);
+        this.multiBreakType = multiBreakType;
 
         this.progressBroken = this.getDestroySpeedMain(serverPlayer);
     }
 
-    public void reset(Player p, Block block, Vector playerDirection, @NotNull Figure figure, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
+    public void reset(Player p, Block block, Vector playerDirection, @NotNull Figure figure, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials, MultiBreakType multiBreakType) {
         this.serverLevel = ((CraftWorld)block.getWorld()).getHandle();
         ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
         this.blockPos = CraftLocation.toBlockPosition(block.getLocation());
@@ -111,6 +113,8 @@ public class MultiBreak {
         this.initBlocks(p, figure, playerDirection, includedMaterials, ignoredMaterials);
 
         this.progressBroken = this.getDestroySpeedMain(serverPlayer);
+        this.multiBreakType = multiBreakType;
+        p.sendMessage(multiBreakType.toString());
         this.lastStage = -1;
         this.paused = false;
     }
@@ -181,10 +185,11 @@ public class MultiBreak {
     public void tick() {
         Player p = this.getPlayer();
         if (p == null) {
-            this.end(p, false);
+            BreakManager.getInstance().endMultiBreak(p, this, false);
             return;
         }
         this.checkPause();
+        this.checkEnd(p);
         if (this.paused) return;
 
         this.progressTicks++;
@@ -204,6 +209,11 @@ public class MultiBreak {
         this.paused = (currentTick - this.lastTick) > 1;
     }
 
+    public void checkEnd(Player p) {
+        if (!this.paused || this.multiBreakType != MultiBreakType.CANCELLED_STATIC) return;
+        BreakManager.getInstance().endMultiBreak(p, this, false);
+    }
+
 
     public void checkDestroySpeedChange(Player p) {
         boolean isGrounded = p.isOnGround();
@@ -218,7 +228,7 @@ public class MultiBreak {
 
 
     public void end(Player p, boolean finished) {
-        this.ended = finished ? Bukkit.getCurrentTick() : 0;
+        this.ended = Bukkit.getCurrentTick();
         MultiBlock[] multiBlockSnapshot = this.getMultiBlockSnapshot();
         this.writeStage(-1, multiBlockSnapshot);
         if (!finished) return;
@@ -425,7 +435,7 @@ public class MultiBreak {
     }
 
     public boolean isNotStatic() {
-        return lastTick == -1;
+        return multiBreakType == MultiBreakType.NORMAL;
     }
 
     public void setProgressTicks(int progressTicks) {

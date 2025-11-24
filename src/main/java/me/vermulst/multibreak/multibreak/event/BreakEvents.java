@@ -5,6 +5,8 @@ import me.vermulst.multibreak.api.event.MultiBreakEndEvent;
 import me.vermulst.multibreak.figure.Figure;
 import me.vermulst.multibreak.multibreak.BreakManager;
 import me.vermulst.multibreak.multibreak.MultiBreak;
+import me.vermulst.multibreak.multibreak.MultiBreakType;
+import me.vermulst.multibreak.utils.LocationKeyUtil;
 import me.vermulst.multibreak.utils.BreakUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -25,13 +27,32 @@ import org.bukkit.inventory.*;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.util.RayTraceResult;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public class BreakEvents implements Listener {
 
+    private static final String STATIC_MULTIBREAK_META = "static-multibreak";
+    private static final int MAX_TICKS_BETWEEN_COMBAT_AND_STATIC_BREAK = 5;
+
     private final BreakManager breakManager;
     public BreakEvents(BreakManager breakManager) {
         this.breakManager = breakManager;
+    }
+
+    private record MultiBreakTypeInfo(MultiBreakType multiBreakType, long blockLocation) {
+        public static MultiBreakTypeInfo of(MultiBreakType multiBreakType, Block block) {
+            return new MultiBreakTypeInfo(multiBreakType, LocationKeyUtil.packBlock(block));
+        }
+    }
+
+    private Optional<MultiBreakTypeInfo> popStaticMultiBreakMeta(Player player) {
+        if (!player.hasMetadata(STATIC_MULTIBREAK_META)) {
+            return Optional.empty();
+        }
+        MultiBreakTypeInfo info = (MultiBreakTypeInfo) player.getMetadata(STATIC_MULTIBREAK_META).getFirst().value();
+        player.removeMetadata(STATIC_MULTIBREAK_META, Main.getInstance());
+        return Optional.of(info);
     }
 
     // events sorted on chronological order
@@ -42,12 +63,20 @@ public class BreakEvents implements Listener {
         ItemStack item = e.getItemInHand();
         Figure figure = breakManager.getFigure(p, item);
         if (figure == null) return;
-        if (p.hasMetadata("static-multibreak")) {
-            breakManager.scheduleMultiBreak(p, figure, e.getBlock(), true);
-            p.removeMetadata("static-multibreak", Main.getInstance());
-        } else {
-            breakManager.scheduleMultiBreak(p, figure, e.getBlock(), false);
+        Optional<MultiBreakTypeInfo> staticInfoOpt = popStaticMultiBreakMeta(p);
+
+        if (staticInfoOpt.isPresent()) {
+            MultiBreakTypeInfo info = staticInfoOpt.get();
+            long packedCurrentBlock = LocationKeyUtil.packBlock(e.getBlock());
+
+            // Check if the block being damaged matches the block from the static metadata
+            if (packedCurrentBlock == info.blockLocation()) {
+                breakManager.scheduleMultiBreak(p, figure, e.getBlock(), info.multiBreakType());
+                return;
+            }
         }
+        // Normal or mismatched static break -> start normal break
+        breakManager.scheduleMultiBreak(p, figure, e.getBlock(), MultiBreakType.NORMAL);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -87,7 +116,7 @@ public class BreakEvents implements Listener {
             if (blockFace == null) {
                 blockFace = BreakUtils.getThickRaytraceBlockFace(p, block);
             }
-            multiBreak = breakManager.initMultiBreak(p, block, figure, blockFace);
+            multiBreak = breakManager.initMultiBreak(p, block, figure, blockFace, MultiBreakType.NORMAL);
             if (multiBreak == null) {
                 breakManager.handleBlockRemoval(location);
                 return;
@@ -96,21 +125,27 @@ public class BreakEvents implements Listener {
 
         // Mismatch (player switched to an instamine-block while breaking)
         if (!block.equals(multiBreak.getBlock())) {
-            multiBreak = breakManager.initMultiBreak(p, block, figure);
+            multiBreak = breakManager.initMultiBreak(p, block, figure, MultiBreakType.NORMAL);
         }
-        MultiBreakEndEvent event = new MultiBreakEndEvent(p, multiBreak, true);
+        boolean finished = !e.isCancelled();
+        MultiBreakEndEvent event = new MultiBreakEndEvent(p, multiBreak, finished);
         event.callEvent();
-        breakManager.endMultiBreak(p, event.getMultiBreak(), true);
+        breakManager.endMultiBreak(p, event.getMultiBreak(), finished);
         breakManager.handleBlockRemoval(location);
+        if (!finished) {
+            MultiBreakTypeInfo multiBreakTypeInfo = MultiBreakTypeInfo.of(MultiBreakType.CANCELLED_STATIC, block);
+            p.setMetadata(STATIC_MULTIBREAK_META, new FixedMetadataValue(Main.getInstance(), multiBreakTypeInfo));
+        }
     }
 
     /** so that punching a mob won't cause static breaks */
     @EventHandler
     public void combat(EntityDamageByEntityEvent e) {
         if (!(e.getDamager() instanceof Player p)) return;
+
         ItemStack item = p.getInventory().getItemInMainHand();
-        Figure figure = breakManager.getFigure(p, item);
-        if (figure == null) return;
+        if (breakManager.getFigure(p, item) == null) return;
+
         MultiBreak multiBreak = breakManager.getMultiBreakOffstate(p);
         if (multiBreak == null) {
             UUID uuid = p.getUniqueId();
@@ -124,10 +159,12 @@ public class BreakEvents implements Listener {
     @EventHandler
     public void mining(PlayerAnimationEvent e) {
         if (!e.getAnimationType().equals(PlayerAnimationType.ARM_SWING)) return;
+
         Player p = e.getPlayer();
         ItemStack item = p.getInventory().getItemInMainHand();
         Figure figure = breakManager.getFigure(p, item);
         if (figure == null) return;
+
         MultiBreak multiBreak = breakManager.getMultiBreak(p);
 
         // Update static break
@@ -139,17 +176,20 @@ public class BreakEvents implements Listener {
             return;
         }
 
-        // Initiate static breaks
+        // Initiate new static break
         if (breakManager.isBreaking(p.getUniqueId())) return;
         MultiBreak multiBreakOffState = breakManager.getMultiBreakOffstate(p);
         if (multiBreakOffState == null) return;
         int ended = multiBreakOffState.getEnded();
-        if (Bukkit.getCurrentTick() - ended <= 5) return;
+        if (Bukkit.getCurrentTick() - ended <= MAX_TICKS_BETWEEN_COMBAT_AND_STATIC_BREAK) return;
         RayTraceResult rayTraceResult = BreakUtils.getRayTraceResultExact(p);
         if (rayTraceResult == null) return;
         Block targetBlock = rayTraceResult.getHitBlock();
         BlockFace face = rayTraceResult.getHitBlockFace();
-        p.setMetadata("static-multibreak", new FixedMetadataValue(Main.getInstance(), true));
+        if (!p.hasMetadata(STATIC_MULTIBREAK_META)) {
+            MultiBreakTypeInfo multiBreakTypeInfo = MultiBreakTypeInfo.of(MultiBreakType.STATIC, targetBlock);
+            p.setMetadata(STATIC_MULTIBREAK_META, new FixedMetadataValue(Main.getInstance(), multiBreakTypeInfo));
+        }
         BlockDamageEvent blockDamageEvent = new BlockDamageEvent(p, targetBlock, face, item, false);
         blockDamageEvent.callEvent();
     }

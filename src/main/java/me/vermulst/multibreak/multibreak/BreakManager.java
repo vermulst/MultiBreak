@@ -145,13 +145,13 @@ public class BreakManager {
      *
      * @param p - player breaking
      */
-    public void scheduleMultiBreak(Player p, @NotNull Figure figure, Block block, boolean isStaticBreak) {
+    public void scheduleMultiBreak(Player p, @NotNull Figure figure, Block block, MultiBreakType multiBreakType) {
         if (multiBreakTask.containsKey(p.getUniqueId())) {
             endMultiBreak(p, this.getMultiBreak(p), false);
         }
         MultiBreak multiBreakOffState = this.getMultiBreakOffstate(p);
-        if (multiBreakOffState != null && !isStaticBreak) multiBreakOffState.setLastTick(-1);
-        MultiBreakRunnable multiBreakRunnable = new MultiBreakRunnable(p, block, figure, this, isStaticBreak);
+        if (multiBreakOffState != null && !multiBreakType.isStatic()) multiBreakOffState.setLastTick(-1);
+        MultiBreakRunnable multiBreakRunnable = new MultiBreakRunnable(p, block, figure, this, multiBreakType);
         int taskID = multiBreakRunnable.runTaskTimer(Main.getInstance(), 1, 1).getTaskId();
         multiBreakTask.put(p.getUniqueId(), taskID);
     }
@@ -181,13 +181,14 @@ public class BreakManager {
         breakManager.getMovedPlayers().remove(uuid);
     }
 
-    public MultiBreak initMultiBreak(Player p, Block block, @NotNull Figure figure) {
+
+    public MultiBreak initMultiBreak(Player p, Block block, @NotNull Figure figure, MultiBreakType multiBreakType) {
         if (block == null) return null;
         BlockFace blockFace = BreakUtils.getBlockFace(p);
-        return this.initMultiBreak(p, block, figure, blockFace);
+        return this.initMultiBreak(p, block, figure, blockFace, multiBreakType);
     }
 
-    public MultiBreak initMultiBreak(Player p, Block block, @NotNull Figure figure, BlockFace blockFace) {
+    public MultiBreak initMultiBreak(Player p, Block block, @NotNull Figure figure, BlockFace blockFace, MultiBreakType multiBreakType) {
         if (blockFace == null) return null;
         Config config = Config.getInstance();
         EnumSet<Material> includedMaterials = config.getIncludedMaterials();
@@ -200,9 +201,9 @@ public class BreakManager {
 
         MultiBreak multiBreak = multiBreakMap.get(p.getUniqueId());
         if (multiBreak != null) {
-            multiBreak.reset(p, block, blockFace.getDirection(), figure, includedMaterials, ignoredMaterials);
+            multiBreak.reset(p, block, blockFace.getDirection(), figure, includedMaterials, ignoredMaterials, multiBreakType);
         } else {
-            multiBreak = new MultiBreak(p, block, blockFace.getDirection(), figure, includedMaterials, ignoredMaterials);
+            multiBreak = new MultiBreak(p, block, blockFace.getDirection(), figure, includedMaterials, ignoredMaterials, multiBreakType);
             multiBreakMap.put(p.getUniqueId(), multiBreak);
         }
         MultiBreakStartEvent event = new MultiBreakStartEvent(p, multiBreak, block);
@@ -235,8 +236,7 @@ public class BreakManager {
         Block block = e.getBlock();
         boolean wasMultiBroken = block.hasMetadata("multi-broken");
         boolean isIgnoredMaterial = Config.getInstance().getIgnoredMaterials().contains(block.getType());
-        boolean isCancelled = e.isCancelled();
-        return !wasMultiBroken && !isIgnoredMaterial && !isCancelled;
+        return !wasMultiBroken && !isIgnoredMaterial;
     }
 
     public void filter(Set<Block> blocks, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials) {
