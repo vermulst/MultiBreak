@@ -1,7 +1,6 @@
 package me.vermulst.multibreak.multibreak;
 
 import me.vermulst.multibreak.Main;
-import me.vermulst.multibreak.api.MultiBreakAPI;
 import me.vermulst.multibreak.api.event.FetchFigureEvent;
 import me.vermulst.multibreak.api.event.FilterBlocksEvent;
 import me.vermulst.multibreak.config.Config;
