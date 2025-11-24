@@ -13,6 +13,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -72,6 +73,11 @@ public class RefreshEvents implements Listener {
     }
 
      /** Refresh tool events */
+
+     @EventHandler
+     public void deathEvent(PlayerRespawnEvent e) {
+         breakManager.refreshTool(e.getPlayer());
+     }
 
     @EventHandler
     public void pickupIntoHand(EntityPickupItemEvent e) {
