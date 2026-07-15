@@ -78,7 +78,7 @@ public class MultiBreak {
     public MultiBreak(Player p, Block block, Vector playerDirection, @NotNull Figure figure, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials, MultiBreakType multiBreakType) {
         this.serverLevel = ((CraftWorld)block.getWorld()).getHandle();
         ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
-        this.blockPos = CraftLocation.toBlockPosition(block.getLocation());
+        this.blockPos = CraftLocation.toBlockPos(block.getLocation());
         this.blockState = serverLevel.getBlockState(this.blockPos);
         this.isGrounded = p.isOnGround();
         this.isSubmerged = serverPlayer.isEyeInFluid(FluidTags.WATER);
@@ -99,7 +99,7 @@ public class MultiBreak {
     public void reset(Player p, Block block, Vector playerDirection, @NotNull Figure figure, EnumSet<Material> includedMaterials, EnumSet<Material> ignoredMaterials, MultiBreakType multiBreakType) {
         this.serverLevel = ((CraftWorld)block.getWorld()).getHandle();
         ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
-        this.blockPos = CraftLocation.toBlockPosition(block.getLocation());
+        this.blockPos = CraftLocation.toBlockPos(block.getLocation());
         this.blockState = serverLevel.getBlockState(this.blockPos);
         this.isGrounded = p.isOnGround();
         this.isSubmerged = serverPlayer.isEyeInFluid(FluidTags.WATER);
@@ -173,7 +173,7 @@ public class MultiBreak {
             if (BlockFilter.isExcluded(material, includedMaterials, ignoredMaterials)) continue;
             int sourceID = getSourceID(baseHash, block.getX(), block.getY(), block.getZ());
             MultiBlock multiBlock = new MultiBlock(block, sourceID);
-            BlockPos blockPos = CraftLocation.toBlockPosition(block.getLocation());
+            BlockPos blockPos = CraftLocation.toBlockPos(block.getLocation());
             float blockProgressPerTick = this.getDestroySpeed(serverPlayer, blockPos);
             if (blockProgressPerTick == Float.POSITIVE_INFINITY) {
                 multiBlock.setVisible(false); // dont show animation

@@ -2,11 +2,11 @@ plugins {
     id 'java'
     id 'maven-publish'
     id "com.gradleup.shadow" version "9.2.2"
-    id "io.papermc.paperweight.userdev" version "2.0.0-beta.19"
+    id "io.papermc.paperweight.userdev" version "2.0.0-beta.21"
 }
 
 group = 'com.github.vermulst'
-version = '1.2.1'
+version = '1.2.2'
 
 
 def deploymentProperties = new Properties()
@@ -33,15 +33,15 @@ repositories {
 }
 
 dependencies {
-    paperweight.paperDevBundle("1.21.3-R0.1-SNAPSHOT")
+    paperweight.paperDevBundle("26.1.2.build.+")
     implementation 'org.bstats:bstats-bukkit:3.1.0'
 }
 
 
-def targetJavaVersion = 21
+def targetJavaVersion = 25
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(25)
     }
     def javaVersion = JavaVersion.toVersion(targetJavaVersion)
     sourceCompatibility = javaVersion

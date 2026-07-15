@@ -53,7 +53,7 @@ public class WriteStageRunnable extends BukkitRunnable {
                 if ((stage != -1 && lastStage > stage) || lastStage == -1) continue;
                 multiBlock.setLastStage(stage);
 
-                BlockPos blockPos = CraftLocation.toBlockPosition(multiBlock.getLocation());
+                BlockPos blockPos = CraftLocation.toBlockPos(multiBlock.getLocation());
                 ClientboundBlockDestructionPacket packet =
                         new ClientboundBlockDestructionPacket(
                                 multiBlock.getSourceID(),

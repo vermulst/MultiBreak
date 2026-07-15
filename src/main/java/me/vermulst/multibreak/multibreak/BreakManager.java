@@ -253,7 +253,7 @@ public class BreakManager {
         if (multiBreak != null) {
             ServerPlayer serverPlayer = ((CraftPlayer)p).getHandle();
             for (Block block : blocks) {
-                BlockPos blockPos = CraftLocation.toBlockPosition(block.getLocation());
+                BlockPos blockPos = CraftLocation.toBlockPos(block.getLocation());
                 float progressPerTick = BreakUtils.getDestroySpeed(serverPlayer, blockPos, multiBreak);
                 if (progressPerTick < lowestProgressPerTick) {
                     lowestProgressPerTick = progressPerTick;
