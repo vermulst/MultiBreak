@@ -22,6 +22,7 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.craftbukkit.util.CraftLocation;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.util.Vector;
@@ -353,8 +354,7 @@ public class MultiBreak {
         Main.getHighPriorityExecutor().submit(writeParticleRunnable);
     }
 
-    private static final Predicate<net.minecraft.world.entity.Entity> isPlayer =
-            (nmsEntity) -> nmsEntity.getType() == net.minecraft.world.entity.EntityType.PLAYER;
+    private static final Predicate<Entity> isPlayer = nmsEntity -> nmsEntity instanceof Player;
 
     // 2-6x faster than API version
     public Set<UUID> getNearbyPlayerUUIDs(Location blockLoc) {
@@ -368,11 +368,10 @@ public class MultiBreak {
                 x + CHECK_PLAYERS_RADIUS, y + CHECK_PLAYERS_RADIUS, z + CHECK_PLAYERS_RADIUS
         );
 
-        List<net.minecraft.world.entity.Entity> entityList = this.serverLevel.getEntities((net.minecraft.world.entity.Entity) null, aabb, isPlayer);
+        List<ServerPlayer> players = this.serverLevel.getPlayers(player -> aabb.contains(player.getX(), player.getY(), player.getZ()));
 
-        for (net.minecraft.world.entity.Entity entity : entityList) {
-            ServerPlayer serverPlayer = (ServerPlayer) entity;
-            uuids.add(serverPlayer.getUUID());
+        for (ServerPlayer player : players) {
+            uuids.add(player.getUUID());
         }
         return uuids;
     }

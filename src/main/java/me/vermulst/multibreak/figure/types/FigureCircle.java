@@ -21,7 +21,7 @@ public class FigureCircle extends FigureIterable {
         double b = getHeight() / 2.0;
         double c = getDepth() / 2.0;
 
-        int resolution = 30;  // You can adjust this based on the desired number of points
+        int resolution = 30;
         double du = 2.0 * Math.PI / (resolution - 1);
         double dv = Math.PI / (resolution - 1);
 
